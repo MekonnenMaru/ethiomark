@@ -1,1508 +1,1438 @@
 <!DOCTYPE html>
-<html lang="am">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ethiomark Bingo</title>
-<link rel="stylesheet" href="bootstrap/css/style.css">
-<link rel="stylesheet" href="bootstrap/css/bingon.css">
-<link rel="stylesheet" href="bootstrap/css/ball.css">
-<link rel="stylesheet" href="bootstrap/css/modal.css">
-<link rel="stylesheet" href="bootstrap/css/gift-unboxing.css">
-<link rel="stylesheet" id="right-menu-css" href="cashier/right-menu.css">
-<style>
-  :root { --bg: rgb(3,46,59); }
-  body { background-color: var(--bg); color: #fff; margin: 0; padding: 0; font-family: Arial, sans-serif; user-select: none; }
+<link rel="stylesheet" id="lightStyleSheet"  href="/bootstrap/css/style.css">
+<link rel="stylesheet" id="modalStyleSheet"  href="/bootstrap/css/modal.css">
+<link rel="stylesheet" id="giftStyleSheet"   href="/bootstrap/css/gift-unboxing.css">
+<link rel="stylesheet" id="ballStyleSheet"   href="/bootstrap/css/ball.css">
+<link rel="stylesheet" id="bingoStyleSheet"  href="/bootstrap/css/bingon.css">
+<link rel="stylesheet" href="/bootstrap/css/congura.css">
+<link rel="stylesheet" href="/cashier/right-menu.css">
+<link rel="stylesheet" href="/bootstrap/css/reg_card.css">
+<link rel="stylesheet" href="/cashier/side-nav.css">
+<link rel="stylesheet" href="/cashier/container.css">
 
-  #layout { display: flex; width: 100%; height: 100vh; overflow: hidden; }
-  #left-panel { width: 52px; background: rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 0; z-index: 100; flex-shrink: 0; }
-  #main-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+<script>
+/* ── Thin IDB wrapper matching the idb library API used throughout ── */
+const dbPromise = (function() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('bingo-audio-cache', 1);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('audios')) db.createObjectStore('audios');
+    };
+    req.onsuccess = e => {
+      const idb = e.target.result;
+      resolve({
+        get: (store, key) => new Promise((res, rej) => {
+          const r = idb.transaction(store,'readonly').objectStore(store).get(key);
+          r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+        }),
+        transaction: (store, mode) => {
+          const tx = idb.transaction(store, mode);
+          const st = tx.objectStore(store);
+          return {
+            objectStore: () => st,
+            store: { put: (blob,key) => st.put(blob,key) },
+            done: new Promise((res, rej) => {
+              tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+            })
+          };
+        }
+      });
+    };
+    req.onerror = () => reject(req.error);
+  });
+})();
+</script>
 
-  /* Bingo board */
-  #bingo-board { display: grid; grid-template-rows: auto 1fr auto auto; gap: 0; padding: 2px; height: 100%; }
-
-  /* 75 number grid */
-  #number-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 2px; padding: 2px; }
-  .col-group { display: flex; flex-direction: column; gap: 2px; }
-  .col-header { text-align: center; font-size: 22px; font-weight: 900; color: #fff; padding: 4px 0; border-radius: 4px 4px 0 0; }
-  .col-header.B { background: #1565c0; }
-  .col-header.I { background: #6a1b9a; }
-  .col-header.N { background: #b71c1c; }
-  .col-header.G { background: #2e7d32; }
-  .col-header.O { background: #e65100; }
-  .num-cell { text-align: center; font-size: 16px; font-weight: 700; padding: 4px 2px; border-radius: 3px; background: rgba(255,255,255,0.07); cursor: default; transition: background 0.2s, color 0.2s; }
-  .num-cell.callnum { color: #fff; }
-
-  /* Current ball display */
-  #ball-display { display: flex; align-items: center; justify-content: center; padding: 6px; gap: 8px; }
-  #rand { font-size: 60px; font-weight: 900; min-width: 120px; text-align: center; background: linear-gradient(135deg, #00bcd4, #006064); border-radius: 12px; padding: 6px 12px; }
-  #recent-calls { display: flex; gap: 4px; align-items: center; overflow: hidden; }
-  .recent-num { font-size: 18px; font-weight: 700; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.1); }
-
-  /* Derash / payout box */
-  #derash-area { display: flex; align-items: center; justify-content: center; padding: 4px; }
-  .derash-box { background-color: #0a3941; width: 90%; border-radius: 10px; padding: 8px; display: flex; flex-direction: column; align-items: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
-  .derash-box .amount { font-size: 40px; font-weight: 900; }
-  .derash-box .derash-line { width: 80%; height: 6px; background-color: #2C866A; margin: 6px 0; }
-  .derash-details { display: flex; justify-content: space-between; width: 100%; padding: 2px 8px; box-sizing: border-box; }
-  .derash-details .total-card { font-size: 16px; color: rgb(134,129,129); }
-  .derash-details .total-calls { font-size: 28px; color: #fff; font-weight: 700; }
-
-  /* Controls row */
-  #controls { display: flex; align-items: center; gap: 6px; padding: 4px 8px; flex-wrap: wrap; justify-content: center; }
-  #bingoo { height: 54px; min-width: 110px; font-size: 22px; font-weight: 900; background: linear-gradient(0deg, #ffee00, #ce9a00); color: #000; border: none; border-radius: 6px; cursor: pointer; }
-  #shuffle { height: 54px; min-width: 90px; font-size: 20px; font-weight: 700; background: #222; color: #fff; border: 2px solid #555; border-radius: 6px; cursor: pointer; }
-  #mycheck { height: 54px; min-width: 90px; font-size: 18px; font-weight: 700; background: #1565c0; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
-  #finsh_game { height: 54px; min-width: 90px; font-size: 16px; font-weight: 700; background: #b71c1c; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
-  .card-input-wrap { display: flex; gap: 4px; align-items: center; }
-  #Ecard_no { width: 90px; height: 50px; font-size: 28px; font-weight: 900; text-align: center; border-radius: 6px; border: 2px solid #ccc; }
-
-  /* Speed slider */
-  #speed-row { display: flex; align-items: center; gap: 8px; padding: 0 12px; color: #fff; font-size: 16px; }
-  #myRange { -webkit-appearance: none; width: 180px; height: 20px; background: #000; border-radius: 10px; outline: none; opacity: 0.7; }
-  #myRange::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 34px; background: #00ff40; cursor: pointer; border-radius: 4px; }
-
-  /* Pattern preview */
-  #pattern-area { display: flex; gap: 4px; align-items: center; justify-content: center; padding: 4px; }
-  #patt-label { font-size: 16px; color: #fff; margin-right: 4px; }
-  #bingoTable { border-collapse: collapse; width: 100px; }
-  #bingoTable th { background: #00478B; color: #fff; width: 18px; height: 18px; font-size: 11px; text-align: center; }
-  #bingoTable td { width: 18px; height: 18px; font-size: 9px; text-align: center; border: 1px solid #444; background: rgba(255,255,255,0.05); }
-  #bingoTable td.highlighted { background: #00bcd4 !important; }
-  #bingoTable .circle { width: 12px; height: 12px; border-radius: 50%; background: #fff; margin: auto; }
-
-  /* Voice selection */
-  #voice-row { display: flex; align-items: center; gap: 6px; padding: 4px 12px; }
-  #voiceselect { height: 42px; font-size: 16px; border-radius: 6px; background: #111; color: #fff; border: 1px solid #555; }
-
-  /* Left panel buttons */
-  .side-btn { width: 44px; min-height: 30px; background: transparent; border: 2px solid #28a745; border-radius: 5px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px 0; }
-  .side-btn.red-border { border-color: rgb(243,49,0); }
-  #bonus-btn { display: none; }
-
-  /* Bonus container */
-  #bonusContainer { position: fixed; right: 60px; bottom: 80px; z-index: 1500; background: rgba(0,0,0,0.85); border: 2px solid #ffd700; border-radius: 12px; padding: 12px; color: #fff; display: none; min-width: 200px; cursor: move; }
-  #bonusContainer h1 { font-size: 22px; margin: 0 0 8px 0; text-align: center; }
-  #close-bonus { position: absolute; top: 4px; right: 8px; background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
-  .bingo-word { background: #1a1a2e; border: 1px solid #ffd700; color: #fff; border-radius: 6px; padding: 4px 8px; margin: 2px; font-size: 14px; cursor: default; }
-  .highlight { color: #ffd700; font-weight: 900; }
-  .special-bonus { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
-
-  /* Bonus notification flash */
-  .bonus-notification { position: fixed; top: 0; left: 0; width: 100%; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; text-align: center; font-size: 32px; font-weight: 900; padding: 16px; z-index: 3000; display: none; }
-  .bonus-notification .close-btn { position: absolute; top: 8px; right: 16px; font-size: 28px; cursor: pointer; background: none; border: none; color: #000; }
-
-  /* Result modal */
-  #result-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2500; align-items: center; justify-content: center; }
-  #result-modal.show { display: flex; }
-  #result-box { background: #0a1628; border: 2px solid #00bcd4; border-radius: 12px; padding: 12px; max-width: 360px; width: 95%; max-height: 90vh; overflow-y: auto; color: #fff; }
-  #result-table { width: 100%; border-collapse: collapse; }
-  #result-table th { background: #00478B; color: #fff; padding: 6px; font-size: 16px; }
-  #result-table td { padding: 6px; text-align: center; font-size: 16px; font-weight: 700; border: 1px solid #333; }
-
-  /* Alert */
-  #customAlert { position: fixed; top: 20px; right: 20px; z-index: 4000; padding: 10px 18px; border-radius: 8px; font-size: 18px; font-weight: 700; display: none; }
-  .custom-alert-success { background: #2e7d32; color: #fff; }
-  .custom-alert-danger { background: #b71c1c; color: #fff; }
-
-  /* Confetti canvas */
-  #canvas2 { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5000; display: none; }
-
-  /* Settings menu */
-  .settings-menu { position: fixed; top: -100%; right: 70px; height: 90%; background: linear-gradient(135deg,#1f413e,#f0f0f0); box-shadow: -2px 0 15px rgba(0,0,0,0.3); padding: 20px; z-index: 2000; color: #333; border-radius: 15px 0 0 15px; border: 1px solid #ddd; transform: translate(10px,-50%); transition: transform 0.5s, top 0.5s; overflow-y: auto; min-width: 280px; }
-  .settings-menu.active { top: 50%; transform: translate(0,-50%); }
-  .settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 4px solid #56e477; }
-  .settings-header h2 { margin: 0; font-size: 20px; color: #5eef80; }
-  .close-btn { background: none; border: none; color: #28a745; font-size: 24px; cursor: pointer; }
-  .settings-option { margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; padding: 6px; background: rgba(255,255,255,0.8); border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-  .settings-option label { font-size: 14px; color: #555; font-weight: 700; }
-  .settings-option select, .settings-option input { padding: 4px 8px; font-size: 14px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; color: #000; }
-  .bonus-submenu { padding: 0 8px; }
-
-  /* Sound toggles */
-  .sound-settings-toggles { margin-top: 8px; }
-  .sound-settings-toggle-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
-  .sound-settings-toggle-group { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-  .sound-settings-toggle-label { font-size: 11px; color: #333; font-weight: 700; text-align: center; }
-  .sound-settings-switch { display: flex; align-items: center; gap: 4px; cursor: pointer; }
-  .sound-settings-slider { display: inline-block; width: 34px; height: 18px; background: #ccc; border-radius: 9px; position: relative; transition: background 0.3s; }
-  .sound-settings-switch input:checked + .sound-settings-slider { background: #28a745; }
-  .sound-settings-slider::after { content: ''; position: absolute; width: 14px; height: 14px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: left 0.3s; }
-  .sound-settings-switch input:checked + .sound-settings-slider::after { left: 18px; }
-  .sound-settings-switch input { display: none; }
-  .sound-settings-state { font-size: 11px; font-weight: 700; color: #555; }
-
-  /* New game / register controls */
-  #new-game-panel { background: rgba(0,0,0,0.4); border-radius: 10px; padding: 10px; margin: 6px; }
-  #new-game-panel h3 { color: #00bcd4; margin: 0 0 8px 0; font-size: 18px; }
-  .ng-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
-  .ng-row label { color: #ccc; font-size: 14px; min-width: 80px; }
-  .ng-input { background: #111; color: #fff; border: 1px solid #555; border-radius: 6px; padding: 6px; font-size: 16px; width: 80px; text-align: center; }
-  #cards-input { width: 220px; font-size: 14px; }
-  #start-game-btn { padding: 10px 24px; font-size: 18px; font-weight: 900; background: #2e7d32; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
-  #start-game-btn:hover { background: #388e3c; }
-  #card-count-display { font-size: 16px; color: #ffd700; margin-left: 8px; }
-
-  /* Audio preload progress */
-  #audioPreloadProgress { display: none; position: fixed; bottom: 20px; left: 20px; z-index: 6000; width: 260px; font-family: Arial; }
-  #audioPreloadProgress .prog-label { text-align: center; margin-bottom: 2px; }
-  .prog-inner { display: inline-block; padding: 2px 14px; background: #2c3e50; border-radius: 20px; }
-  .prog-inner span { color: #ecf0f1; font-size: 14px; }
-  .prog-bar-wrap { width: 100%; height: 24px; background: #e0e5e9; border-radius: 12px; overflow: hidden; position: relative; }
-  #progressBar { height: 100%; width: 0%; background: linear-gradient(to right, #3498db, #2980b9); transition: width 0.4s; }
-  #progressPercent { position: absolute; width: 100%; text-align: center; line-height: 24px; color: #fff; font-weight: 700; font-size: 16px; }
-
-  /* Responsive */
-  @media (max-width: 600px) {
-    #rand { font-size: 40px; padding: 4px 8px; min-width: 80px; }
-    .derash-box .amount { font-size: 28px; }
-    .num-cell { font-size: 12px; }
+<script>
+/* ── Light / dark mode init (before render) ── */
+(function(){
+  var s = localStorage.getItem('toggleState');
+  if (s === 'light') {
+    document.getElementById('lightStyleSheet').href  = '/bootstrap/css/light/style.css';
+    document.getElementById('modalStyleSheet').href  = '/bootstrap/css/light/modal.css';
+    document.getElementById('giftStyleSheet').href   = '/bootstrap/css/light/gift-unboxing.css';
+    document.getElementById('ballStyleSheet').href   = '/bootstrap/css/light/ball.css';
+    document.getElementById('bingoStyleSheet').href  = '/bootstrap/css/light/bingon.css';
   }
+})();
+</script>
 
-  #drawn_number_counter { font-size: 24px; font-weight: 900; color: #ffd700; min-width: 40px; text-align: center; }
+<script src="/bootstrap/js/jquery.js"></script>
+<script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="/cards_data.js"></script>
+
+<style>
+.bonus-notification {
+  position:fixed;top:18%;right:50px;margin-right:10px;width:250px;padding:15px;
+  background-color:#fff;border-radius:20px;border:3px solid green;
+  box-shadow:0 8px 16px rgba(0,0,0,.2);z-index:9999;text-align:center;
+  animation:slideIn 1s ease-out forwards,shake .5s infinite;
+}
+.close-btn { position:absolute;top:-10px;right:-10px;font-size:24px;font-weight:bold;
+  color:white;background-color:#ff8c00;border-radius:50%;padding:5px 10px;cursor:pointer;
+  box-shadow:0 4px 8px rgba(0,0,0,.3);transition:background-color .3s,transform .2s;z-index:10000; }
+.close-btn:hover { background-color:#ff4500;transform:scale(1.2); }
+.bonus-text { font-weight:bold;letter-spacing:2px;font-size:30px;color:green;
+  background:linear-gradient(to right,#ffcc33,#ff8c00);-webkit-background-clip:text;
+  border:3px solid #ffb400;padding:10px;border-radius:10px;
+  box-shadow:0 0 10px #ffb400,0 0 15px #ff8c00,0 0 20px #ff8c00;position:relative; }
+.confetti { position:absolute;top:-50px;left:0;right:0;height:100px;pointer-events:none;overflow:hidden; }
+@keyframes slideIn { 0%{transform:translateX(100%);opacity:0;} 100%{transform:translateX(0);opacity:1;} }
+@keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-5px);} 50%{transform:translateX(5px);} 75%{transform:translateX(-5px);} }
+.blink { animation:blinker 1s linear infinite; }
+@keyframes blinker { 50%{opacity:0;} }
+.bingo-button { display:inline-block;width:85px;margin:5px;font-size:40px;background-color:#007bff;
+  color:white;border:none;padding:15px;border-radius:5px;opacity:1;visibility:visible;
+  text-align:center;vertical-align:middle;box-sizing:border-box;font-weight:700; }
+@media screen and (max-width:768px) { .bingo-button{width:50px;font-size:24px;padding:8px;} }
+@keyframes wave { 0%{transform:translateY(-10px);} 50%{transform:translateY(10px);} 100%{transform:translateY(-10px);} }
+.bingo-button.wave-animation { animation:wave 1s; }
+#selected-numbers { display:flex;flex-wrap:wrap;justify-content:flex-start;gap:10px;padding:10px; }
+@keyframes blink { 0%{opacity:1;} 50%{opacity:0;} 100%{opacity:1;} }
 </style>
+
+<!-- ─────────────── Voice directories ─────────────── -->
+<script>
+const directories = [
+  '/assets/afall/sound/new-voice/',
+  '/assets/afall/sound/addis/',
+  '/assets/afall/sound/voice/',
+  '/assets/afall/sound/nigus/',
+  '/assets/afall/sound/modern-arada/',
+  '/assets/afall/sound/modern-formal/',
+  '/assets/afall/sound/yordi/',
+  '/assets/afall/sound/beti/',
+  '/assets/afall/sound/foromifa/',
+  '/assets/afall/sound/gual/',
+  '/assets/afall/sound/wedi/'
+];
+const dynamicVoiceFiles = Array.from({length:75},(_,i)=>`${i+1}.wav`);
+const specialFiles = {
+  'goodbingo.mp3':'/assets/afall/sound/',
+  'good.wav':'/assets/afall/sound/',
+  'lijemr_new.mp3':'/assets/afall/sound/',
+  'locked_card.mp3':'/assets/afall/sound/',
+  'notgood.wav':'/assets/afall/sound/',
+  'notreg.wav':'/assets/afall/sound/',
+  'shuffle.wav':'/assets/afall/sound/',
+  'start.mp3':'/assets/afall/sound/',
+  'StartupSound.opus':'/assets/afall/sound/',
+  'stop.mp3':'/assets/afall/sound/',
+  'clapping.mp3':'/assets/afall/sound/'
+};
+const voiceFiles = [
+  ...directories.map(dir => dynamicVoiceFiles.map(file=>({file,directory:dir}))).flat(),
+  ...Object.entries(specialFiles).map(([file,directory])=>({file,directory}))
+];
+let activeAudios = [];
+
+window.onload = () => {
+  initGameState();
+  preloadAudios().catch(err=>console.error('Audio preload error:',err));
+};
+
+async function preloadAudios() {
+  const audioBlobs = [];
+  const selected_voice = document.getElementById("voiceselect").value;
+  const priority_path = directories[selected_voice - 1];
+  const priorityDirectories = [priority_path];
+  const priorityFiles = Object.keys(specialFiles).map(file=>({file,directory:specialFiles[file]}));
+  const progress = document.getElementById('audioPreloadProgress');
+  progress.style.display = 'block';
+  let loadedFiles = 0;
+  const totalFiles = Object.keys(specialFiles).length + voiceFiles.length + 2;
+  function updateProgress() {
+    loadedFiles++;
+    const percent = Math.min(Math.round((loadedFiles/totalFiles)*100),100);
+    document.getElementById('progressBar').style.width = percent+'%';
+    document.getElementById('progressPercent').textContent = percent+'%';
+    if(percent===100) document.getElementById('progressBar').style.background='#2E7D32';
+  }
+  for (const {file,directory} of priorityFiles) {
+    await preloadAudioFile(`${directory}${file}`,audioBlobs); updateProgress();
+  }
+  for (const {file,directory} of voiceFiles) {
+    if (priorityDirectories.includes(directory)) {
+      await preloadAudioFile(`${directory}${file}`,audioBlobs); updateProgress();
+    }
+  }
+  if (audioBlobs.length > 0) { await storeAudiosInBulk(audioBlobs); updateProgress(); }
+  const remainingAudioBlobs = [];
+  for (const {file,directory} of voiceFiles) {
+    if (!priorityDirectories.includes(directory)) {
+      await preloadAudioFile(`${directory}${file}`,remainingAudioBlobs); updateProgress();
+    }
+  }
+  if (remainingAudioBlobs.length > 0) { await storeAudiosInBulk(remainingAudioBlobs); updateProgress(); }
+  document.getElementById('statusText').textContent = 'Audio Loaded!';
+  setTimeout(()=>{ progress.style.display='none'; },2000);
+}
+
+async function preloadAudioFile(audioUrl, audioBlobs) {
+  const isCached = await checkIfFileCached(btoa(audioUrl));
+  if (isCached) return;
+  try {
+    const response = await fetch(audioUrl);
+    if (!response.ok) { console.warn('Skipped missing audio.'); return; }
+    const blob = await response.blob();
+    audioBlobs.push({url:btoa(audioUrl),blob});
+  } catch(e) { console.error('Failed to fetch audio.'); }
+}
+
+async function checkIfFileCached(url) {
+  const db = await dbPromise;
+  const tx = db.transaction('audios','readonly');
+  const cachedBlob = await tx.objectStore().get(url);
+  return cachedBlob !== undefined;
+}
+
+async function storeAudiosInBulk(audioBlobs) {
+  if (!audioBlobs.length) return;
+  const db = await dbPromise;
+  const tx = db.transaction('audios','readwrite');
+  for (const {url,blob} of audioBlobs) tx.store.put(blob,url);
+  await tx.done;
+}
+
+async function getAudio(url) {
+  const db = await dbPromise;
+  try { return await db.get('audios',url); } catch(e) { return null; }
+}
+
+async function playAudio(voicePath) {
+  const blob = await getAudio(btoa(voicePath));
+  if (blob) {
+    const audio = new Audio(URL.createObjectURL(blob));
+    audio.preload='auto'; activeAudios.push(audio);
+    audio.play().catch(e=>console.error('Play error:',e));
+  } else {
+    try {
+      const resp = await fetch(voicePath);
+      if (!resp.ok) return;
+      const fetchedBlob = await resp.blob();
+      const audio = new Audio(URL.createObjectURL(fetchedBlob));
+      audio.preload='auto'; activeAudios.push(audio);
+      audio.play().catch(e=>console.error('Play error:',e));
+    } catch(e) {}
+  }
+}
+
+function voices(rb) {
+  const rbStr = String(rb);
+  const selectvoice = document.getElementById("voiceselect").value;
+  if (rbStr.includes('.')) {
+    playAudio(`/assets/afall/sound/${rbStr}`);
+  } else {
+    const path = directories[selectvoice - 1];
+    const vf = voiceFiles[rb - 1] && voiceFiles[rb - 1].file;
+    if (path && vf) playAudio(`${path}${vf}`);
+  }
+}
+
+function showAlert(message, type) {
+  var d = document.getElementById('customAlert');
+  d.innerHTML = message; d.style.display = 'block';
+  d.className = 'custom-alert alert-' + type;
+  setTimeout(()=>{ d.style.display='none'; }, 3000);
+}
+</script>
 </head>
 <body>
-<canvas id="canvas2"></canvas>
-<div id="customAlert"></div>
-<div class="bonus-notification" id="bonusNotification">
-  <button class="close-btn" onclick="document.getElementById('bonusNotification').style.display='none'">&times;</button>
+
+<!-- ─── Audio preload progress ─── -->
+<div id="audioPreloadProgress" style="display:none;position:fixed;bottom:20px;left:20px;z-index:2000;width:260px;font-family:Arial,sans-serif;">
+  <div style="text-align:center;margin-bottom:1px;">
+    <div style="display:inline-block;padding:2px 15px;background:#2c3e50;border-radius:20px;">
+      <span id="statusText" style="color:#ecf0f1;font-weight:500;font-size:15px;letter-spacing:.5px;">Downloading Audio</span>
+    </div>
+  </div>
+  <div style="width:100%;height:26px;background:#e0e5e9;border-radius:13px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.2);position:relative;">
+    <div id="progressBar" style="height:100%;width:0%;background:linear-gradient(to right,#3498db,#2980b9);transition:width .4s;">
+      <div id="progressPercent" style="position:absolute;width:100%;text-align:center;line-height:26px;color:white;font-weight:700;font-size:18px;"></div>
+    </div>
+  </div>
+</div>
+
+<div id="customAlert" class="custom-alert" style="display:none;position:fixed;top:20px;right:20px;z-index:2000;"></div>
+<div id="overlay" class="hidden"></div>
+
+<div style="display:none;" class="bonus-notification" id="bonusNotification">
+  <span class="close-btn" onclick="closeNotification()">×</span>
   <h1 id="gift-bonus" class="bonus-text"></h1>
+  <div class="confetti"></div>
 </div>
+<script>function closeNotification(){document.getElementById("bonusNotification").style.display="none";}</script>
 
-<div id="result-modal">
-  <div id="result-box">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <h3 style="margin:0;color:#00bcd4;">ካርቴላ ውጤት</h3>
-      <button onclick="document.getElementById('result-modal').classList.remove('show')" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;">&times;</button>
+<!-- ─── Hidden data elements (populated by initGameState) ─── -->
+<p id="ran_voice" hidden>1</p>
+<p id="patt" hidden>1</p>
+<p id="start_get_mony_from" hidden>0</p>
+<p id="bonus_eligiblity_starts_from" hidden>0</p>
+<p id="lock_round_up_last_digit" hidden>0</p>
+<p id="round" hidden>1</p>
+<p id="sew" hidden>0</p>
+<p id="birr" hidden>0</p>
+<p id="bala" hidden>9999</p>
+<p id="profit" hidden>0</p>
+<p id="new_bonus_status" hidden style="font-size:50px;">off</p>
+<p id="new_bonus_amount" hidden style="font-size:50px;">20</p>
+<p id="max_new_bonus_per_day" hidden style="font-size:50px;">1</p>
+<p id="new_bonus_chance" hidden style="font-size:50px;">3</p>
+<p id="bonusCutSize_tobe_locked" hidden style="font-size:50px;"></p>
+<p id="todays_new_bonus_count" hidden style="font-size:50px;">0</p>
+<p id="auto_check_result" hidden style="font-size:50px;">manual</p>
+<p id="color" hidden style="font-size:50px;">two</p>
+<p id="good_bingo_sound" hidden style="font-size:50px;">0</p>
+<p id="profit_json" hidden style="font-size:50px;"></p>
+<p id="partner_id" hidden style="font-size:50px;">0</p>
+<p id="partner_settings_json_status" hidden style="font-size:50px;">off</p>
+<p id="fd" hidden></p>
+<p id="wc" hidden></p>
+
+<!-- ─── LocalStorage helpers ─── -->
+<script>
+function getGameState(){try{return JSON.parse(localStorage.getItem('game_state'))||{};}catch(e){return {};}}
+function getAppSettings(){try{return JSON.parse(localStorage.getItem('app_settings'))||{};}catch(e){return {};}}
+function saveGameState(s){localStorage.setItem('game_state',JSON.stringify(s));}
+
+function initGameState(){
+  const gs=getGameState(), settings=getAppSettings();
+  const round=gs.round||1;
+  document.getElementById('round').innerText=round;
+
+  const cards=gs.cards||[], price=gs.price||0;
+  document.getElementById('sew').innerText=cards.length;
+  document.getElementById('birr').innerText=price;
+  document.getElementById('patt').innerText=gs.pattern||1;
+
+  const sound=gs.sound||1;
+  document.getElementById('ran_voice').innerText=sound;
+  const vs=document.getElementById('voiceselect');
+  if(vs) vs.value=sound;
+
+  const speed=gs.speed_range||3;
+  const myRange=document.getElementById('myRange');
+  if(myRange){myRange.value=speed;document.getElementById('demo').textContent=speed;}
+
+  const bonusStatus=settings.bonus?.status||'off';
+  document.getElementById('new_bonus_status').innerText=bonusStatus;
+  document.getElementById('new_bonus_amount').innerText=settings.bonus?.amount||20;
+  document.getElementById('max_new_bonus_per_day').innerText=settings.bonus?.per_day||1;
+  document.getElementById('auto_check_result').innerText=settings.system?.check_result||'manual';
+  document.getElementById('good_bingo_sound').innerText=settings.system?.good_bingo_sound||'0';
+  document.getElementById('profit').innerText=settings.system?.profit||'0';
+
+  const bonusBtn=document.getElementById('bonus');
+  const bonusCont=document.getElementById('bonusContainer');
+  if(bonusStatus==='on'){if(bonusBtn)bonusBtn.style.display='';if(bonusCont)bonusCont.style.display='block';}
+  else{if(bonusBtn)bonusBtn.style.display='none';}
+
+  const today=new Date().toDateString();
+  const bonusMeta=JSON.parse(localStorage.getItem('bonus_meta')||'{}');
+  const todaysCount=(bonusMeta.date===today)?(bonusMeta.count||0):0;
+  document.getElementById('todays_new_bonus_count').innerText=todaysCount;
+
+  document.getElementById('modal-round-number').innerHTML='Round '+round;
+  document.getElementById('cardCounter').innerHTML='ብዛት : '+cards.length;
+  renderRegisteredCards(cards,price,round);
+  applySavedSettings(settings);
+  $('#myModal').modal('show');
+}
+
+function renderRegisteredCards(cards,price,round){
+  document.getElementById('modal-round-number').innerHTML='Round '+round;
+  if(cards.length>0){
+    document.getElementById('selected-numbers-container').style.display='block';
+    document.getElementById('selected-numbers-container-img').style.display='none';
+    document.getElementById('selected-numbers').innerHTML=cards.map(cn=>`<button class="bingo-button">${cn}</button>`).join('');
+  }
+}
+
+function applySavedSettings(settings){
+  if(!settings) return;
+  const setBonusEl=document.getElementById("settings_set_bonus");
+  const bonusAmountEl=document.getElementById("settings_bonus_amount");
+  const bonusOptionsEl=document.getElementById("sittings_bonus_options");
+  const bonusSubMenu=document.querySelector(".bonus-submenu");
+  if(setBonusEl) setBonusEl.value=settings.bonus?.status||"off";
+  if(bonusAmountEl) bonusAmountEl.value=settings.bonus?.amount||"20";
+  if(bonusOptionsEl) bonusOptionsEl.value=settings.bonus?.per_day||"1";
+  if(bonusSubMenu) bonusSubMenu.style.display=settings.bonus?.status==="on"?"block":"none";
+  const cr=document.getElementById("settings_check_result");
+  const cm=document.getElementById("settings_color_mode");
+  const pr=document.getElementById("settings_cashier_profit");
+  const gs_=document.getElementById("settings_good_bingo_sound");
+  if(cr) cr.value=settings.system?.check_result||"manual";
+  if(cm) cm.value=settings.system?.color_mode||"two";
+  if(pr) pr.value=settings.system?.profit||"0";
+  if(gs_) gs_.value=settings.system?.good_bingo_sound||"0";
+  if(settings.toggles){
+    $("#will_start_sound_toggle").prop("checked",settings.toggles.will_start??true);
+    $("#started_sound_toggle").prop("checked",settings.toggles.started??true);
+    $("#stopped_sound_toggle").prop("checked",settings.toggles.stopped??true);
+    $("#counte_registerd_card").prop("checked",settings.toggles.show_card_count??true);
+    const cc=document.getElementById("cardCounter");
+    if(cc) cc.style.display=settings.toggles.show_card_count?"inline":"none";
+  }
+}
+</script>
+
+<!-- ─── Start game (no AJAX) ─── -->
+<script>
+var hasBeenCalled=false;
+function startbingo(){
+  if(hasBeenCalled) return;
+  hasBeenCalled=true;
+  const btn=document.getElementById('mybtn');
+  btn.disabled=true;
+  const n=parseInt(document.getElementById('sew').innerText)||0;
+  const s=parseInt(document.getElementById('birr').innerText)||0;
+  const b=parseInt(document.getElementById('bala').innerText)||9999;
+  const profit=parseInt(document.getElementById('profit').innerText)||0;
+  const round_number=document.getElementById("round").innerText;
+  const lock_d=parseInt(document.getElementById("lock_round_up_last_digit").innerText)||0;
+  const sgmf=parseInt(document.getElementById("start_get_mony_from").innerText)||0;
+  const bels=parseInt(document.getElementById("bonus_eligiblity_starts_from").innerText)||0;
+  document.getElementById("round_number_bellow_5").innerHTML="Round "+round_number;
+  const nbs=document.getElementById('settings_set_bonus').value;
+  if(nbs==="on"){
+    const bb=document.getElementById('bonus');
+    const bc=document.getElementById('bonusContainer');
+    if(bb) bb.disabled=false;
+    if(bc) bc.style.display='block';
+  } else {
+    const bb=document.getElementById('bonus');
+    if(bb) bb.style.display='none';
+  }
+  const dr=n*s;
+  let total=0;
+  if(profit==0){
+    if(dr>120&&dr<320) total=dr*0.2;
+    else if(dr>=320&&dr<800) total=dr*0.22;
+    else if(dr>=800&&dr<1000) total=dr*0.25;
+    else if(dr>=1000) total=dr*0.3;
+    else total=dr*0.2;
+  } else { total=dr*profit/100; }
+  let roundedTotal=0;
+  if(lock_d==0){const ld=total%10;roundedTotal=total-ld+(ld>5?10:0);}
+  else{roundedTotal=total;}
+  if(roundedTotal<10&&total<=10) roundedTotal=10;
+  const income=dr;
+  if(n!=0&&s!=0&&b>0){
+    if(income<sgmf){
+      document.getElementById('amount').innerText=income+" ብር ወሳጅ";
+      document.getElementById('amount1').innerText=income;
+    } else {
+      document.getElementById('amount').innerText=(income-roundedTotal)+" ብር ወሳጅ";
+      document.getElementById('amount1').innerText=(income-roundedTotal);
+    }
+  }
+  hasBeenCalled=false;
+  btn.disabled=false;
+}
+</script>
+
+<div id="user-content" style="display:block;">
+
+<!-- ─── Top-right button column ─── -->
+<div id="buttonContainer" style="position:absolute;top:0px;right:2px;z-index:9999;display:flex;flex-direction:column;gap:5px;align-items:flex-end;width:50px;">
+  <button id="toggleBTN" style="display:flex;align-items:center;justify-content:center;padding:15px 0;background-color:transparent;color:white;border:2px solid #28a745;border-radius:5px;cursor:pointer;width:100%;text-align:center;">
+    <div id="toggleIcon" style="display:flex;align-items:center;justify-content:center;width:30px;height:20px;background-color:white;border-radius:10px;margin-right:10px;position:relative;">
+      <div id="toggleCircle" style="width:14px;height:14px;background-color:#28a745;border-radius:50%;position:absolute;top:3px;left:3px;transition:left .3s;"></div>
     </div>
-    <div id="result-content"></div>
-  </div>
-</div>
-
-<div id="layout">
-  <!-- LEFT PANEL: side buttons -->
-  <div id="left-panel">
-    <button class="side-btn" id="toggleBTN" title="Dark/Light">
-      <div id="toggleIcon" style="width:22px;height:14px;background:#fff;border-radius:7px;position:relative;">
-        <div id="toggleCircle" style="width:10px;height:10px;background:#28a745;border-radius:50%;position:absolute;top:2px;left:2px;transition:left 0.3s;"></div>
-      </div>
-    </button>
-    <button class="side-btn" id="fullscreenBtn" title="Fullscreen">
-      <svg width="14" height="14" fill="#fff" viewBox="0 0 16 16"><path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/></svg>
-    </button>
-    <button class="side-btn red-border" id="settings-btn" title="Settings">
-      <svg width="14" height="14" fill="#fff" viewBox="0 0 16 16"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52z"/></svg>
-    </button>
-    <button class="side-btn" id="bonus-btn" title="ቦነስ">ቦነስ</button>
-  </div>
-
-  <!-- MAIN AREA -->
-  <div id="main-area">
-
-    <!-- NEW GAME PANEL (shown when no active game) -->
-    <div id="new-game-panel">
-      <h3>ጨዋታ ምዝገባ — New Game</h3>
-      <div class="ng-row">
-        <label>ዋጋ (ብር):</label>
-        <input type="number" id="ng-price" class="ng-input" value="5" min="1" max="1000">
-        <label style="margin-left:12px;">ፓተርን:</label>
-        <select id="ng-pattern" class="ng-input" style="width:60px;">
-          <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-          <option value="4">4</option><option value="5">5</option><option value="6">6</option>
-          <option value="7">7</option><option value="8">8</option><option value="9">9</option>
-          <option value="10">10</option><option value="11">11</option><option value="12">12</option>
-        </select>
-      </div>
-      <div class="ng-row">
-        <label>ካርቴላ #s:</label>
-        <input type="text" id="cards-input" class="ng-input" placeholder="e.g. 1-50 or 1,2,3,5-10" style="width:220px;font-size:14px;">
-        <span id="card-count-display"></span>
-      </div>
-      <div class="ng-row">
-        <label>ቴክሰቱ:</label>
-        <select id="ng-category" class="ng-input" style="width:100px;">
-          <option value="default">default</option>
-          <option value="Mezgeb2">Mezgeb2</option>
-        </select>
-      </div>
-      <div class="ng-row">
-        <button id="start-game-btn">▶ ጀምር</button>
-      </div>
+  </button>
+  <button id="fullscreenBtn" style="display:flex;align-items:center;justify-content:center;padding:0px 0;background-color:transparent;color:white;border:2px solid #28a745;border-radius:5px;cursor:pointer;width:100%;text-align:center;">
+    <svg width="14" height="14" fill="#ffffff" class="bi bi-fullscreen" viewBox="0 0 16 16"><path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/></svg>
+  </button>
+  <button id="settings" style="display:flex;align-items:center;justify-content:center;padding:0px 0;background-color:transparent;color:white;border:3px solid rgb(243,49,0);border-radius:5px;cursor:pointer;width:100%;text-align:center;">
+    <svg width="14" height="8" fill="currentColor" class="bi bi-gear" viewBox="0 0 16 16"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52z"/></svg>
+  </button>
+  <button id="helps" style="display:flex;align-items:center;justify-content:center;padding:0px 0;background-color:transparent;color:white;border:2px solid #28a745;border-radius:5px;cursor:pointer;width:100%;text-align:center;">
+    <svg width="16" height="1" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/></svg>
+  </button>
+  <button id="bonus" style="display:none;">
+    <span>ቦነስ</span>
+    <div id="bonusTooltip" class="tooltip">ቦነስ ከፈለጉ እባክዎት በቀይ<br>Bonus status ያብሩት!</div>
+  </button>
+  <div id="bonusContainer" style="display:none;">
+    <button id="close-bonus">&times;</button>
+    <div id="bonusContent">
+      <h1>🎉 ቺርስ 🎉</h1>
+      <p hidden id="special_bonus_data"></p>
+      <p class="special-bonus" id="special_bonus_buttons"><button class="bingo-word">No Bonus</button></p>
     </div>
-
-    <!-- GAME BOARD (shown during active game) -->
-    <div id="game-board" style="display:none;">
-
-      <!-- Ball display + recent calls -->
-      <div id="ball-display">
-        <div id="rand">--</div>
-        <div style="display:flex;flex-direction:column;gap:4px;flex:1;">
-          <div id="recent-calls"></div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:14px;color:#aaa;">ጥሪዎች:</span>
-            <span id="drawn_number_counter">0</span>
-            <span style="font-size:14px;color:#aaa;">/75</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 75-number grid -->
-      <div id="number-grid">
-        <div class="col-group"><div class="col-header B">B</div></div>
-        <div class="col-group"><div class="col-header I">I</div></div>
-        <div class="col-group"><div class="col-header N">N</div></div>
-        <div class="col-group"><div class="col-header G">G</div></div>
-        <div class="col-group"><div class="col-header O">O</div></div>
-      </div>
-
-      <!-- Derash box -->
-      <div id="derash-area">
-        <div class="derash-box">
-          <div class="derash-content">
-            <div class="amount" id="amount">0 ብር ወሳጅ</div>
-          </div>
-          <div class="derash-line"></div>
-          <div class="derash-details">
-            <span class="total-card" id="card-count-info">0 ካርቴላ</span>
-            <span class="total-calls" id="drawn_number_counter2">0</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Speed + voice -->
-      <div id="speed-row">
-        <span>ፍጥነት:</span>
-        <input type="range" id="myRange" min="1" max="10" value="3">
-        <span id="demo">3</span>s
-        <span style="margin-left:16px;">ድምጽ:</span>
-        <select id="voiceselect" style="height:34px;font-size:14px;border-radius:6px;background:#111;color:#fff;border:1px solid #555;">
-          <option value="1">ድምጽ 1</option>
-          <option value="2">ድምጽ 2</option>
-          <option value="3">ድምጽ 3</option>
-          <option value="4">ድምጽ 4</option>
-          <option value="5">ድምጽ 5</option>
-          <option value="6">ድምጽ 6</option>
-          <option value="7">ድምጽ 7</option>
-          <option value="8">ድምጽ 8</option>
-          <option value="9">ድምጽ 9</option>
-          <option value="10">ድምጽ 10</option>
-          <option value="11">ድምጽ 11</option>
-        </select>
-      </div>
-
-      <!-- Pattern preview -->
-      <div id="pattern-area">
-        <span id="patt-label">ፓተርን: <b id="patt-num">1</b></span>
-        <table id="bingoTable">
-          <thead><tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr></thead>
-          <tbody>
-            <tr><td></td><td></td><td></td><td></td><td></td></tr>
-            <tr><td></td><td></td><td></td><td></td><td></td></tr>
-            <tr><td></td><td></td><td></td><td></td><td></td></tr>
-            <tr><td></td><td></td><td></td><td></td><td></td></tr>
-            <tr><td></td><td></td><td></td><td></td><td></td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Controls -->
-      <div id="controls">
-        <button id="bingoo">START</button>
-        <button id="shuffle">🔀 Shuffle</button>
-        <div class="card-input-wrap">
-          <input type="number" id="Ecard_no" placeholder="ካርቴላ">
-          <button id="mycheck">✔ Check</button>
-        </div>
-        <button id="finsh_game">⏹ Finish</button>
-      </div>
-
-    </div><!-- /game-board -->
-  </div><!-- /main-area -->
-</div><!-- /layout -->
-
-<!-- BONUS CONTAINER -->
-<div id="bonusContainer">
-  <button id="close-bonus">&times;</button>
-  <div id="bonusContent">
-    <h1>🎉 ቺርስ 🎉</h1>
-    <p class="special-bonus" id="bonus-numbers-display"></p>
   </div>
 </div>
 
-<!-- SETTINGS MENU -->
+<!-- ─── Settings Menu ─── -->
 <div class="settings-menu" id="settings-menu">
   <div class="settings-header">
     <h2>Settings - ማስተካከያ</h2>
     <button class="close-btn" id="close-menu">&times;</button>
   </div>
   <div class="settings-option">
-    <label>Bonus - ቦነስ:</label>
-    <select id="settings_set_bonus">
-      <option value="off">ጠፍቷል</option>
-      <option value="on">በርቷል</option>
+    <label>Bonus status - ቦነስ:</label>
+    <select id="settings_set_bonus" class="bonus-toggle">
+      <option value="off">ጠፍቷል</option><option value="on">በርቷል</option>
     </select>
   </div>
-  <div class="bonus-submenu" id="bonus-submenu" style="display:none;">
+  <div class="bonus-submenu" style="display:none;">
     <div class="settings-option">
-      <label>ቦነስ ብር (20-300):</label>
-      <input type="number" id="settings_bonus_amount" min="20" max="300" step="10" value="50">
+      <label for="settings_bonus_amount">Amount of money (20-300):</label>
+      <input type="number" id="settings_bonus_amount" min="20" max="300" step="10" value="50" class="bonus-input">
     </div>
     <div class="settings-option">
-      <label>ቦነስ ጊዜ (1-4):</label>
-      <select id="sittings_bonus_options">
-        <option value="1">1</option><option value="2">2</option>
-        <option value="3">3</option><option value="4">4</option>
+      <label for="sittings_bonus_options">Number of bonus options (1-4):</label>
+      <select id="sittings_bonus_options" class="bonus-input">
+        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
       </select>
     </div>
   </div>
   <div class="settings-option">
-    <label>ውጤት ማረጋገጥ:</label>
+    <label>Check Result - አሸናፊዉን መለየት:</label>
     <select id="settings_check_result">
-      <option value="auto">Auto</option>
-      <option value="manual">Manual</option>
+      <option value="auto">Auto</option><option value="manual">Manual</option>
     </select>
   </div>
   <div class="settings-option">
-    <label>Color mode:</label>
+    <label>Set result color mode:</label>
     <select id="settings_color_mode">
-      <option value="two">Two [red/green]</option>
-      <option value="three">Three [red/yellow/green]</option>
+      <option value="two">Two [red and green]</option>
+      <option value="three">Three [red, green and Yellow]</option>
     </select>
   </div>
   <div class="settings-option">
-    <label>Win sound:</label>
+    <label>good bingo sound:</label>
     <select id="settings_good_bingo_sound">
       <option value="0">ይህ ካርቴላ አሸንፏል</option>
       <option value="1">ጭብጨባ</option>
-      <option value="2">ጉድ ቢንጎ</option>
+      <option value="2">ጉድ ቢንጎ - Good Bingo</option>
     </select>
   </div>
   <div class="settings-option">
-    <label>Profit %:</label>
+    <label>Set Profit:</label>
     <select id="settings_cashier_profit">
-      <option value="0">Default</option>
-      <option value="10">10%</option>
-      <option value="12">12%</option>
-      <option value="15">15%</option>
-      <option value="17">17%</option>
-      <option value="20">20%</option>
-      <option value="23">23%</option>
-      <option value="25">25%</option>
-      <option value="27">27%</option>
-      <option value="30">30%</option>
-      <option value="33">33%</option>
-      <option value="35">35%</option>
-      <option value="37">37%</option>
-      <option value="40">40%</option>
+      <option value="0">Default</option><option value="10">10%</option><option value="12">12%</option>
+      <option value="15">15%</option><option value="17">17%</option><option value="20">20%</option>
+      <option value="23">23%</option><option value="25">25%</option><option value="27">27%</option>
+      <option value="30">30%</option><option value="33">33%</option><option value="35">35%</option>
+      <option value="37">37%</option><option value="40">40%</option>
     </select>
   </div>
-  <div class="settings-option">
-    <label>ጀምር ከ ብር:</label>
-    <input type="number" id="settings_start_from" value="0" min="0" style="width:70px;">
-  </div>
-  <div class="settings-option">
-    <label>Round ▲:</label>
-    <select id="settings_lock_round">
-      <option value="0">ሊደርብ</option>
-      <option value="1">ቀጥታ</option>
-    </select>
-  </div>
-
   <div class="sound-settings-toggles">
     <div class="sound-settings-toggle-row">
       <div class="sound-settings-toggle-group">
-        <label class="sound-settings-toggle-label">ሊጀምር ነው</label>
+        <label class="sound-settings-toggle-label">ሊጀምር ነው ድምጽ</label>
         <label class="sound-settings-switch">
           <input type="checkbox" id="will_start_sound_toggle">
-          <span class="sound-settings-slider"></span>
-          <span class="sound-settings-state">OFF</span>
+          <span class="sound-settings-slider"></span><span class="sound-settings-state">OFF</span>
         </label>
       </div>
       <div class="sound-settings-toggle-group">
-        <label class="sound-settings-toggle-label">ጀምሯል</label>
+        <label class="sound-settings-toggle-label">ጨዋታው ጀምሯል ድምጽ</label>
         <label class="sound-settings-switch">
           <input type="checkbox" id="started_sound_toggle" checked>
-          <span class="sound-settings-slider"></span>
-          <span class="sound-settings-state">ON</span>
+          <span class="sound-settings-slider"></span><span class="sound-settings-state">ON</span>
         </label>
       </div>
       <div class="sound-settings-toggle-group">
-        <label class="sound-settings-toggle-label">ቁሟል</label>
+        <label class="sound-settings-toggle-label">ጨዋታው ቁሟል ድምጽ</label>
         <label class="sound-settings-switch">
           <input type="checkbox" id="stopped_sound_toggle">
-          <span class="sound-settings-slider"></span>
-          <span class="sound-settings-state">OFF</span>
+          <span class="sound-settings-slider"></span><span class="sound-settings-state">OFF</span>
         </label>
       </div>
     </div>
     <div class="sound-settings-toggle-row">
       <div class="sound-settings-toggle-group">
-        <label class="sound-settings-toggle-label">ካርቴላ ብዛት</label>
+        <label class="sound-settings-toggle-label">የተመዘገበ ቁጥር ብዛት</label>
         <label class="sound-settings-switch">
           <input type="checkbox" id="counte_registerd_card">
-          <span class="sound-settings-slider"></span>
-          <span class="sound-settings-state">OFF</span>
+          <span class="sound-settings-slider"></span><span class="sound-settings-state">OFF</span>
         </label>
       </div>
     </div>
   </div>
-  <center><button id="submit_settings_form" class="settings-option" style="color:green;font-size:22px;cursor:pointer;">Save Changes</button></center>
-  <center><i style="color:green;font-size:18px;" id="settings_update_response"></i></center>
+  <center><button id="submit_settings_form" class="settings-option" style="color:green;font-size:30px;">Save Changes</button></center>
+  <center><i style="color:green;font-size:30px;" id="settings_update_response"></i></center>
 </div>
 
-<!-- Audio preload progress -->
-<div id="audioPreloadProgress">
-  <div class="prog-label"><div class="prog-inner"><span id="statusText">Downloading Audio</span></div></div>
-  <div class="prog-bar-wrap"><div id="progressBar"><div id="progressPercent"></div></div></div>
-</div>
-
-<script src="bootstrap/js/confetti.browser.min.js"></script>
-<script src="cards_data.js"></script>
 <script>
-'use strict';
+/* ─── Settings & UI events ─── */
+const bonusContainer=document.getElementById('bonusContainer');
+let isDragging=false,offsetX,offsetY;
 
-// ============================================================
-// IndexedDB setup
-// ============================================================
-const DB_NAME = 'EthiomarkBingoDB';
-const DB_VERSION = 2;
-let db;
-
-function openDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings');
-      if (!d.objectStoreNames.contains('game')) d.createObjectStore('game');
-      if (!d.objectStoreNames.contains('audios')) d.createObjectStore('audios');
-    };
-    req.onsuccess = e => { db = e.target.result; resolve(db); };
-    req.onerror = e => reject(e.target.error);
-  });
-}
-function dbGet(store, key) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(store, 'readonly');
-    const r = tx.objectStore(store).get(key);
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = e => reject(e.target.error);
-  });
-}
-function dbSet(store, key, value) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(store, 'readwrite');
-    const r = tx.objectStore(store).put(value, key);
-    r.onsuccess = () => resolve();
-    r.onerror = e => reject(e.target.error);
-  });
-}
-function dbDelete(store, key) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(store, 'readwrite');
-    const r = tx.objectStore(store).delete(key);
-    r.onsuccess = () => resolve();
-    r.onerror = e => reject(e.target.error);
-  });
-}
-
-// ============================================================
-// Card lookup by number + category
-// ============================================================
-const cardMap = {};
-for (const c of BINGO_CARDS) {
-  const [cn, b, i, n, g, o] = c;
-  if (!cardMap[cn]) cardMap[cn] = {};
-  // Store under 'default' and 'Mezgeb2' etc based on position
-  // Cards 1-628 appear in both categories; we need to know which
-  // We'll index by cardNumber and store all variants
-  if (!cardMap[cn]._all) cardMap[cn]._all = [];
-  cardMap[cn]._all.push({ b, i, n, g, o });
-}
-
-// Build category-aware map from raw BINGO_CARDS
-// BINGO_CARDS format: [cn, b[], i[], n[], g[], o[]]
-// We also stored categories via JS extraction - let's rebuild from raw SQL context
-// Raw cards: index 0-4469, first 628 = default, next 628*N = others
-// Actually from SQL: category is embedded. We extracted without it in compact form.
-// Let's re-extract from BINGO_CARDS with category data embedded at index 6.
-// But we only stored [cn,b,i,n,g,o] - 6 elements. We need to add category.
-// Re-examine: the cards_data.js we generated has [cn, b, i, n, g, o] only.
-// We'll look up by card number; if category matters we use the first match for 'default'.
-// For now, do a simple lookup: first occurrence = default.
-
-const cardByNumAndCat = {};
-// Re-parse BINGO_CARDS with proper category mapping
-// From SQL we know: category alternates by batch. Let's detect by total count.
-// 4470 cards / 628 = ~7.1 so there are 7 full sets + partial.
-// Let's count unique card numbers
-const uniqueCardNums = [...new Set(BINGO_CARDS.map(c => c[0]))];
-// Each card number appears multiple times (one per category set)
-// We'll store first occurrence as 'default'
-const cardByNum = {};
-for (const c of BINGO_CARDS) {
-  const cn = c[0];
-  if (!cardByNum[cn]) {
-    cardByNum[cn] = { b: c[1], i: c[2], n: c[3], g: c[4], o: c[5] };
-  }
-}
-
-// ============================================================
-// Game state
-// ============================================================
-let gameState = null;
-// gameState: { round, price, pattern, cards[], category, drawn[], result_string, bonus:{status,amount,per_day,chance}, settings }
-
-// Settings defaults
-const DEFAULT_SETTINGS = {
-  bonus: { status: 'off', amount: 50, per_day: 2 },
-  system: { check_result: 'manual', color_mode: 'two', good_bingo_sound: 0 },
-  toggles: { will_start: false, started: true, stopped: false, show_card_count: false },
-  profit: 0,
-  start_get_money_from: 0,
-  lock_round_up: 0,
-  voice: 1
-};
-let appSettings = { ...DEFAULT_SETTINGS };
-
-// Drawing state
-let uniqueRandoms = [];
-let wc_priorityNumbers = [];
-let special_bonus_numbers = [];
-let new_bonus_status = 'off';
-let drawnNumbers = [];
-let randomstring = '';
-let lightInterval = null;
-let isRunning = false;
-let max = 75;
-
-// Pattern cycling
-let patternIndex = 0;
-let patternCycleInterval = null;
-
-// ============================================================
-// Audio
-// ============================================================
-const VOICE_DIRS = [
-  '../assets/sound/voice/', '../assets/sound/nigus/', '../assets/sound/modern-arada/',
-  '../assets/sound/modern-formal/', '../assets/sound/fana/', '../assets/sound/famharic/',
-  '../assets/sound/foromifa/', '../assets/sound/gual/', '../assets/sound/wedi/',
-  '../assets/sound/addis/', '../assets/sound/addis2/'
-];
-
-async function getAudioBlob(url) {
-  try {
-    const cached = await dbGet('audios', url);
-    if (cached) return cached;
-  } catch(e) {}
-  try {
-    const resp = await fetch(url);
-    if (!resp.ok) return null;
-    const blob = await resp.blob();
-    try { await dbSet('audios', url, blob); } catch(e) {}
-    return blob;
-  } catch(e) { return null; }
-}
-
-let currentAudio = null;
-async function playAudio(url) {
-  const blob = await getAudioBlob(url);
-  if (!blob) return;
-  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-  const objUrl = URL.createObjectURL(blob);
-  const audio = new Audio(objUrl);
-  audio.preload = 'auto';
-  audio.onended = () => URL.revokeObjectURL(objUrl);
-  audio.play().catch(() => {});
-  currentAudio = audio;
-}
-
-function voices(rb) {
-  const voiceIdx = parseInt(document.getElementById('voiceselect').value) - 1;
-  if (typeof rb === 'string') {
-    // Special sound file
-    let path = '';
-    if (rb === 'start.mp3') path = '../assets/sound/start.mp3';
-    else if (rb === 'stop.mp3') path = '../assets/sound/stop.mp3';
-    else if (rb === 'will_start.mp3') path = '../assets/sound/will_start.mp3';
-    else if (rb === 'goodbingo.mp3') path = '../assets/sound/goodbingo.mp3';
-    else if (rb === 'clap.mp3') path = '../assets/sound/clap.mp3';
-    else if (rb === 'this_card_won.mp3') path = '../assets/sound/this_card_won.mp3';
-    if (path) playAudio(path);
-    return;
-  }
-  const dir = VOICE_DIRS[voiceIdx] || VOICE_DIRS[0];
-  playAudio(dir + rb + '.wav');
-}
-
-// ============================================================
-// Alert
-// ============================================================
-function showAlert(msg, type) {
-  const el = document.getElementById('customAlert');
-  el.textContent = msg;
-  el.className = 'custom-alert-' + (type || 'success');
-  el.style.display = 'block';
-  clearTimeout(el._timer);
-  el._timer = setTimeout(() => { el.style.display = 'none'; }, 3000);
-}
-
-// ============================================================
-// Recent calls table
-// ============================================================
-const recentCallsEl = document.getElementById('recent-calls');
-const MAX_RECENT = 8;
-function updateRecentCalls(num) {
-  const span = document.createElement('span');
-  span.className = 'recent-num';
-  span.textContent = num;
-  if (recentCallsEl.children.length >= MAX_RECENT) {
-    recentCallsEl.removeChild(recentCallsEl.lastChild);
-  }
-  recentCallsEl.insertBefore(span, recentCallsEl.firstChild);
-}
-
-// ============================================================
-// Number grid builder
-// ============================================================
-function buildNumberGrid() {
-  const gridEl = document.getElementById('number-grid');
-  gridEl.innerHTML = '';
-  const cols = ['B','I','N','G','O'];
-  const ranges = [[1,15],[16,30],[31,45],[46,60],[61,75]];
-  cols.forEach((col, ci) => {
-    const div = document.createElement('div');
-    div.className = 'col-group';
-    const header = document.createElement('div');
-    header.className = 'col-header ' + col;
-    header.textContent = col;
-    div.appendChild(header);
-    const [start, end] = ranges[ci];
-    for (let n = start; n <= end; n++) {
-      const cell = document.createElement('div');
-      cell.className = 'num-cell';
-      cell.textContent = n;
-      const attr = col.toLowerCase();
-      cell.setAttribute('num' + attr, n);
-      div.appendChild(cell);
-    }
-    gridEl.appendChild(div);
-  });
-}
-
-// ============================================================
-// Drawing a number
-// ============================================================
-function getRandomNumber() {
-  if (wc_priorityNumbers.length > 0) return wc_priorityNumbers.shift();
-  if (uniqueRandoms.length > 0) return uniqueRandoms.pop();
-  if (new_bonus_status === 'off' && special_bonus_numbers.length > 0) return special_bonus_numbers.shift();
-  return null;
-}
-
-function shuffleArray(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-}
-
-function initDrawingPools() {
-  uniqueRandoms = [];
-  special_bonus_numbers = [];
-  wc_priorityNumbers = [];
-  // For client-side: no bonus numbers, no winner cards to pre-seed
-  new_bonus_status = (appSettings.bonus && appSettings.bonus.status === 'on') ? 'on' : 'off';
-
-  if (new_bonus_status === 'on') {
-    // Generate bonus numbers (3 random from 1-75)
-    const allNums = Array.from({length:75}, (_,i)=>i+1);
-    shuffleArray(allNums);
-    special_bonus_numbers = allNums.slice(0, 3);
-    // remaining go to uniqueRandoms
-    for (let i = 1; i <= 75; i++) {
-      if (!special_bonus_numbers.includes(i)) uniqueRandoms.push(i);
-    }
+document.addEventListener("DOMContentLoaded",function(){
+  const bb=document.getElementById('bonus');
+  if(bb) bb.disabled=true;
+  let sp=JSON.parse(localStorage.getItem('bonusContainerPosition')||'null');
+  if(sp){
+    bonusContainer.style.top=`${Math.min(sp.top,window.innerHeight)}px`;
+    bonusContainer.style.left=`${Math.min(sp.left,window.innerWidth)}px`;
   } else {
-    for (let i = 1; i <= 75; i++) uniqueRandoms.push(i);
+    bonusContainer.style.right='20px';
+    bonusContainer.style.top='80%';
+  }
+});
+
+bonusContainer.addEventListener('mousedown',e=>{
+  isDragging=true;
+  offsetX=e.clientX-bonusContainer.getBoundingClientRect().left;
+  offsetY=e.clientY-bonusContainer.getBoundingClientRect().top;
+});
+document.addEventListener('mousemove',e=>{
+  if(isDragging){
+    const x=e.clientX-offsetX,y=e.clientY-offsetY;
+    const maxX=window.innerWidth-bonusContainer.offsetWidth;
+    const maxY=window.innerHeight-bonusContainer.offsetHeight;
+    bonusContainer.style.left=`${Math.min(Math.max(x,0),maxX)}px`;
+    bonusContainer.style.top=`${Math.min(Math.max(y,0),maxY)}px`;
+  }
+});
+document.addEventListener('mouseup',()=>{
+  if(isDragging){
+    isDragging=false;
+    localStorage.setItem('bonusContainerPosition',JSON.stringify({
+      left:parseInt(bonusContainer.style.left),top:parseInt(bonusContainer.style.top)
+    }));
+  }
+});
+document.getElementById('bonus').addEventListener('click',function(){
+  bonusContainer.style.display=(bonusContainer.style.display==='none')?'block':'none';
+});
+document.getElementById("close-bonus").addEventListener("click",()=>{ bonusContainer.style.display="none"; });
+
+document.getElementById("settings").addEventListener("click",function(e){
+  e.stopPropagation();
+  document.getElementById("settings-menu").classList.add("active");
+  applySavedSettings(getAppSettings());
+});
+document.addEventListener("click",function(e){
+  const sm=document.getElementById("settings-menu");
+  const sb=document.getElementById("settings");
+  if(!sm.contains(e.target)&&!sb.contains(e.target)) sm.classList.remove("active");
+});
+document.getElementById("close-menu").addEventListener("click",function(e){
+  e.stopPropagation();
+  document.getElementById("settings-menu").classList.remove("active");
+});
+document.getElementById("settings_set_bonus").addEventListener("change",function(){
+  document.querySelector(".bonus-submenu").style.display=(this.value==="on")?"block":"none";
+});
+
+$("#submit_settings_form").on('click',function(e){
+  e.preventDefault();
+  const btn=document.getElementById('submit_settings_form');
+  btn.disabled=true;btn.innerText='Saving...';btn.style.opacity='0.6';btn.style.cursor='not-allowed';
+  const settings={
+    bonus:{status:$("#settings_set_bonus").val(),amount:$("#settings_bonus_amount").val(),per_day:$("#sittings_bonus_options").val()},
+    system:{check_result:$("#settings_check_result").val(),color_mode:$("#settings_color_mode").val(),profit:$("#settings_cashier_profit").val(),good_bingo_sound:$("#settings_good_bingo_sound").val()},
+    toggles:{will_start:$("#will_start_sound_toggle").is(":checked"),started:$("#started_sound_toggle").is(":checked"),stopped:$("#stopped_sound_toggle").is(":checked"),show_card_count:$("#counte_registerd_card").is(":checked")}
+  };
+  localStorage.setItem('app_settings',JSON.stringify(settings));
+  document.getElementById("new_bonus_status").innerText=settings.bonus.status;
+  document.getElementById("new_bonus_amount").innerText=settings.bonus.amount;
+  document.getElementById("max_new_bonus_per_day").innerText=settings.bonus.per_day;
+  document.getElementById("auto_check_result").innerText=settings.system.check_result;
+  document.getElementById("good_bingo_sound").innerText=settings.system.good_bingo_sound;
+  document.getElementById("profit").innerText=settings.system.profit;
+  const cc=document.getElementById("cardCounter");
+  if(cc) cc.style.display=settings.toggles.show_card_count?"inline":"none";
+  $("#settings_update_response").html("በተሳካ ሁኔታ ተመዝግቧል!").css("color","green");
+  setTimeout(function(){
+    btn.disabled=false;btn.innerText='Save Changes';btn.style.opacity='1';btn.style.cursor='pointer';
+    $("#settings_update_response").empty();
+    $("#settings-menu").removeClass("active");
+  },2000);
+});
+
+// Light/dark toggle
+document.getElementById('toggleBTN').addEventListener('click',function(){
+  const cur=localStorage.getItem('toggleState')||'dark';
+  const next=(cur==='dark')?'light':'dark';
+  localStorage.setItem('toggleState',next);
+  if(next==='light'){
+    document.getElementById('lightStyleSheet').href='/bootstrap/css/light/style.css';
+    document.getElementById('modalStyleSheet').href='/bootstrap/css/light/modal.css';
+    document.getElementById('giftStyleSheet').href='/bootstrap/css/light/gift-unboxing.css';
+    document.getElementById('ballStyleSheet').href='/bootstrap/css/light/ball.css';
+    document.getElementById('bingoStyleSheet').href='/bootstrap/css/light/bingon.css';
+    document.getElementById('toggleCircle').style.left='13px';
+  } else {
+    document.getElementById('lightStyleSheet').href='/bootstrap/css/style.css';
+    document.getElementById('modalStyleSheet').href='/bootstrap/css/modal.css';
+    document.getElementById('giftStyleSheet').href='/bootstrap/css/gift-unboxing.css';
+    document.getElementById('ballStyleSheet').href='/bootstrap/css/ball.css';
+    document.getElementById('bingoStyleSheet').href='/bootstrap/css/bingon.css';
+    document.getElementById('toggleCircle').style.left='3px';
+  }
+});
+
+function updateFsIcon(fs){
+  document.getElementById('fullscreenBtn').innerHTML=fs
+    ?'<svg width="14" height="14" fill="#fff" viewBox="0 0 16 16"><path d="M5.5 0a.5.5 0 0 1 .5.5v4A1.5 1.5 0 0 1 4.5 6h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5m5 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 10 4.5v-4a.5.5 0 0 1 .5-.5M0 10.5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 6 11.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5m10 1a1.5 1.5 0 0 1 1.5-1.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0z"/></svg>'
+    :'<svg width="14" height="14" fill="#fff" viewBox="0 0 16 16"><path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/></svg>';
+}
+document.getElementById('fullscreenBtn').addEventListener('click',function(){
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen().then(()=>updateFsIcon(true));
+  else document.exitFullscreen().then(()=>updateFsIcon(false));
+});
+document.addEventListener('fullscreenchange',()=>updateFsIcon(!!document.fullscreenElement));
+document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').modal('show'));
+</script>
+
+<!-- ─── Main content ─── -->
+<div id="main-content" class="main-content">
+
+  <!-- ─── Start / Register Modal ─── -->
+  <div id="myModal" class="modal fade" data-keyboard="false" data-backdrop="static" style="display:none;overflow-y:auto;">
+    <div class="modal-dialog">
+      <div class="modal-content" style="width:600px;height:400px;opacity:.9;">
+        <div class="modal-header">
+          <h2 id="modal-round-number">Round 1</h2>
+          <div class="hidden-info"></div>
+          <div class="button-group">
+            <button class="modal-button" id="report_button">Report</button>&nbsp;
+            <button class="modal-button" id="logoutbtn">Logout</button>
+            <button id="register_game_button" class="modal-button-register"><h3>Register Card</h3></button>
+          </div>
+        </div>
+        <div class="modal-body" style="background-color:#f6f7f9;">
+          <h2 id="amount">ኢትዮ-ማርክ ቢንጎ</h2>
+          <div style="min-height:300px;margin:0px;">
+            <img id="selected-numbers-container-img" src="/assets/images/card1.png" style="user-drag:none;-webkit-user-drag:none;width:70%;max-height:400px;" onerror="this.style.display='none'">
+            <div id="selected-numbers-container" style="background:rgba(255,255,255,.8);padding:10px;border-radius:5px;display:none;max-height:300px;overflow-y:auto;">
+              <h2>የተመዘገቡ ካርድ ቁጥሮች</h2>
+              <div id="selected-numbers" style="font-size:24px;color:#000;"></div>
+            </div>
+          </div>
+          <p id="bala_alert" style="color:red;animation:blink 2s infinite;"></p>
+          <button type="submit" class="exe modal-start-btn snake-border" id="mybtn" onclick="return startbingo();">Start</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Register Card Modal ─── -->
+  <div id="registerCardModal" class="modal fade" data-keyboard="false" data-backdrop="static" style="display:none;overflow-y:auto;">
+    <div class="modal-dialog">
+      <div class="modal-content" style="padding:20px;">
+        <div class="modal-header">
+          <h2>Register New Game</h2>
+          <button class="modal-button" onclick="$('#registerCardModal').modal('hide');">Close</button>
+        </div>
+        <div class="modal-body">
+          <div style="margin-bottom:10px;">
+            <label style="font-size:20px;">Card Numbers (comma separated):</label><br>
+            <textarea id="reg_card_numbers" rows="4" style="width:100%;font-size:18px;padding:5px;" placeholder="e.g. 1,2,3,100,500"></textarea>
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="font-size:20px;">Pattern:</label><br>
+            <select id="reg_pattern" style="font-size:20px;width:100%;padding:5px;">
+              <option value="1">Any 1 line</option><option value="2">Any 2 lines</option>
+              <option value="3">Any Horizontal</option><option value="4">Any Vertical</option>
+              <option value="5">X Pattern</option><option value="6">Four Corners</option>
+              <option value="7">Center Corners</option><option value="8">Meskel</option>
+              <option value="9">T</option><option value="10">Reverse T</option>
+              <option value="11">L</option><option value="12">Full Card</option>
+            </select>
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="font-size:20px;">Price per card (ብር):</label><br>
+            <input type="number" id="reg_price" style="font-size:20px;width:100%;padding:5px;" value="10" min="1">
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="font-size:20px;">Voice:</label><br>
+            <select id="reg_voice" style="font-size:20px;width:100%;padding:5px;">
+              <option value="11">New voice</option><option value="10">Addis</option>
+              <option value="1">Bereket</option><option value="2">Nigus</option>
+              <option value="3">Amharic Arada</option><option value="4">Amharic formal</option>
+              <option value="5">Amharic yordi</option><option value="6">Amharic Beti</option>
+              <option value="7">Oromifa Female</option><option value="8">Tigrigna Female</option>
+              <option value="9">Tigrigna Male</option>
+            </select>
+          </div>
+          <button onclick="saveRegistration()" style="background:green;color:white;font-size:24px;padding:10px 30px;border:none;border-radius:5px;cursor:pointer;">Save &amp; Start</button>
+          <button onclick="clearRegistration()" style="background:red;color:white;font-size:24px;padding:10px 20px;border:none;border-radius:5px;cursor:pointer;margin-left:10px;">Clear Game</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  document.getElementById('report_button').onclick=function(){};
+  document.getElementById('logoutbtn').onclick=function(){
+    if(confirm('Logout? Game state will be preserved.')){location.reload();}
+  };
+  document.getElementById('register_game_button').onclick=function(){
+    const gs=getGameState();
+    if(gs.cards) document.getElementById('reg_card_numbers').value=gs.cards.join(',');
+    if(gs.pattern) document.getElementById('reg_pattern').value=gs.pattern;
+    if(gs.price) document.getElementById('reg_price').value=gs.price;
+    if(gs.sound) document.getElementById('reg_voice').value=gs.sound;
+    $('#registerCardModal').modal('show');
+  };
+
+  function saveRegistration(){
+    const raw=document.getElementById('reg_card_numbers').value;
+    const cards=raw.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>0);
+    if(!cards.length){alert('Please enter at least one card number.');return;}
+    const pattern=parseInt(document.getElementById('reg_pattern').value)||1;
+    const price=parseInt(document.getElementById('reg_price').value)||10;
+    const sound=parseInt(document.getElementById('reg_voice').value)||1;
+    const gs=getGameState();
+    const newGs={round:gs.round||1,cards,pattern,price,sound,speed_range:gs.speed_range||3,randomstring:gs.randomstring||''};
+    saveGameState(newGs);
+    document.getElementById('sew').innerText=cards.length;
+    document.getElementById('birr').innerText=price;
+    document.getElementById('patt').innerText=pattern;
+    document.getElementById('voiceselect').value=sound;
+    document.getElementById('cardCounter').innerHTML='ብዛት : '+cards.length;
+    renderRegisteredCards(cards,price,newGs.round);
+    $('#registerCardModal').modal('hide');
+    showAlert('ካርዶቹ ተመዝግበዋል! ('+cards.length+' cards)','success');
+  }
+
+  function clearRegistration(){
+    if(!confirm('Clear game and start new round?')) return;
+    const gs=getGameState();
+    saveGameState({round:(gs.round||1)+1,cards:[],pattern:1,price:0,sound:1,speed_range:3,randomstring:''});
+    location.reload();
+  }
+  </script>
+
+  <!-- ─── Game display ─── -->
+  <div class="container" style="margin-left:5px;">
+    <div class="row">
+      <div id="col-11"></div>
+      <div id="col-2" class="col-2">
+        <div class="contains">
+          <div class="ball2"><div class="ball3"><div class="ball4"><div class="ball5">
+            <p class="num" id="rand"></p>
+          </div></div></div></div>
+        </div>
+      </div>
+      <div id="col-4" class="col-4">
+        <p class="lastcall">Recent Results for (<a href="#" style="color:red;text-align:center;font-size:25px;font-weight:900;" id="round_number_bellow_5">yyyyy</a>)</p>
+        <div class="tgable-container">
+          <table id="bingo-table">
+            <tr>
+              <td class="bingo-call" style="color:red;" t="0"></td>
+              <td class="bingo-call" t="1"></td>
+              <td class="bingo-call" t="2"></td>
+              <td class="bingo-call" t="3"></td>
+              <td class="bingo-call" t="4"></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <div class="col-3">
+        <div class="derash-box">
+          <div class="derash-content">
+            <span class="amount"><span id="amount1"></span><span>&nbsp;ደራሽ</span></span>
+          </div>
+          <span class="derash-line">-</span><br><br>
+          <div class="derash-details">
+            <span class="total-card" id="cardCounter">ብዛት : 0</span>&nbsp;&nbsp;&nbsp;&nbsp;
+            <span class="total-calls">ጥሪ : <span id="drawn_number_counter">0</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <br><br>
+
+    <!-- ─── B/I/N/G/O number grid ─── -->
+    <div class="row">
+      <div class="col-12">
+        <div class="brow">
+          <div class="callb">
+            <p class="txtbox" style="background-color:#ff0404;">B</p>
+            <div class="numrow"><p class="numbox" numb="1">1</p></div><div class="numrow"><p class="numbox" numb="2">2</p></div>
+            <div class="numrow"><p class="numbox" numb="3">3</p></div><div class="numrow"><p class="numbox" numb="4">4</p></div>
+            <div class="numrow"><p class="numbox" numb="5">5</p></div><div class="numrow"><p class="numbox" numb="6">6</p></div>
+            <div class="numrow"><p class="numbox" numb="7">7</p></div><div class="numrow"><p class="numbox" numb="8">8</p></div>
+            <div class="numrow"><p class="numbox" numb="9">9</p></div><div class="numrow"><p class="numbox" numb="10">10</p></div>
+            <div class="numrow"><p class="numbox" numb="11">11</p></div><div class="numrow"><p class="numbox" numb="12">12</p></div>
+            <div class="numrow"><p class="numbox" numb="13">13</p></div><div class="numrow"><p class="numbox" numb="14">14</p></div>
+            <div class="numrow"><p class="numbox" numb="15">15</p></div>
+          </div>
+        </div>
+        <div class="irow">
+          <div class="callb">
+            <p class="txtbox" style="background-color:#0c3d75;">I</p>
+            <div class="numrow"><p class="numbox" numi="16">16</p></div><div class="numrow"><p class="numbox" numi="17">17</p></div>
+            <div class="numrow"><p class="numbox" numi="18">18</p></div><div class="numrow"><p class="numbox" numi="19">19</p></div>
+            <div class="numrow"><p class="numbox" numi="20">20</p></div><div class="numrow"><p class="numbox" numi="21">21</p></div>
+            <div class="numrow"><p class="numbox" numi="22">22</p></div><div class="numrow"><p class="numbox" numi="23">23</p></div>
+            <div class="numrow"><p class="numbox" numi="24">24</p></div><div class="numrow"><p class="numbox" numi="25">25</p></div>
+            <div class="numrow"><p class="numbox" numi="26">26</p></div><div class="numrow"><p class="numbox" numi="27">27</p></div>
+            <div class="numrow"><p class="numbox" numi="28">28</p></div><div class="numrow"><p class="numbox" numi="29">29</p></div>
+            <div class="numrow"><p class="numbox" numi="30">30</p></div>
+          </div>
+        </div>
+        <div class="irow">
+          <div class="callb">
+            <p class="txtbox" style="background-color:#34c659;color:white;">N</p>
+            <div class="numrow"><p class="numbox" numn="31">31</p></div><div class="numrow"><p class="numbox" numn="32">32</p></div>
+            <div class="numrow"><p class="numbox" numn="33">33</p></div><div class="numrow"><p class="numbox" numn="34">34</p></div>
+            <div class="numrow"><p class="numbox" numn="35">35</p></div><div class="numrow"><p class="numbox" numn="36">36</p></div>
+            <div class="numrow"><p class="numbox" numn="37">37</p></div><div class="numrow"><p class="numbox" numn="38">38</p></div>
+            <div class="numrow"><p class="numbox" numn="39">39</p></div><div class="numrow"><p class="numbox" numn="40">40</p></div>
+            <div class="numrow"><p class="numbox" numn="41">41</p></div><div class="numrow"><p class="numbox" numn="42">42</p></div>
+            <div class="numrow"><p class="numbox" numn="43">43</p></div><div class="numrow"><p class="numbox" numn="44">44</p></div>
+            <div class="numrow"><p class="numbox" numn="45">45</p></div>
+          </div>
+        </div>
+        <div class="irow">
+          <div class="callb">
+            <p class="txtbox" style="background-color:#ff8800;color:white;">G</p>
+            <div class="numrow"><p class="numbox" numg="46">46</p></div><div class="numrow"><p class="numbox" numg="47">47</p></div>
+            <div class="numrow"><p class="numbox" numg="48">48</p></div><div class="numrow"><p class="numbox" numg="49">49</p></div>
+            <div class="numrow"><p class="numbox" numg="50">50</p></div><div class="numrow"><p class="numbox" numg="51">51</p></div>
+            <div class="numrow"><p class="numbox" numg="52">52</p></div><div class="numrow"><p class="numbox" numg="53">53</p></div>
+            <div class="numrow"><p class="numbox" numg="54">54</p></div><div class="numrow"><p class="numbox" numg="55">55</p></div>
+            <div class="numrow"><p class="numbox" numg="56">56</p></div><div class="numrow"><p class="numbox" numg="57">57</p></div>
+            <div class="numrow"><p class="numbox" numg="58">58</p></div><div class="numrow"><p class="numbox" numg="59">59</p></div>
+            <div class="numrow"><p class="numbox" numg="60">60</p></div>
+          </div>
+        </div>
+        <div class="irow">
+          <div class="callb">
+            <p class="txtbox" style="background-color:rgb(10,89,31);color:white;">O</p>
+            <div class="numrow"><p class="numbox" numo="61">61</p></div><div class="numrow"><p class="numbox" numo="62">62</p></div>
+            <div class="numrow"><p class="numbox" numo="63">63</p></div><div class="numrow"><p class="numbox" numo="64">64</p></div>
+            <div class="numrow"><p class="numbox" numo="65">65</p></div><div class="numrow"><p class="numbox" numo="66">66</p></div>
+            <div class="numrow"><p class="numbox" numo="67">67</p></div><div class="numrow"><p class="numbox" numo="68">68</p></div>
+            <div class="numrow"><p class="numbox" numo="69">69</p></div><div class="numrow"><p class="numbox" numo="70">70</p></div>
+            <div class="numrow"><p class="numbox" numo="71">71</p></div><div class="numrow"><p class="numbox" numo="72">72</p></div>
+            <div class="numrow"><p class="numbox" numo="73">73</p></div><div class="numrow"><p class="numbox" numo="74">74</p></div>
+            <div class="numrow"><p class="numbox" numo="75">75</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Control row ─── -->
+    <div class="row">
+      <div class="col-12">
+        <div class="setting_box" style="display:flex;justify-content:center;align-items:center;width:80%;margin:20px auto;">
+          <button style="border:5px solid white;max-width:150px;" onclick="change()" id="bingoo" class="btnbingo">Bingo</button>
+          <button style="border:5px solid white;max-width:150px;" id="shuffle" class="btnshuffle">Shuffle</button>
+          <button style="border:5px solid red;max-width:150px;" id="finsh_game" class="btnbingo">Finsh</button>
+          <div class="sound-input-text">
+            <select id="voiceselect" class="voiceselect" onchange="change_language()">
+              <option value="11">New voice</option><option value="10">Addis</option>
+              <option value="1">Bereket</option><option value="2">Nigus</option>
+              <option value="3">Amharic Arada</option><option value="4">Amharic formal</option>
+              <option value="5">Amharic yordi</option><option value="6">Amharic Beti</option>
+              <option value="7">Oromifa Female</option><option value="8">Tigrigna Female</option>
+              <option value="9">Tigrigna Male</option>
+            </select>
+          </div>
+          <div class="check_card">
+            <input type="text" placeholder="Card Number..." id="Ecard_no" class="card-input" required>
+          </div>
+          <button style="border:5px solid white;max-width:150px;" type="submit" class="btnbingo" id="mycheck">Check</button>
+        </div>
+        <div class="row">
+          <div class="col-1"></div>
+          <div class="col-3"></div>
+          <div class="slidecontainer col-4" style="display:inline-block;">
+            <p style="margin-bottom:-1.0rem;font-size:32px;font-weight:600;text-align:center;">
+              Play speed: <span id="demo">3</span>
+            </p>
+            <input type="range" min="1" max="15" value="3" class="slider" id="myRange" style="height:60px;letter-spacing:1px;margin-top:-2.0rem;">
+          </div>
+          <div class="col-4"></div>
+        </div>
+
+        <canvas id="canvas" style="display:none;"></canvas>
+        <script src="/bootstrap/js/confetti.browser.min.js"></script>
+        <canvas id="canvas2" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2999;display:none;"></canvas>
+
+        <!-- Check-card result modal -->
+        <div id="myModalcard" class="modal fade" data-keyboard="false" data-backdrop="static">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h1 class="modal-title"><span style="font-size:20px;">Round <span id="modal-card-round">1</span></span></h1>
+                <center><div id="claim-bonus-popup" class="claim-bonus-popup">Claim Bonus</div></center>
+                <button class="modal-button" style="padding:10px 15px;" id="addbingo">Close</button>
+              </div>
+              <div class="modal-body">
+                <div id="modal-body"></div>
+                <div style="width:100%;margin-top:0px;">
+                  <button class="modal-button" style="padding:10px 15px;background:green;color:white;" id="goodbingo">GOOD BINGO</button>
+                  <button class="modal-button" style="padding:10px 15px;background-color:red;color:white;" id="notbingo">NOT BINGO</button>
+                  <button class="modal-button" style="padding:10px 15px;margin-left:5px;background-color:yellow;color:black;" id="lock_card">Lock?</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Help modal -->
+        <div id="helpmodal" class="modal fade" style="overflow-y:scroll;" data-keyboard="false" data-backdrop="static">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h1 class="modal-title"><span style="font-size:20px;">Ethiomark - ኢትዮ ማርክ</span></h1>
+                <button class="modal-button" style="padding:10px 15px;" id="helpmodals">Close</button>
+              </div>
+              <div class="modal-body">
+                <div style="min-height:500px;">
+                  <div class="box1f">
+                    <h1>Sample Pattern</h1>
+                    <table id="bingoTable">
+                      <thead><tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr></thead>
+                      <tbody>
+                        <tr><td>1</td><td>16</td><td>31</td><td>46</td><td>61</td></tr>
+                        <tr><td>2</td><td>17</td><td>32</td><td>47</td><td>62</td></tr>
+                        <tr><td>3</td><td>18</td><td class="free-cell">★</td><td>48</td><td>63</td></tr>
+                        <tr><td>4</td><td>19</td><td>34</td><td>49</td><td>64</td></tr>
+                        <tr><td>5</td><td>20</td><td>35</td><td>50</td><td>65</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ─── Draw engine ─── -->
+<script>
+var uniqueRandoms=[], max=75;
+let c_round_number=parseInt(document.getElementById('round').innerText.trim(),10)||1;
+let fd_val=document.getElementById('fd').innerText.trim();
+let wc_val=document.getElementById('wc').innerText.trim().replace(/[\n\r\s]+/g,'');
+let new_bonus_status_val=document.getElementById('new_bonus_status').innerText.trim();
+let todays_nb_count=parseInt(document.getElementById('todays_new_bonus_count').innerText)||0;
+let max_nb_per_day=parseInt(document.getElementById('max_new_bonus_per_day').innerText)||1;
+let nb_chance=parseInt(document.getElementById('new_bonus_chance').innerText)||3;
+let bcsl=document.getElementById('bonusCutSize_tobe_locked').innerText.trim();
+
+let sbn_el=document.getElementById("special_bonus_data");
+let sbn_str=sbn_el.innerText.trim();
+let special_bonus_numbers=sbn_str.split(',').map(n=>parseInt(n,10)).filter(n=>!isNaN(n));
+
+// Parse WC
+let wc_sets=wc_val.split('*').map(s=>s.trim()).filter(s=>s.length>0);
+let sel_block=wc_sets.find(s=>parseInt(s.split(',')[0].trim(),10)===c_round_number);
+if(sel_block) wc_val=sel_block; else wc_val="";
+let wc_parts=wc_val.split(',');
+let wc_round=parseInt(wc_parts[0],10);
+let wc_priorityNumbers=(c_round_number===wc_round)?wc_parts.slice(1).map(n=>parseInt(n,10)):[];
+if(wc_priorityNumbers.length<1&&fd_val) wc_priorityNumbers=fd_val.split(',').map(n=>parseInt(n,10));
+wc_priorityNumbers=wc_priorityNumbers.filter(n=>!special_bonus_numbers.includes(n));
+
+// Bonus logic
+var n_val=parseInt(document.getElementById('sew').innerText)||0;
+var s_val=parseInt(document.getElementById('birr').innerText)||0;
+new_bonus_status_val="off";
+if(n_val*s_val<=49){
+  new_bonus_status_val="off";
+  if(special_bonus_numbers.length>0) special_bonus_numbers.splice(Math.floor(Math.random()*special_bonus_numbers.length),0);
+} else if(todays_nb_count>=max_nb_per_day){
+  new_bonus_status_val="off";
+  if(special_bonus_numbers.length>0) special_bonus_numbers.splice(Math.floor(Math.random()*special_bonus_numbers.length),0);
+} else {
+  let bcs=parseInt(bcsl,10);
+  let ri=Math.floor(Math.random()*special_bonus_numbers.length);
+  if(!isNaN(bcs)) ri=bcs;
+  special_bonus_numbers.splice(ri,nb_chance);
+}
+
+function shuffleArray(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}}
+
+if(!uniqueRandoms.length){
+  for(let i=1;i<=max;i++){
+    if(new_bonus_status_val==="off"){if(!wc_priorityNumbers.includes(i)&&!special_bonus_numbers.includes(i)) uniqueRandoms.push(i);}
+    else{if(!wc_priorityNumbers.includes(i)) uniqueRandoms.push(i);}
   }
   shuffleArray(uniqueRandoms);
 }
 
-function getBingoPrefix(num) {
-  if (num <= 15) return 'B-';
-  if (num <= 30) return 'I-';
-  if (num <= 45) return 'N-';
-  if (num <= 60) return 'G-';
-  return 'O-';
+function getRandomNumber(){
+  if(wc_priorityNumbers.length>0) return wc_priorityNumbers.shift();
+  if(uniqueRandoms.length>0) return uniqueRandoms.pop();
+  if(new_bonus_status_val==="off"&&special_bonus_numbers.length>0) return special_bonus_numbers.shift();
+  return undefined;
 }
 
-function markNumberOnGrid(num) {
-  const prefixes = {B:'numb',I:'numi',N:'numn',G:'numg',O:'numo'};
-  if (num <= 15) { const el = document.querySelector('[numb="'+num+'"]'); if(el) el.classList.add('callnum'); }
-  else if (num <= 30) { const el = document.querySelector('[numi="'+num+'"]'); if(el) el.classList.add('callnum'); }
-  else if (num <= 45) { const el = document.querySelector('[numn="'+num+'"]'); if(el) el.classList.add('callnum'); }
-  else if (num <= 60) { const el = document.querySelector('[numg="'+num+'"]'); if(el) el.classList.add('callnum'); }
-  else { const el = document.querySelector('[numo="'+num+'"]'); if(el) el.classList.add('callnum'); }
-}
+let randomstring="";
 
-function randomnuber() {
-  if (drawnNumbers.length >= 75) { stopDrawing(); return; }
-  const num = getRandomNumber();
-  if (num == null) { stopDrawing(); return; }
-
-  drawnNumbers.push(num);
-  randomstring += num + ',';
-
-  voices(num);
-  updateRecentCalls(num);
-  markNumberOnGrid(num);
-
-  const prefix = getBingoPrefix(num);
-  document.getElementById('rand').textContent = prefix + num;
-
-  const counter = drawnNumbers.length;
-  document.getElementById('drawn_number_counter').textContent = counter;
-  document.getElementById('drawn_number_counter2').textContent = counter;
-
-  // Auto check result
-  if (appSettings.system && appSettings.system.check_result === 'auto') {
-    if (gameState && gameState.cards && gameState.cards.length > 0) {
-      checkAllCards();
+// Restore any in-progress drawn string
+(function(){
+  const gs=getGameState();
+  if(gs.randomstring){
+    randomstring=gs.randomstring;
+    // Restore callnum highlights
+    const drawn=gs.randomstring.split(',').map(n=>parseInt(n)).filter(n=>!isNaN(n));
+    drawn.forEach(num=>{
+      let attr='';
+      if(num>=1&&num<=15) attr='numb';
+      else if(num<=30) attr='numi';
+      else if(num<=45) attr='numn';
+      else if(num<=60) attr='numg';
+      else if(num<=75) attr='numo';
+      if(attr){const el=document.querySelector(`[${attr}="${num}"]`);if(el) el.className+=' callnum';}
+    });
+    // Remove those from uniqueRandoms
+    uniqueRandoms=uniqueRandoms.filter(n=>!drawn.includes(n));
+    max=75-drawn.length;
+    // Update counter
+    const ce=document.getElementById("drawn_number_counter");
+    if(ce) ce.innerText=drawn.filter(n=>n>0).length;
+    // Update bingo-call table with last 5
+    if(drawn.length>0){
+      const cells=document.querySelectorAll('.bingo-call');
+      const last5=drawn.slice(-5).reverse();
+      last5.forEach((num,idx)=>{if(cells[idx]){cells[idx].textContent=num;cells[idx].setAttribute('t',num);}});
+      document.getElementById('rand').innerText=getBingoLetter(drawn[drawn.length-1])+drawn[drawn.length-1];
     }
   }
+})();
 
-  // Save state
-  saveGameState();
-
-  if (drawnNumbers.length >= 75) { stopDrawing(); }
+function getBingoLetter(num){
+  if(num>=1&&num<=15) return 'B-';
+  if(num>=16&&num<=30) return 'I-';
+  if(num>=31&&num<=45) return 'N-';
+  if(num>=46&&num<=60) return 'G-';
+  if(num>=61&&num<=75) return 'O-';
+  return '';
 }
 
-// ============================================================
-// START / STOP drawing
-// ============================================================
-function startDrawing() {
-  if (isRunning) return;
-  isRunning = true;
-  const btn = document.getElementById('bingoo');
-  btn.textContent = 'STOP';
-  btn.style.background = '#4CAF50';
-
-  document.getElementById('shuffle').disabled = true;
-  document.getElementById('finsh_game').disabled = true;
-  document.getElementById('mycheck').disabled = true;
-
-  const speed = parseInt(document.getElementById('myRange').value) * 1000;
-  lightInterval = setInterval(randomnuber, speed);
-
-  if (document.getElementById('started_sound_toggle').checked) {
-    voices('start.mp3');
-  }
+function randomnuber(){
+  let rArr=randomstring.split(',').filter(v=>v!=='undefined'&&v!=='');
+  let drawnCount=rArr.length;
+  let ce=document.getElementById("drawn_number_counter");
+  if(ce) ce.innerText=drawnCount;
+  if(rArr.filter(Boolean).length===75){change();return;}
+  let rn=getRandomNumber();
+  if(rn===undefined) return;
+  voices(rn);
+  updateTable(rn);
+  randomstring=randomstring+rn+",";
+  document.getElementById('ran_voice').innerText=rn;
+  if(rn<=15){document.getElementById('rand').innerText='B-'+rn;const el=document.querySelector('[numb="'+rn+'"]');if(el) el.className+=' callnum';}
+  else if(rn<=30){document.getElementById('rand').innerText='I-'+rn;const el=document.querySelector('[numi="'+rn+'"]');if(el) el.className+=' callnum';}
+  else if(rn<=45){document.getElementById('rand').innerText='N-'+rn;const el=document.querySelector('[numn="'+rn+'"]');if(el) el.className+=' callnum';}
+  else if(rn<=60){document.getElementById('rand').innerText='G-'+rn;const el=document.querySelector('[numg="'+rn+'"]');if(el) el.className+=' callnum';}
+  else if(rn<=75){document.getElementById('rand').innerText='O-'+rn;const el=document.querySelector('[numo="'+rn+'"]');if(el) el.className+=' callnum';}
+  const gs=getGameState(); gs.randomstring=randomstring; saveGameState(gs);
 }
 
-function stopDrawing() {
-  if (!isRunning) return;
-  isRunning = false;
-  clearInterval(lightInterval);
-  lightInterval = null;
+function functionC(){randomnuber();max=max-1;}
 
-  const btn = document.getElementById('bingoo');
-  btn.textContent = 'START';
-  btn.style.background = '';
-
-  document.getElementById('shuffle').disabled = false;
-  document.getElementById('finsh_game').disabled = false;
-  document.getElementById('mycheck').disabled = false;
-
-  if (document.getElementById('stopped_sound_toggle').checked) {
-    voices('stop.mp3');
-  }
-}
-
-// ============================================================
-// Win checking
-// ============================================================
-function checkCard(cardData, drawn, pattern, colorMode) {
-  const B = cardData.b, I = cardData.i, N = cardData.n, G = cardData.g, O = cardData.o;
-  const card = {B, I, N, G, O};
-
-  let count_winning_line = 0;
-
-  // Corners
-  const corners = [B[0], O[0], B[4], O[4]];
-  if (corners.every(v => drawn.includes(v))) count_winning_line++;
-
-  // Center corners
-  const centerCorners = [I[1], G[1], I[3], G[3]];
-  if (centerCorners.every(v => drawn.includes(v))) count_winning_line++;
-
-  // Meskel
-  const meskel = [I[2], N[1], N[3], G[2]];
-  if (meskel.every(v => drawn.includes(v))) count_winning_line++;
-
-  // Rows (row 2 needs 4 matches because of free space N[2]=0)
-  const winning_rows = [];
-  for (let i = 0; i < 5; i++) {
-    const rowNums = [B[i], I[i], N[i], G[i], O[i]];
-    const expected = (i === 2) ? 4 : 5;
-    const matched = rowNums.filter(v => drawn.includes(v)).length;
-    const win = matched >= expected;
-    winning_rows.push(win);
-    if (win) count_winning_line++;
-  }
-
-  // Columns (N column needs 4)
-  const winning_cols = {};
-  const colKeys = ['B','I','N','G','O'];
-  const colData = {B, I, N, G, O};
-  for (const ck of colKeys) {
-    const col = colData[ck];
-    let cnt = 0;
-    for (let i = 0; i < 5; i++) {
-      if (ck === 'N' && i === 2) continue; // free space
-      if (drawn.includes(col[i])) cnt++;
-    }
-    const exp = (ck === 'N') ? 4 : 5;
-    winning_cols[ck] = cnt >= exp;
-    if (winning_cols[ck]) count_winning_line++;
-  }
-
-  // Diagonal top-left to bottom-right (needs 4, center is free)
-  const diag0 = [B[0], I[1], N[2], G[3], O[4]];
-  const diag0Match = diag0.filter(v => drawn.includes(v)).length;
-  const win_diag0 = diag0Match >= 4;
-  if (win_diag0) count_winning_line++;
-
-  // Diagonal top-right to bottom-left (needs 4)
-  const diag1 = [B[4], I[3], N[2], G[1], O[0]];
-  const diag1Match = diag1.filter(v => drawn.includes(v)).length;
-  const win_diag1 = diag1Match >= 4;
-  if (win_diag1) count_winning_line++;
-
-  const is_bingo = count_winning_line >= pattern;
-
-  // Build HTML table
-  const lastDrawn = drawn.length > 0 ? drawn[drawn.length - 1] : null;
-  let html = `<div style="font-size:20px;font-weight:900;background:#fff;color:#000;padding:6px;margin-bottom:6px;display:flex;justify-content:space-between;">
-    <span>Card No: ${gameState ? gameState.cards.join('/') : '?'}</span>
-    <span style="color:green;">Any ${pattern} line</span>
-  </div>`;
-  html += "<table id='result-table'><thead><tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr></thead><tbody>";
-
-  for (let row = 0; row < 5; row++) {
-    html += '<tr>';
-    let colIdx = 0;
-    for (const ck of ['B','I','N','G','O']) {
-      const col = colData[ck];
-      const num = col[row];
-      const isCenter = (row === 2 && ck === 'N');
-      const isDrawn = drawn.includes(num);
-
-      let bg = 'white', fg = 'black';
-
-      if (isCenter) {
-        html += `<td style="background:#ffd700;color:#000;font-size:18px;font-weight:900;">★</td>`;
-        colIdx++; continue;
-      }
-
-      if (isDrawn) {
-        // Determine color
-        let isWinCell = false;
-        let isLastDrawWin = false;
-
-        // Check if this cell is in a winning line
-        if (winning_rows[row]) {
-          isWinCell = true;
-          isLastDrawWin = (num === lastDrawn);
-        }
-        if (winning_cols[ck]) {
-          isWinCell = true;
-          isLastDrawWin = isLastDrawWin || (num === lastDrawn);
-        }
-        if (win_diag0 && diag0.includes(num)) {
-          isWinCell = true;
-          isLastDrawWin = isLastDrawWin || (num === lastDrawn);
-        }
-        if (win_diag1 && diag1.includes(num)) {
-          isWinCell = true;
-          isLastDrawWin = isLastDrawWin || (num === lastDrawn);
-        }
-        if (corners.includes(num) && corners.every(v => drawn.includes(v))) {
-          isWinCell = true;
-          isLastDrawWin = isLastDrawWin || (num === lastDrawn);
-        }
-        if (centerCorners.includes(num) && centerCorners.every(v => drawn.includes(v))) {
-          isWinCell = true;
-          isLastDrawWin = isLastDrawWin || (num === lastDrawn);
-        }
-        if (meskel.includes(num) && meskel.every(v => drawn.includes(v))) {
-          isWinCell = true;
-          isLastDrawWin = isLastDrawWin || (num === lastDrawn);
-        }
-
-        if (isWinCell) {
-          if (colorMode === 'two') {
-            bg = isLastDrawWin ? 'green' : 'green';
-            fg = 'white';
-          } else {
-            bg = isLastDrawWin ? 'green' : '#bca106';
-            fg = 'white';
-          }
-        } else {
-          bg = 'red'; fg = 'white';
-        }
-      }
-
-      html += `<td style="background:${bg};color:${fg};font-size:16px;font-weight:700;">${num}</td>`;
-      colIdx++;
-    }
-    html += '</tr>';
-  }
-  html += '</tbody></table>';
-
-  if (is_bingo) {
-    html += `<div style="text-align:center;font-size:28px;font-weight:900;color:#00ff40;margin-top:8px;">🏆 BINGO! ✅</div>`;
-  } else {
-    html += `<div style="text-align:center;font-size:18px;color:#f44336;margin-top:8px;">❌ ያልሸነፈ - ${count_winning_line}/${pattern} lines</div>`;
-  }
-
-  return { is_bingo, count_winning_line, html };
-}
-
-function checkAllCards() {
-  if (!gameState || !gameState.cards || gameState.cards.length === 0) return;
-  const pattern = parseInt(gameState.pattern) || 1;
-  const colorMode = (appSettings.system && appSettings.system.color_mode) || 'two';
-
-  for (const cn of gameState.cards) {
-    const cardData = cardByNum[cn];
-    if (!cardData) continue;
-    const result = checkCard(cardData, drawnNumbers, pattern, colorMode);
-    if (result.is_bingo) {
-      showWinResult(cn, result);
-      return; // stop at first winner
-    }
-  }
-}
-
-function showWinResult(cn, result) {
-  document.getElementById('result-content').innerHTML = result.html;
-  document.getElementById('result-modal').classList.add('show');
-  celebrate();
-  const soundMode = parseInt((appSettings.system && appSettings.system.good_bingo_sound) || 0);
-  if (soundMode === 0) voices('this_card_won.mp3');
-  else if (soundMode === 1) voices('clap.mp3');
-  else voices('goodbingo.mp3');
-}
-
-// ============================================================
-// Pattern display
-// ============================================================
-const allPatterns = {
-  '1': [[1],[2],[3],[4],[5],[6],[7],[8],[9],[10],[13]],
-  '2': [[1,3],[2,4],[3,5],[1,5],[1,6],[2,7],[3,8],[4,9],[5,10],[6,7],[6,8],[6,9],[6,10]],
-  '3': [[1],[2],[3],[4],[5]],
-  '4': [[6],[7],[8],[9],[10]],
-  '5': [[11]],
-  '6': [[12]],
-  '7': [[13]],
-  '8': [[14]],
-  '9': [[15]],
-  '10': [[16]],
-  '11': [[17]],
-  '12': [[18]]
+const slider_el=document.getElementById("myRange");
+const output_el=document.getElementById("demo");
+output_el.innerHTML=slider_el.value;
+slider_el.oninput=function(){
+  output_el.innerHTML=this.value;
+  const gs=getGameState(); gs.speed_range=parseInt(this.value); saveGameState(gs);
 };
 
-const patternContent = {};
+var light=null;
+var btn=document.getElementById('bingoo');
 
-function clearCircles() {
-  const tbody = document.querySelector('#bingoTable tbody');
-  for (let r = 0; r < 5; r++) {
-    for (let c = 0; c < 5; c++) {
-      const cell = tbody.rows[r].cells[c];
-      cell.classList.remove('highlighted');
-      const key = r+'-'+c;
-      if (!patternContent[key]) {
-        if (r === 2 && c === 2) { cell.innerHTML = '★'; patternContent[key] = '★'; }
-        else { const n = Math.floor(Math.random()*99)+1; cell.innerHTML = n; patternContent[key] = n; }
-      } else {
-        cell.innerHTML = patternContent[key];
-      }
+function change(){
+  var slider=document.getElementById("myRange").value;
+  if(light===null){
+    if($("#started_sound_toggle").is(":checked")) voices("start.mp3");
+    btn.style.backgroundColor='#4CAF50'; btn.innerHTML="STOP";
+    light=setInterval(functionC,slider*1000);
+    document.getElementById("shuffle").disabled=true;
+    document.getElementById("shuffle").style.color="#888888";
+    document.getElementById("shuffle").style.background="#444";
+    document.getElementById("finsh_game").disabled=true;
+    document.getElementById("finsh_game").style.color="#888888";
+    document.getElementById("finsh_game").style.background="#444";
+    document.getElementById("mycheck").disabled=true;
+    document.getElementById("mycheck").style.color="#888888";
+    document.getElementById("mycheck").style.background="#444";
+  } else {
+    document.getElementById("finsh_game").disabled=false;
+    document.getElementById("finsh_game").style.color="";
+    document.getElementById("finsh_game").style.background="";
+    document.getElementById("mycheck").disabled=false;
+    document.getElementById("mycheck").style.color="";
+    document.getElementById("mycheck").style.background="";
+    if($("#stopped_sound_toggle").is(":checked")) voices("stop.mp3");
+    btn.style.backgroundColor='#1976D2'; btn.innerHTML="Bingo";
+    window.clearInterval(light); light=null;
+    let rArr=randomstring.split(',').filter(v=>v!=='undefined');
+    let valid=rArr.join(',');
+    if(valid!==""&&/\d/.test(valid)){
+      const saveBtn=document.getElementById("bingoo");
+      saveBtn.disabled=true; saveBtn.innerText="Saving...";
+      saveBtn.style.opacity="0.6"; saveBtn.style.cursor="not-allowed";
+      const gs=getGameState(); gs.randomstring=valid; gs.last_result=valid; saveGameState(gs);
+      showAlert("✅ ተቀምጧል","success");
+      setTimeout(()=>{
+        saveBtn.disabled=false; saveBtn.innerHTML="Bingo";
+        saveBtn.style.opacity="1"; saveBtn.style.cursor="pointer";
+      },800);
     }
   }
 }
 
-function drawPattern(patterns) {
-  const tbody = document.querySelector('#bingoTable tbody');
-  clearCircles();
-  patterns.forEach(p => {
-    switch(p) {
-      case 1: case 2: case 3: case 4: case 5:
-        for(let i=0;i<5;i++){const cell=tbody.rows[i].cells[p-1];cell.innerHTML='<div class="circle"></div>';cell.classList.add('highlighted');}break;
-      case 6: case 7: case 8: case 9: case 10:
-        for(let i=0;i<5;i++){const cell=tbody.rows[p-6].cells[i];cell.innerHTML='<div class="circle"></div>';cell.classList.add('highlighted');}break;
-      case 11: // T
-        for(let i=0;i<5;i++){tbody.rows[1].cells[i].innerHTML='<div class="circle"></div>';tbody.rows[1].cells[i].classList.add('highlighted');tbody.rows[i].cells[2].innerHTML='<div class="circle"></div>';tbody.rows[i].cells[2].classList.add('highlighted');}break;
-      case 12: // Reverse T
-        for(let i=0;i<5;i++){tbody.rows[4].cells[i].innerHTML='<div class="circle"></div>';tbody.rows[4].cells[i].classList.add('highlighted');tbody.rows[i].cells[2].innerHTML='<div class="circle"></div>';tbody.rows[i].cells[2].classList.add('highlighted');}break;
-      case 13: // X
-        for(let i=0;i<5;i++){tbody.rows[i].cells[i].innerHTML='<div class="circle"></div>';tbody.rows[i].cells[i].classList.add('highlighted');tbody.rows[i].cells[4-i].innerHTML='<div class="circle"></div>';tbody.rows[i].cells[4-i].classList.add('highlighted');}break;
-      case 14: // L
-        for(let i=0;i<5;i++){tbody.rows[i].cells[0].innerHTML='<div class="circle"></div>';tbody.rows[i].cells[0].classList.add('highlighted');}
-        for(let i=0;i<5;i++){tbody.rows[4].cells[i].innerHTML='<div class="circle"></div>';tbody.rows[4].cells[i].classList.add('highlighted');}break;
-      case 15: // Reverse L
-        for(let i=0;i<5;i++){tbody.rows[i].cells[4].innerHTML='<div class="circle"></div>';tbody.rows[i].cells[4].classList.add('highlighted');}
-        for(let i=0;i<5;i++){tbody.rows[4].cells[i].innerHTML='<div class="circle"></div>';tbody.rows[4].cells[i].classList.add('highlighted');}break;
-      case 16: // Half above
-        for(let r=0;r<3;r++) for(let c=0;c<5;c++){tbody.rows[r].cells[c].innerHTML='<div class="circle"></div>';tbody.rows[r].cells[c].classList.add('highlighted');}break;
-      case 17: // Half below
-        for(let r=2;r<5;r++) for(let c=0;c<5;c++){tbody.rows[r].cells[c].innerHTML='<div class="circle"></div>';tbody.rows[r].cells[c].classList.add('highlighted');}break;
-      case 18: // Full
-        for(let r=0;r<5;r++) for(let c=0;c<5;c++){tbody.rows[r].cells[c].innerHTML='<div class="circle"></div>';tbody.rows[r].cells[c].classList.add('highlighted');}break;
-    }
-  });
-}
-
-function updatePattern() {
-  const pattNum = (gameState && gameState.pattern) ? String(gameState.pattern) : '1';
-  const patterns = allPatterns[pattNum] || [[1]];
-  clearInterval(patternCycleInterval);
-  patternIndex = 0;
-  drawPattern(patterns[patternIndex]);
-  if (patterns.length > 1) {
-    patternCycleInterval = setInterval(() => {
-      patternIndex = (patternIndex + 1) % patterns.length;
-      drawPattern(patterns[patternIndex]);
-    }, 2000);
-  }
-  document.getElementById('patt-num').textContent = pattNum;
-}
-
-// ============================================================
-// Commission / payout calculation
-// ============================================================
-function calcPayout(n, s) {
-  const profit = parseInt(appSettings.profit || 0);
-  const start_from = parseInt(appSettings.start_get_money_from || 0);
-  const lock_round = parseInt(appSettings.lock_round_up || 0);
-  const dr = n * s;
-  let income = dr;
-  let total = 0;
-
-  if (profit === 0) {
-    // auto tiers
-    if (dr > 120 && dr < 320) total = dr * 0.20;
-    else if (dr >= 320 && dr < 800) total = dr * 0.22;
-    else if (dr >= 800 && dr < 1000) total = dr * 0.25;
-    else if (dr >= 1000) total = dr * 0.30;
-    else total = dr * 0.20;
-  } else {
-    total = dr * profit / 100;
-  }
-
-  let roundedTotal = 0;
-  if (lock_round === 0) {
-    const lastDigit = total % 10;
-    roundedTotal = lastDigit > 5 ? total - lastDigit + 10 : total - lastDigit;
-  } else {
-    roundedTotal = total;
-  }
-  if (roundedTotal < 10 && total <= 10) roundedTotal = 10;
-
-  let payout = income;
-  if (income >= start_from) {
-    payout = income - roundedTotal;
-  }
-  return Math.max(0, Math.round(payout));
-}
-
-function updateDerash() {
-  if (!gameState) return;
-  const n = gameState.cards ? gameState.cards.length : 0;
-  const s = parseInt(gameState.price) || 0;
-  const payout = calcPayout(n, s);
-  document.getElementById('amount').textContent = payout + ' ብር ወሳጅ';
-  document.getElementById('card-count-info').textContent = n + ' ካርቴላ';
-}
-
-// ============================================================
-// Parse card range input
-// ============================================================
-function parseCardRange(input) {
-  const cards = new Set();
-  const parts = input.split(',');
-  for (const part of parts) {
-    const trimmed = part.trim();
-    if (trimmed.includes('-')) {
-      const [a, b] = trimmed.split('-').map(Number);
-      for (let i = a; i <= b; i++) cards.add(i);
-    } else if (trimmed) {
-      cards.add(parseInt(trimmed));
-    }
-  }
-  return [...cards].filter(n => n >= 1 && n <= 628).sort((a,b) => a-b);
-}
-
-// ============================================================
-// New game registration
-// ============================================================
-async function startNewGame() {
-  const priceVal = parseInt(document.getElementById('ng-price').value);
-  const patternVal = parseInt(document.getElementById('ng-pattern').value);
-  const cardsInput = document.getElementById('cards-input').value.trim();
-  const category = document.getElementById('ng-category').value;
-
-  if (!cardsInput) { showAlert('ካርቴላ ቁጥር ያስገቡ', 'danger'); return; }
-  const cards = parseCardRange(cardsInput);
-  if (cards.length === 0) { showAlert('ትክክለኛ ካርቴላ ቁጥሮች ያስገቡ', 'danger'); return; }
-
-  // Validate cards exist
-  const missing = cards.filter(cn => !cardByNum[cn]);
-  if (missing.length > 0) { showAlert('ካርቴላ ' + missing.slice(0,5).join(',') + ' አልተገኘም', 'danger'); return; }
-
-  const round = ((await dbGet('game', 'round')) || 0) + 1;
-  gameState = {
-    round,
-    price: priceVal,
-    pattern: patternVal,
-    cards,
-    category,
-    drawn: [],
-    started: false
-  };
-
-  await saveGameState();
-  await showGameBoard();
-}
-
-async function saveGameState() {
-  if (!gameState) return;
-  gameState.drawn = drawnNumbers.slice();
-  await dbSet('game', 'current', gameState);
-  await dbSet('game', 'round', gameState.round);
-}
-
-async function showGameBoard() {
-  document.getElementById('new-game-panel').style.display = 'none';
-  document.getElementById('game-board').style.display = 'block';
-  buildNumberGrid();
-  // Re-mark already drawn numbers
-  drawnNumbers = (gameState.drawn || []).slice();
-  for (const n of drawnNumbers) markNumberOnGrid(n);
-  document.getElementById('drawn_number_counter').textContent = drawnNumbers.length;
-  document.getElementById('drawn_number_counter2').textContent = drawnNumbers.length;
-  updateDerash();
-  updatePattern();
-  initDrawingPools();
-  // Remove already drawn from pools
-  for (const n of drawnNumbers) {
-    const uIdx = uniqueRandoms.indexOf(n);
-    if (uIdx >= 0) uniqueRandoms.splice(uIdx, 1);
-    const wIdx = wc_priorityNumbers.indexOf(n);
-    if (wIdx >= 0) wc_priorityNumbers.splice(wIdx, 1);
-  }
-  if (drawnNumbers.length > 0) {
-    document.getElementById('rand').textContent = getBingoPrefix(drawnNumbers[drawnNumbers.length-1]) + drawnNumbers[drawnNumbers.length-1];
-    for (const n of [...drawnNumbers].reverse().slice(0, MAX_RECENT)) updateRecentCalls(n);
-  }
-  updateBonusUI();
-  if (appSettings.toggles && appSettings.toggles.will_start) voices('will_start.mp3');
-}
-
-async function finishGame() {
-  if (isRunning) stopDrawing();
-  clearInterval(patternCycleInterval);
-  drawnNumbers = [];
-  randomstring = '';
-  gameState = null;
-  await dbDelete('game', 'current');
-  document.getElementById('game-board').style.display = 'none';
-  document.getElementById('new-game-panel').style.display = 'block';
-  showAlert('ጨዋታ ተጠናቋል', 'success');
-}
-
-// ============================================================
-// Bonus UI
-// ============================================================
-function updateBonusUI() {
-  const status = (appSettings.bonus && appSettings.bonus.status) || 'off';
-  const bonusBtn = document.getElementById('bonus-btn');
-  const bonusContainer = document.getElementById('bonusContainer');
-  if (status === 'on') {
-    bonusBtn.style.display = 'flex';
-    bonusContainer.style.display = 'block';
-    const amount = (appSettings.bonus && appSettings.bonus.amount) || 50;
-    const nums = special_bonus_numbers;
-    const display = document.getElementById('bonus-numbers-display');
-    display.innerHTML = '';
-    if (nums.length > 0) {
-      nums.forEach(n => {
-        const btn = document.createElement('button');
-        btn.className = 'bingo-word';
-        btn.innerHTML = '<span class="bingo-word-text">' + getBingoPrefix(n) + n + '</span>';
-        display.appendChild(btn);
-      });
-      const abtn = document.createElement('button');
-      abtn.className = 'bingo-word';
-      abtn.innerHTML = 'ከጨረሱ <span class="highlight">' + amount + ' ብር🎉</span>';
-      display.appendChild(abtn);
-    } else {
-      display.innerHTML = '<button class="bingo-word">No Bonus</button>';
-    }
-  } else {
-    bonusBtn.style.display = 'none';
-    bonusContainer.style.display = 'none';
-  }
-}
-
-// ============================================================
-// Settings persistence
-// ============================================================
-async function loadSettings() {
-  const saved = await dbGet('settings', 'app');
-  if (saved) appSettings = Object.assign({}, DEFAULT_SETTINGS, saved);
-  applySettingsToUI();
-}
-
-function applySettingsToUI() {
-  const s = appSettings;
-  const el = id => document.getElementById(id);
-  if (el('settings_set_bonus')) el('settings_set_bonus').value = (s.bonus && s.bonus.status) || 'off';
-  if (el('settings_bonus_amount')) el('settings_bonus_amount').value = (s.bonus && s.bonus.amount) || 50;
-  if (el('sittings_bonus_options')) el('sittings_bonus_options').value = (s.bonus && s.bonus.per_day) || 2;
-  if (el('settings_check_result')) el('settings_check_result').value = (s.system && s.system.check_result) || 'manual';
-  if (el('settings_color_mode')) el('settings_color_mode').value = (s.system && s.system.color_mode) || 'two';
-  if (el('settings_good_bingo_sound')) el('settings_good_bingo_sound').value = (s.system && s.system.good_bingo_sound) || 0;
-  if (el('settings_cashier_profit')) el('settings_cashier_profit').value = s.profit || 0;
-  if (el('settings_start_from')) el('settings_start_from').value = s.start_get_money_from || 0;
-  if (el('settings_lock_round')) el('settings_lock_round').value = s.lock_round_up || 0;
-  if (el('voiceselect')) el('voiceselect').value = s.voice || 1;
-
-  const bonusSubmenu = el('bonus-submenu');
-  if (bonusSubmenu) bonusSubmenu.style.display = ((s.bonus && s.bonus.status) === 'on') ? 'block' : 'none';
-
-  // Sound toggles
-  const toggles = s.toggles || {};
-  ['will_start_sound_toggle','started_sound_toggle','stopped_sound_toggle','counte_registerd_card'].forEach(id => {
-    const key = id.replace('_sound_toggle','').replace('_toggle','').replace('counte_registerd_card','show_card_count');
-    if (el(id)) el(id).checked = !!toggles[key.replace('_sound','')];
-  });
-  if (el('started_sound_toggle')) el('started_sound_toggle').checked = (toggles.started !== false);
-}
-
-async function saveSettings() {
-  const s = appSettings;
-  s.bonus = {
-    status: document.getElementById('settings_set_bonus').value,
-    amount: parseInt(document.getElementById('settings_bonus_amount').value) || 50,
-    per_day: parseInt(document.getElementById('sittings_bonus_options').value) || 2
-  };
-  s.system = {
-    check_result: document.getElementById('settings_check_result').value,
-    color_mode: document.getElementById('settings_color_mode').value,
-    good_bingo_sound: parseInt(document.getElementById('settings_good_bingo_sound').value)
-  };
-  s.profit = parseInt(document.getElementById('settings_cashier_profit').value) || 0;
-  s.start_get_money_from = parseInt(document.getElementById('settings_start_from').value) || 0;
-  s.lock_round_up = parseInt(document.getElementById('settings_lock_round').value) || 0;
-  s.voice = parseInt(document.getElementById('voiceselect').value) || 1;
-  s.toggles = {
-    will_start: document.getElementById('will_start_sound_toggle').checked,
-    started: document.getElementById('started_sound_toggle').checked,
-    stopped: document.getElementById('stopped_sound_toggle').checked,
-    show_card_count: document.getElementById('counte_registerd_card').checked
-  };
-  await dbSet('settings', 'app', s);
-  document.getElementById('settings_update_response').textContent = '✔ Saved!';
-  setTimeout(() => { document.getElementById('settings_update_response').textContent = ''; }, 2000);
-  updateDerash();
-  updateBonusUI();
-}
-
-// ============================================================
-// Celebrate / confetti
-// ============================================================
-function celebrate() {
-  const myCanvas = document.getElementById('canvas2');
-  myCanvas.style.display = 'block';
-  myCanvas.width = window.innerWidth;
-  myCanvas.height = window.innerHeight;
-  const myConfetti = confetti.create(myCanvas, { resize: true, useWorker: false });
-  myConfetti({ particleCount: 1000, spread: 200, origin: { y: 0.8 } });
-  setTimeout(() => { myCanvas.style.display = 'none'; }, 5000);
-}
-
-// ============================================================
-// Dark/light toggle
-// ============================================================
-let isDark = true;
-function toggleTheme() {
-  isDark = !isDark;
-  const link = document.getElementById('right-menu-css');
-  const mainStyle = document.querySelector('link[href="bootstrap/css/style.css"]');
-  if (!isDark) {
-    mainStyle && (mainStyle.href = 'bootstrap/css/light/style.css');
-  } else {
-    mainStyle && (mainStyle.href = 'bootstrap/css/style.css');
-  }
-  const circle = document.getElementById('toggleCircle');
-  if (circle) circle.style.left = isDark ? '2px' : '8px';
-}
-
-// ============================================================
-// Drag for bonus container
-// ============================================================
-function setupDrag(el) {
-  let isDragging = false, ox, oy;
-  el.addEventListener('mousedown', e => {
-    isDragging = true;
-    ox = e.clientX - el.getBoundingClientRect().left;
-    oy = e.clientY - el.getBoundingClientRect().top;
-    e.preventDefault();
-  });
-  document.addEventListener('mousemove', e => {
-    if (!isDragging) return;
-    el.style.left = (e.clientX - ox) + 'px';
-    el.style.top = (e.clientY - oy) + 'px';
-    el.style.right = 'auto';
-    el.style.bottom = 'auto';
-  });
-  document.addEventListener('mouseup', () => { isDragging = false; });
-}
-
-// ============================================================
-// Card count display in new-game panel
-// ============================================================
-document.getElementById('cards-input').addEventListener('input', function() {
-  const cards = parseCardRange(this.value);
-  document.getElementById('card-count-display').textContent = cards.length > 0 ? '(' + cards.length + ' ካርቴላ)' : '';
+document.getElementById("myRange").addEventListener("input",function(){
+  if(light!==null){window.clearInterval(light);light=setInterval(functionC,this.value*1000);}
 });
 
-// ============================================================
-// Event Listeners
-// ============================================================
-document.getElementById('bingoo').addEventListener('click', () => {
-  if (isRunning) stopDrawing(); else startDrawing();
-});
-
-document.getElementById('shuffle').addEventListener('click', () => {
-  if (isRunning) return;
-  drawnNumbers = [];
-  randomstring = '';
-  document.getElementById('rand').textContent = '--';
-  document.getElementById('drawn_number_counter').textContent = '0';
-  document.getElementById('drawn_number_counter2').textContent = '0';
-  document.getElementById('recent-calls').innerHTML = '';
-  // Reset grid
-  document.querySelectorAll('.num-cell').forEach(el => el.classList.remove('callnum'));
-  initDrawingPools();
-  showAlert('Shuffled!', 'success');
-});
-
-document.getElementById('mycheck').addEventListener('click', async () => {
-  const cardNum = parseInt(document.getElementById('Ecard_no').value);
-  if (!cardNum || cardNum < 1 || cardNum > 628) { showAlert('ትክክለኛ ካርቴላ ቁጥር ያስገቡ', 'danger'); return; }
-  const cardData = cardByNum[cardNum];
-  if (!cardData) { showAlert('ካርቴላ ' + cardNum + ' አልተገኘም', 'danger'); return; }
-  if (!gameState) { showAlert('ጨዋታ አልተጀመረም', 'danger'); return; }
-
-  // Check if card is registered in this game
-  if (gameState.cards && !gameState.cards.includes(cardNum)) {
-    showAlert('ካርቴላ ' + cardNum + ' ያልተመዘገበ ነው', 'danger'); return;
-  }
-
-  const pattern = parseInt(gameState.pattern) || 1;
-  const colorMode = (appSettings.system && appSettings.system.color_mode) || 'two';
-  const result = checkCard(cardData, drawnNumbers, pattern, colorMode);
-
-  document.getElementById('result-content').innerHTML = result.html;
-  document.getElementById('result-modal').classList.add('show');
-
-  if (result.is_bingo) {
-    celebrate();
-    const soundMode = parseInt((appSettings.system && appSettings.system.good_bingo_sound) || 0);
-    if (soundMode === 0) voices('this_card_won.mp3');
-    else if (soundMode === 1) voices('clap.mp3');
-    else voices('goodbingo.mp3');
-  }
-});
-
-document.getElementById('finsh_game').addEventListener('click', async () => {
-  if (confirm('ጨዋታውን ማጠናቀቅ ይፈልጋሉ?')) {
-    await finishGame();
-  }
-});
-
-document.getElementById('start-game-btn').addEventListener('click', startNewGame);
-
-document.getElementById('myRange').addEventListener('input', function() {
-  document.getElementById('demo').textContent = this.value;
-  if (isRunning) {
-    clearInterval(lightInterval);
-    lightInterval = setInterval(randomnuber, parseInt(this.value) * 1000);
-  }
-});
-
-// Settings menu
-document.getElementById('settings-btn').addEventListener('click', () => {
-  document.getElementById('settings-menu').classList.toggle('active');
-});
-document.getElementById('close-menu').addEventListener('click', () => {
-  document.getElementById('settings-menu').classList.remove('active');
-});
-document.getElementById('submit_settings_form').addEventListener('click', saveSettings);
-
-// Bonus toggle visibility
-document.getElementById('settings_set_bonus').addEventListener('change', function() {
-  document.getElementById('bonus-submenu').style.display = this.value === 'on' ? 'block' : 'none';
-});
-
-// Bonus button
-document.getElementById('bonus-btn').addEventListener('click', () => {
-  const bc = document.getElementById('bonusContainer');
-  bc.style.display = bc.style.display === 'none' ? 'block' : 'none';
-});
-document.getElementById('close-bonus').addEventListener('click', () => {
-  document.getElementById('bonusContainer').style.display = 'none';
-});
-
-// Sound toggle labels
-document.querySelectorAll('.sound-settings-switch input').forEach(input => {
-  input.addEventListener('change', function() {
-    const stateEl = this.closest('.sound-settings-switch').querySelector('.sound-settings-state');
-    if (stateEl) stateEl.textContent = this.checked ? 'ON' : 'OFF';
-  });
-});
-
-// Fullscreen
-document.getElementById('fullscreenBtn').addEventListener('click', () => {
-  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
-  else document.exitFullscreen().catch(() => {});
-});
-
-// Dark/light
-document.getElementById('toggleBTN').addEventListener('click', toggleTheme);
-
-// ============================================================
-// INIT
-// ============================================================
-async function init() {
-  await openDB();
-  await loadSettings();
-
-  setupDrag(document.getElementById('bonusContainer'));
-
-  // Check for restored game
-  const savedGame = await dbGet('game', 'current');
-  if (savedGame && savedGame.cards && savedGame.cards.length > 0) {
-    gameState = savedGame;
-    await showGameBoard();
-    showAlert('ቀደምት ጨዋታ ተመልሷል', 'success');
-  }
+function updateTable(a){
+  const cells=document.getElementById('bingo-table').getElementsByClassName('bingo-call');
+  for(let i=cells.length-1;i>0;i--){cells[i].textContent=cells[i-1].textContent;cells[i].setAttribute('t',cells[i-1].getAttribute('t'));}
+  cells[0].textContent=a; cells[0].setAttribute('t',a);
 }
 
-init().catch(e => console.error('Init error:', e));
+document.getElementById("shuffle").addEventListener("click",function(){
+  voices("shuffle.wav"); shuffleArray(uniqueRandoms); showAlert("Shuffled!","success");
+});
+
+document.getElementById("finsh_game").addEventListener("click",function(){
+  if(!confirm('ጨዋታውን ጨርሰዋል? (Finish this game?)')) return;
+  const gs=getGameState();
+  const newRound=(gs.round||1)+1;
+  saveGameState({round:newRound,cards:gs.cards||[],pattern:gs.pattern||1,price:gs.price||0,sound:gs.sound||1,speed_range:gs.speed_range||3,randomstring:''});
+  randomstring=""; uniqueRandoms=[]; max=75;
+  for(let i=1;i<=75;i++) uniqueRandoms.push(i);
+  shuffleArray(uniqueRandoms);
+  document.getElementById('round').innerText=newRound;
+  document.getElementById('modal-round-number').innerHTML='Round '+newRound;
+  document.getElementById('round_number_bellow_5').innerHTML='Round '+newRound;
+  document.getElementById('drawn_number_counter').innerText='0';
+  document.querySelectorAll('.numbox').forEach(el=>el.className='numbox');
+  document.querySelectorAll('.bingo-call').forEach(c=>{c.textContent='';c.setAttribute('t','');});
+  document.getElementById('rand').innerText='';
+  showAlert('Round '+newRound+' ተጀምሯል!','success');
+  $('#myModal').modal('show');
+});
 </script>
+
+<!-- ─── Client-side card check ─── -->
+<script>
+function lookupCard(cn){
+  if(typeof cardsData==='undefined') return null;
+  return cardsData.find(c=>c[0]===cn)||null;
+}
+
+function checkCardWin(card, drawn, pattern){
+  const b=card[1],ic=card[2],n=card[3],g=card[4],o=card[5];
+  const drawnSet=new Set(drawn);
+  const FREE=n[2];
+  function hit(v){return drawnSet.has(v)||v===FREE;}
+  function lineHit(arr){return arr.filter(v=>hit(v)).length>=4;}
+
+  const corners=[b[0],o[0],b[4],o[4]];
+  const cCorners=[ic[1],g[1],ic[3],g[3]];
+  const meskel=[ic[2],n[1],n[3],g[2]];
+  const rows=[[b[0],ic[0],n[0],g[0],o[0]],[b[1],ic[1],n[1],g[1],o[1]],[b[2],ic[2],n[2],g[2],o[2]],[b[3],ic[3],n[3],g[3],o[3]],[b[4],ic[4],n[4],g[4],o[4]]];
+  const cols=[b,ic,n,g,o];
+  const diag1=[b[0],ic[1],n[2],g[3],o[4]];
+  const diag2=[b[4],ic[3],n[2],g[1],o[0]];
+
+  let cnt=0;
+  if(corners.every(v=>hit(v))) cnt++;
+  if(cCorners.every(v=>hit(v))) cnt++;
+  if(meskel.every(v=>hit(v))) cnt++;
+  rows.forEach(r=>{if(lineHit(r)) cnt++;});
+  cols.forEach(c=>{if(lineHit(c)) cnt++;});
+  if(lineHit(diag1)) cnt++;
+  if(lineHit(diag2)) cnt++;
+
+  return {count_winning_line:cnt, expected_pattern:pattern};
+}
+
+function buildCardHTML(card, drawn, pattern, cardNo){
+  const b=card[1],ic=card[2],n=card[3],g=card[4],o=card[5];
+  const drawnSet=new Set(drawn);
+  const lastCalled=drawn[drawn.length-1];
+  const FREE=n[2];
+  function hit(v){return drawnSet.has(v)||v===FREE;}
+  function lineHit(arr){return arr.filter(v=>hit(v)).length>=4;}
+
+  const corners=[b[0],o[0],b[4],o[4]];
+  const cCorners=[ic[1],g[1],ic[3],g[3]];
+  const meskel=[ic[2],n[1],n[3],g[2]];
+  const rows=[[b[0],ic[0],n[0],g[0],o[0]],[b[1],ic[1],n[1],g[1],o[1]],[b[2],ic[2],n[2],g[2],o[2]],[b[3],ic[3],n[3],g[3],o[3]],[b[4],ic[4],n[4],g[4],o[4]]];
+  const cols=[b,ic,n,g,o];
+  const diag1=[b[0],ic[1],n[2],g[3],o[4]];
+  const diag2=[b[4],ic[3],n[2],g[1],o[0]];
+
+  const allCorners=corners.every(v=>hit(v));
+  const allCC=cCorners.every(v=>hit(v));
+  const allMk=meskel.every(v=>hit(v));
+  const winRows=rows.map(r=>lineHit(r));
+  const winCols=cols.map(c=>lineHit(c));
+  const winD1=lineHit(diag1), winD2=lineHit(diag2);
+
+  const colorMode=document.getElementById('settings_color_mode')?.value||document.getElementById('color')?.innerText?.trim()||'two';
+  const colData=[b,ic,n,g,o];
+
+  let html=`<div style='font-size:30px;font-weight:bolder;background-color:white;color:black;padding:5px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;'>
+    <span>Card No: ${cardNo}</span><span style='color:green;'>Any ${pattern} line</span></div>`;
+  html+=`<table id='tablefetch' style='width:90%;margin:0 auto;text-align:center;border-collapse:collapse;'>
+    <thead><tr style='line-height:2.5;'>
+      <th style='background-color:#00478B;color:white;'>B</th><th style='background-color:#00478B;color:white;'>I</th>
+      <th style='background-color:#00478B;color:white;'>N</th><th style='background-color:#00478B;color:white;'>G</th>
+      <th style='background-color:#00478B;color:white;'>O</th>
+    </tr></thead><tbody>`;
+
+  for(let row=0;row<5;row++){
+    html+='<tr>';
+    for(let col=0;col<5;col++){
+      const num=colData[col][row];
+      const isFree=(col===2&&row===2);
+      const isHit=hit(num);
+      let bg='white',fg='black';
+      if(isHit){
+        const inWR=winRows[row], inWC=winCols[col];
+        const inD1=diag1.includes(num)&&winD1, inD2=diag2.includes(num)&&winD2;
+        const inCorn=corners.includes(num)&&allCorners;
+        const inCC=cCorners.includes(num)&&allCC;
+        const inMk=meskel.includes(num)&&allMk;
+        const isWin=inWR||inWC||inD1||inD2||inCorn||inCC||inMk||isFree;
+        if(isWin){
+          if(num===lastCalled||isFree){bg='green';fg='white';}
+          else if(colorMode==='two'){bg='green';fg='white';}
+          else{bg='#bca106';fg='white';}
+        } else {bg='red';fg='white';}
+      }
+      html+=`<td style='background-color:${bg};color:${fg};font-size:24px;padding:8px;border:1px solid #ccc;min-width:40px;'>${isFree?'★':num}</td>`;
+    }
+    html+='</tr>';
+  }
+  html+='</tbody></table>';
+  return html;
+}
+
+function celebrate(){
+  const canvas=document.getElementById('canvas2');
+  canvas.style.display='block';
+  try{
+    const myConf=confetti.create(canvas,{resize:true,useWorker:true});
+    myConf({particleCount:200,spread:160,origin:{y:0.6}});
+  } catch(e){console.log('confetti err',e);}
+  setTimeout(()=>{canvas.style.display='none';},3000);
+}
+
+$("#mycheck").on('click',function(event){
+  const cn=parseInt(document.getElementById('Ecard_no').value);
+  if(!cn){showAlert("Please enter a card number.","danger");return;}
+  const submitBtn=document.getElementById('mycheck');
+  submitBtn.disabled=true; submitBtn.innerText='Wait...';
+  submitBtn.style.opacity='0.6'; submitBtn.style.cursor='not-allowed';
+
+  const gs=getGameState();
+  const regCards=gs.cards||[];
+  const pattern=gs.pattern||1;
+  const drawn=(gs.randomstring||randomstring).split(',').map(n=>parseInt(n)).filter(n=>!isNaN(n)&&n>0);
+
+  if(!regCards.includes(cn)){
+    voices("notreg.wav");
+    showAlert("ያስገቡት ካርድ አልተመዘገበም","danger");
+    submitBtn.disabled=false; submitBtn.innerText='Check';
+    submitBtn.style.opacity='1'; submitBtn.style.cursor='pointer';
+    return;
+  }
+  const lockedCards=gs.locked_cards||[];
+  if(lockedCards.includes(cn)){
+    voices("locked_card.mp3");
+    showAlert("ያስገቡት ካርድ የተቆለፈ ነው","danger");
+    submitBtn.disabled=false; submitBtn.innerText='Check';
+    submitBtn.style.opacity='1'; submitBtn.style.cursor='pointer';
+    return;
+  }
+
+  const card=lookupCard(cn);
+  if(!card){
+    showAlert("Card #"+cn+" not found in database.","danger");
+    submitBtn.disabled=false; submitBtn.innerText='Check';
+    submitBtn.style.opacity='1'; submitBtn.style.cursor='pointer';
+    return;
+  }
+
+  const result=checkCardWin(card,drawn,pattern);
+  const cardHTML=buildCardHTML(card,drawn,pattern,cn);
+  submitBtn.disabled=false; submitBtn.innerText='Check';
+  submitBtn.style.opacity='1'; submitBtn.style.cursor='pointer';
+
+  document.getElementById('modal-card-round').innerText=gs.round||1;
+  $('#modal-body').html(cardHTML);
+  $('#myModalcard').modal('show',{backdrop:'static',keyboard:false});
+
+  const auto=$("#settings_check_result").val()||document.getElementById("auto_check_result")?.textContent.trim()||"manual";
+  const drawn_cnt=document.getElementById("drawn_number_counter").innerText;
+  const gbs=$("#settings_good_bingo_sound").val()||document.getElementById("good_bingo_sound").innerText;
+  const isWin=result.count_winning_line>=result.expected_pattern;
+
+  if(auto==="auto"){
+    document.getElementById('notbingo')?.style.setProperty('display','none','important');
+    document.getElementById('goodbingo')?.style.setProperty('display','none','important');
+    if(isWin){
+      celebrate(); setTimeout(()=>celebrate(),300); setTimeout(()=>celebrate(),600);
+      const el=document.getElementById('canvas');
+      el.style.display='block'; el.style.pointerEvents='none';
+      el.style.zIndex='9999'; el.style.position='absolute';
+      let af="good.wav";
+      switch(gbs){case "0":af="good.wav";break;case "1":af="clapping.mp3";break;case "2":af="goodbingo.mp3";break;}
+      voices(af);
+      setTimeout(()=>{el.style.display='none';},3000);
+    } else { voices("notgood.wav"); }
+  } else {
+    document.getElementById('notbingo')?.style.setProperty('display','inline-block','important');
+    document.getElementById('goodbingo')?.style.setProperty('display','inline-block','important');
+  }
+});
+
+$(document).ready(function(){
+  $("#goodbingo").on('click',function(){
+    const el=document.getElementById('canvas');
+    el.style.display='block'; el.style.pointerEvents='none';
+    el.style.zIndex='9999'; el.style.position='absolute';
+    const gbs=$("#settings_good_bingo_sound").val()||document.getElementById("good_bingo_sound").innerText;
+    let af="good.wav";
+    switch(gbs){case "0":af="good.wav";break;case "1":af="clapping.mp3";break;case "2":af="goodbingo.mp3";break;}
+    voices(af); celebrate();
+    setTimeout(()=>celebrate(),300); setTimeout(()=>celebrate(),600);
+    setTimeout(()=>{el.style.display='none';},3000);
+  });
+  $("#notbingo").on('click',function(){voices("notgood.wav");$('#myModalcard').modal('hide');});
+  $("#addbingo").on('click',function(){$('#myModalcard').modal('hide');});
+  $("#helpmodals").on('click',function(){$('#helpmodal').modal('hide');});
+  document.getElementById("lock_card").addEventListener('click',function(){
+    const cn=parseInt(document.getElementById('Ecard_no').value);
+    if(!cn) return;
+    const gs=getGameState();
+    if(!gs.locked_cards) gs.locked_cards=[];
+    if(!gs.locked_cards.includes(cn)){
+      gs.locked_cards.push(cn); saveGameState(gs);
+      showAlert("Card "+cn+" locked.","success");
+    } else { showAlert("Card "+cn+" already locked.","danger"); }
+    $('#myModalcard').modal('hide');
+  });
+});
+
+function change_language(){
+  const gs=getGameState();
+  gs.sound=parseInt(document.getElementById('voiceselect').value);
+  saveGameState(gs);
+}
+</script>
+
 </body>
 </html>
