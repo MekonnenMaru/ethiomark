@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        background-color: #f4f4f4;
+    }
+    .container {
+        margin-top: 20px;
+    }
+    .bingo-card {
+        display: inline-block;
+        background-color: rgb(3, 46, 59);
+        color: #fff;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        margin: 10px;
+        
+    }
+
+    .bingo-header {
+        font-size: 40px; /* Adjust font size */
+        font-weight: bold; /* Make the text bold */
+        line-height: 1.2; /* Adjust line height for better spacing */
+        letter-spacing: 10px; /* Adjust spacing between letters */
+        color: #fff; /* Ensure the color is white */
+        margin-bottom: 20px; /* Space below the header */
+        display: flex;
+        justify-content: center; /* Center the header text horizontally */
+        align-items: center; /* Vertically center if there are multiple lines of text */
+    }
+
+    .bingo-row {
+        display: flex;
+        justify-content: center;
+    }
+    .bingo-cell {
+        width: 50px;
+        height: 50px;
+        margin: 3px;
+        background-color: #ffffff;
+        color: #003366;
+        font-size: 24px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 5px;
+        border: 2px solid #003366;
+    }
+    .free-cell {
+        background-color: #FFD700; /* Gold color for the free space */
+    }
+    #card-number {
+        font-size: 20px;
+        color: #ffffff;
+        margin-top: 10px;
+        font-weight: 900;
+    }
+
+    
+
+
+
+
+
+
+
+
+    @media print {
+    body {
+        background-color: white;
+        margin: 0;
+        padding: 0;
+    }
+    .container, #card-input, button {
+        display: none;
+    }
+
+    /* Adjust the size of each bingo card */
+    .bingo-card {
+        display: inline-block;
+        width: 45%; /* Adjust card size to fit 2 per row */
+        margin: 5px 5px;
+        padding: 20px;
+        border-radius: 10px;
+        box-sizing: border-box;
+        border: none;
+        height: auto;
+    }
+    
+    .bingo-header {
+        font-size: 28px; /* Adjust font size to fit */
+        font-weight: bold;
+        letter-spacing: 17px;
+        color: #fff;
+        margin-bottom: 20px;
+    }
+
+    .bingo-cell {
+        width: 50px;
+        height: 50px;
+        margin: 3px;
+        background-color: #ffffff;
+        color: #003366;
+        font-size: 24px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 5px;
+        border: 2px solid #003366;
+    }
+
+    /* Card number adjustments */
+    #card-number {
+        font-size: 18px;
+        color: #ffffff;
+        margin-top: 10px;
+        font-weight: 900;
+        text-align: center;
+    }
+
+    /* Set the A4 paper size */
+    @page {
+        size: A4;
+        margin: 15mm; /* Adjust the margins to fit 4 cards */
+    }
+
+    /* Layout for 4 cards per page */
+    .bingo-card-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    /* Ensure proper space between cards */
+    .bingo-card {
+        width: 48%;  /* Fit 2 cards per row */
+        margin-bottom: 20px;
+    }
+}
+
+
+
+</style>
+</head>
+<body>
+
+<div class="container">
+    <label for="min-cards">Enter Minimum Number of Cards:</label>
+    <input type="number" id="min-cards" min="1" max="100" value="1">
+    <br><br>
+    <label for="max-cards">Enter Maximum Number of Cards:</label>
+    <input type="number" id="max-cards" min="1" max="100" value="5">
+    <br><br>
+    <button onclick="generateCards()">Generate Cards</button>
+    <button onclick="window.print()">Print Cards</button> <!-- Print Button -->
+
+
+    <button onclick="printToPDF()">Print to PDF</button>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        function printToPDF() {
+            ipcRenderer.send('print-to-pdf');
+        }
+    </script>
+</div>
+<div id="bingo-card-container"></div>
+
+<script>
+    // Sample JSON data to simulate table.json
+    // Path to the JSON file (relative to the HTML file)
+    const jsonDataPath = '../assets/file/cartela_300.json';
+    // Declare jsonData as a global variable
+    let jsonData = [];
+
+    // Fetch the JSON file using fetch() API
+    fetch(jsonDataPath)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();  // Parse the JSON data
+        })
+        .then(data => {
+            jsonData = data;  // Store the JSON data in the global variable
+            console.log('JSON Data Loaded:', jsonData);
+            displayData(jsonData);  // Call function to display the data in the HTML
+        })
+        .catch(error => {
+            console.error('Error loading or parsing JSON:', error);
+        });
+
+    // Function to display the JSON data in the HTML
+    function displayData(data) {
+        const outputElement = document.getElementById('json-output');
+        outputElement.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`; // Pretty print JSON
+    }
+    
+
+
+
+
+    function generateCards() {
+        const minCards = parseInt(document.getElementById("min-cards").value);
+        const maxCards = parseInt(document.getElementById("max-cards").value);
+        
+        if (minCards > maxCards) {
+            alert("Minimum number of cards cannot be greater than maximum number of cards!");
+            return;
+        }
+
+        const bingoContainer = document.getElementById("bingo-card-container");
+        bingoContainer.innerHTML = ''; // Clear any previous cards
+
+        // Generate cards sequentially from minCards to maxCards
+        for (let i = minCards; i <= maxCards; i++) {
+            const cardData = jsonData.tables.find(table => table.cartela_number === i);
+            
+            if (!cardData) {
+                alert(`Card number ${i} not found!`);
+                continue;
+            }
+
+            const card = document.createElement("div");
+            card.classList.add("bingo-card");
+
+            // Add the BINGO header
+            const toppart = document.createElement("div");
+            toppart.textContent = "Ethiomark.com";
+            card.appendChild(toppart);
+
+            // Add the BINGO header
+            const header = document.createElement("div");
+            header.classList.add("bingo-header");
+            header.textContent = "B   I   N   G   O";
+            card.appendChild(header);
+
+            // Create the Bingo grid without transposing
+            for (let rowIndex = 0; rowIndex < 5; rowIndex++) {
+                const bingoRow = document.createElement("div");
+                bingoRow.classList.add("bingo-row");
+
+                // Use rowIndex for each column in the Bingo grid
+                for (let colIndex = 0; colIndex < 5; colIndex++) {
+                    const cell = document.createElement("div");
+                    cell.classList.add("bingo-cell");
+
+                    const num = cardData.cartela_data[colIndex][rowIndex]; // Change this to use colIndex for each row value
+
+                    // Center cell (row 2, column 2) is the "Free" space
+                    if (rowIndex === 2 && colIndex === 2) {
+                        cell.classList.add("free-cell");
+                        cell.textContent = "★";
+                    } else {
+                        cell.textContent = num;
+                    }
+
+                    bingoRow.appendChild(cell);
+                }
+
+                card.appendChild(bingoRow);
+            }
+
+            // Add the card number label
+            const cardNumberLabel = document.createElement("div");
+            cardNumberLabel.id = "card-number";
+
+            // Add space between the phone number and card number using non-breaking spaces
+            cardNumberLabel.innerHTML = `0918101037&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Card No ${i}`;
+
+            card.appendChild(cardNumberLabel);
+
+
+            // Append the Bingo card to the container
+            bingoContainer.appendChild(card);
+        }
+    }
+</script>
+
+</body>
+</html>
