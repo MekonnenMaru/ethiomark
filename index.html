@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ethiomark Bingo</title>
+<link rel="stylesheet" href="bootstrap/css/style.css">
+<link rel="stylesheet" href="bootstrap/css/bingon.css">
+<link rel="stylesheet" href="bootstrap/css/ball.css">
+<link rel="stylesheet" href="bootstrap/css/modal.css">
+<link rel="stylesheet" href="bootstrap/css/gift-unboxing.css">
+<link rel="stylesheet" id="right-menu-css" href="cashier/right-menu.css">
+<style>
+  :root { --bg: rgb(3,46,59); }
+  body { background-color: var(--bg); color: #fff; margin: 0; padding: 0; font-family: Arial, sans-serif; user-select: none; }
+
+  #layout { display: flex; width: 100%; height: 100vh; overflow: hidden; }
+  #left-panel { width: 52px; background: rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 0; z-index: 100; flex-shrink: 0; }
+  #main-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+  /* Bingo board */
+  #bingo-board { display: grid; grid-template-rows: auto 1fr auto auto; gap: 0; padding: 2px; height: 100%; }
+
+  /* 75 number grid */
+  #number-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 2px; padding: 2px; }
+  .col-group { display: flex; flex-direction: column; gap: 2px; }
+  .col-header { text-align: center; font-size: 22px; font-weight: 900; color: #fff; padding: 4px 0; border-radius: 4px 4px 0 0; }
+  .col-header.B { background: #1565c0; }
+  .col-header.I { background: #6a1b9a; }
+  .col-header.N { background: #b71c1c; }
+  .col-header.G { background: #2e7d32; }
+  .col-header.O { background: #e65100; }
+  .num-cell { text-align: center; font-size: 16px; font-weight: 700; padding: 4px 2px; border-radius: 3px; background: rgba(255,255,255,0.07); cursor: default; transition: background 0.2s, color 0.2s; }
+  .num-cell.callnum { color: #fff; }
+
+  /* Current ball display */
+  #ball-display { display: flex; align-items: center; justify-content: center; padding: 6px; gap: 8px; }
+  #rand { font-size: 60px; font-weight: 900; min-width: 120px; text-align: center; background: linear-gradient(135deg, #00bcd4, #006064); border-radius: 12px; padding: 6px 12px; }
+  #recent-calls { display: flex; gap: 4px; align-items: center; overflow: hidden; }
+  .recent-num { font-size: 18px; font-weight: 700; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.1); }
+
+  /* Derash / payout box */
+  #derash-area { display: flex; align-items: center; justify-content: center; padding: 4px; }
+  .derash-box { background-color: #0a3941; width: 90%; border-radius: 10px; padding: 8px; display: flex; flex-direction: column; align-items: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+  .derash-box .amount { font-size: 40px; font-weight: 900; }
+  .derash-box .derash-line { width: 80%; height: 6px; background-color: #2C866A; margin: 6px 0; }
+  .derash-details { display: flex; justify-content: space-between; width: 100%; padding: 2px 8px; box-sizing: border-box; }
+  .derash-details .total-card { font-size: 16px; color: rgb(134,129,129); }
+  .derash-details .total-calls { font-size: 28px; color: #fff; font-weight: 700; }
+
+  /* Controls row */
+  #controls { display: flex; align-items: center; gap: 6px; padding: 4px 8px; flex-wrap: wrap; justify-content: center; }
+  #bingoo { height: 54px; min-width: 110px; font-size: 22px; font-weight: 900; background: linear-gradient(0deg, #ffee00, #ce9a00); color: #000; border: none; border-radius: 6px; cursor: pointer; }
+  #shuffle { height: 54px; min-width: 90px; font-size: 20px; font-weight: 700; background: #222; color: #fff; border: 2px solid #555; border-radius: 6px; cursor: pointer; }
+  #mycheck { height: 54px; min-width: 90px; font-size: 18px; font-weight: 700; background: #1565c0; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+  #finsh_game { height: 54px; min-width: 90px; font-size: 16px; font-weight: 700; background: #b71c1c; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+  .card-input-wrap { display: flex; gap: 4px; align-items: center; }
+  #Ecard_no { width: 90px; height: 50px; font-size: 28px; font-weight: 900; text-align: center; border-radius: 6px; border: 2px solid #ccc; }
+
+  /* Speed slider */
+  #speed-row { display: flex; align-items: center; gap: 8px; padding: 0 12px; color: #fff; font-size: 16px; }
+  #myRange { -webkit-appearance: none; width: 180px; height: 20px; background: #000; border-radius: 10px; outline: none; opacity: 0.7; }
+  #myRange::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 34px; background: #00ff40; cursor: pointer; border-radius: 4px; }
+
+  /* Pattern preview */
+  #pattern-area { display: flex; gap: 4px; align-items: center; justify-content: center; padding: 4px; }
+  #patt-label { font-size: 16px; color: #fff; margin-right: 4px; }
+  #bingoTable { border-collapse: collapse; width: 100px; }
+  #bingoTable th { background: #00478B; color: #fff; width: 18px; height: 18px; font-size: 11px; text-align: center; }
+  #bingoTable td { width: 18px; height: 18px; font-size: 9px; text-align: center; border: 1px solid #444; background: rgba(255,255,255,0.05); }
+  #bingoTable td.highlighted { background: #00bcd4 !important; }
+  #bingoTable .circle { width: 12px; height: 12px; border-radius: 50%; background: #fff; margin: auto; }
+
+  /* Voice selection */
+  #voice-row { display: flex; align-items: center; gap: 6px; padding: 4px 12px; }
+  #voiceselect { height: 42px; font-size: 16px; border-radius: 6px; background: #111; color: #fff; border: 1px solid #555; }
+
+  /* Left panel buttons */
+  .side-btn { width: 44px; min-height: 30px; background: transparent; border: 2px solid #28a745; border-radius: 5px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px 0; }
+  .side-btn.red-border { border-color: rgb(243,49,0); }
+  #bonus-btn { display: none; }
+
+  /* Bonus container */
+  #bonusContainer { position: fixed; right: 60px; bottom: 80px; z-index: 1500; background: rgba(0,0,0,0.85); border: 2px solid #ffd700; border-radius: 12px; padding: 12px; color: #fff; display: none; min-width: 200px; cursor: move; }
+  #bonusContainer h1 { font-size: 22px; margin: 0 0 8px 0; text-align: center; }
+  #close-bonus { position: absolute; top: 4px; right: 8px; background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
+  .bingo-word { background: #1a1a2e; border: 1px solid #ffd700; color: #fff; border-radius: 6px; padding: 4px 8px; margin: 2px; font-size: 14px; cursor: default; }
+  .highlight { color: #ffd700; font-weight: 900; }
+  .special-bonus { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+
+  /* Bonus notification flash */
+  .bonus-notification { position: fixed; top: 0; left: 0; width: 100%; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; text-align: center; font-size: 32px; font-weight: 900; padding: 16px; z-index: 3000; display: none; }
+  .bonus-notification .close-btn { position: absolute; top: 8px; right: 16px; font-size: 28px; cursor: pointer; background: none; border: none; color: #000; }
+
+  /* Result modal */
+  #result-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2500; align-items: center; justify-content: center; }
+  #result-modal.show { display: flex; }
+  #result-box { background: #0a1628; border: 2px solid #00bcd4; border-radius: 12px; padding: 12px; max-width: 360px; width: 95%; max-height: 90vh; overflow-y: auto; color: #fff; }
+  #result-table { width: 100%; border-collapse: collapse; }
+  #result-table th { background: #00478B; color: #fff; padding: 6px; font-size: 16px; }
+  #result-table td { padding: 6px; text-align: center; font-size: 16px; font-weight: 700; border: 1px solid #333; }
+
+  /* Alert */
+  #customAlert { position: fixed; top: 20px; right: 20px; z-index: 4000; padding: 10px 18px; border-radius: 8px; font-size: 18px; font-weight: 700; display: none; }
+  .custom-alert-success { background: #2e7d32; color: #fff; }
+  .custom-alert-danger { background: #b71c1c; color: #fff; }
+
+  /* Confetti canvas */
+  #canvas2 { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5000; display: none; }
+
+  /* Settings menu */
+  .settings-menu { position: fixed; top: -100%; right: 70px; height: 90%; background: linear-gradient(135deg,#1f413e,#f0f0f0); box-shadow: -2px 0 15px rgba(0,0,0,0.3); padding: 20px; z-index: 2000; color: #333; border-radius: 15px 0 0 15px; border: 1px solid #ddd; transform: translate(10px,-50%); transition: transform 0.5s, top 0.5s; overflow-y: auto; min-width: 280px; }
+  .settings-menu.active { top: 50%; transform: translate(0,-50%); }
+  .settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 4px solid #56e477; }
+  .settings-header h2 { margin: 0; font-size: 20px; color: #5eef80; }
+  .close-btn { background: none; border: none; color: #28a745; font-size: 24px; cursor: pointer; }
+  .settings-option { margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; padding: 6px; background: rgba(255,255,255,0.8); border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+  .settings-option label { font-size: 14px; color: #555; font-weight: 700; }
+  .settings-option select, .settings-option input { padding: 4px 8px; font-size: 14px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; color: #000; }
+  .bonus-submenu { padding: 0 8px; }
+
+  /* Sound toggles */
+  .sound-settings-toggles { margin-top: 8px; }
+  .sound-settings-toggle-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .sound-settings-toggle-group { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .sound-settings-toggle-label { font-size: 11px; color: #333; font-weight: 700; text-align: center; }
+  .sound-settings-switch { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .sound-settings-slider { display: inline-block; width: 34px; height: 18px; background: #ccc; border-radius: 9px; position: relative; transition: background 0.3s; }
+  .sound-settings-switch input:checked + .sound-settings-slider { background: #28a745; }
+  .sound-settings-slider::after { content: ''; position: absolute; width: 14px; height: 14px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: left 0.3s; }
+  .sound-settings-switch input:checked + .sound-settings-slider::after { left: 18px; }
+  .sound-settings-switch input { display: none; }
+  .sound-settings-state { font-size: 11px; font-weight: 700; color: #555; }
+
+  /* New game / register controls */
+  #new-game-panel { background: rgba(0,0,0,0.4); border-radius: 10px; padding: 10px; margin: 6px; }
+  #new-game-panel h3 { color: #00bcd4; margin: 0 0 8px 0; font-size: 18px; }
+  .ng-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+  .ng-row label { color: #ccc; font-size: 14px; min-width: 80px; }
+  .ng-input { background: #111; color: #fff; border: 1px solid #555; border-radius: 6px; padding: 6px; font-size: 16px; width: 80px; text-align: center; }
+  #cards-input { width: 220px; font-size: 14px; }
+  #start-game-btn { padding: 10px 24px; font-size: 18px; font-weight: 900; background: #2e7d32; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+  #start-game-btn:hover { background: #388e3c; }
+  #card-count-display { font-size: 16px; color: #ffd700; margin-left: 8px; }
+
+  /* Audio preload progress */
+  #audioPreloadProgress { display: none; position: fixed; bottom: 20px; left: 20px; z-index: 6000; width: 260px; font-family: Arial; }
+  #audioPreloadProgress .prog-label { text-align: center; margin-bottom: 2px; }
+  .prog-inner { display: inline-block; padding: 2px 14px; background: #2c3e50; border-radius: 20px; }
+  .prog-inner span { color: #ecf0f1; font-size: 14px; }
+  .prog-bar-wrap { width: 100%; height: 24px; background: #e0e5e9; border-radius: 12px; overflow: hidden; position: relative; }
+  #progressBar { height: 100%; width: 0%; background: linear-gradient(to right, #3498db, #2980b9); transition: width 0.4s; }
+  #progressPercent { position: absolute; width: 100%; text-align: center; line-height: 24px; color: #fff; font-weight: 700; font-size: 16px; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    #rand { font-size: 40px; padding: 4px 8px; min-width: 80px; }
+    .derash-box .amount { font-size: 28px; }
+    .num-cell { font-size: 12px; }
+  }
+
+  #drawn_number_counter { font-size: 24px; font-weight: 900; color: #ffd700; min-width: 40px; text-align: center; }
+</style>
+</head>
+<body>
+<canvas id="canvas2"></canvas>
+<div id="customAlert"></div>
+<div class="bonus-notification" id="bonusNotification">
+  <button class="close-btn" onclick="document.getElementById('bonusNotification').style.display='none'">&times;</button>
+  <h1 id="gift-bonus" class="bonus-text"></h1>
+</div>
+
+<div id="result-modal">
+  <div id="result-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <h3 style="margin:0;color:#00bcd4;">ካርቴላ ውጤት</h3>
+      <button onclick="document.getElementById('result-modal').classList.remove('show')" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;">&times;</button>
+    </div>
+    <div id="result-content"></div>
+  </div>
+</div>
+
+<div id="layout">
+  <!-- LEFT PANEL: side buttons -->
+  <div id="left-panel">
+    <button class="side-btn" id="toggleBTN" title="Dark/Light">
+      <div id="toggleIcon" style="width:22px;height:14px;background:#fff;border-radius:7px;position:relative;">
+        <div id="toggleCircle" style="width:10px;height:10px;background:#28a745;border-radius:50%;position:absolute;top:2px;left:2px;transition:left 0.3s;"></div>
+      </div>
+    </button>
+    <button class="side-btn" id="fullscreenBtn" title="Fullscreen">
+      <svg width="14" height="14" fill="#fff" viewBox="0 0 16 16"><path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/></svg>
+    </button>
+    <button class="side-btn red-border" id="settings-btn" title="Settings">
+      <svg width="14" height="14" fill="#fff" viewBox="0 0 16 16"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52z"/></svg>
+    </button>
+    <button class="side-btn" id="bonus-btn" title="ቦነስ">ቦነስ</button>
+  </div>
+
+  <!-- MAIN AREA -->
+  <div id="main-area">
+
+    <!-- NEW GAME PANEL (shown when no active game) -->
+    <div id="new-game-panel">
+      <h3>ጨዋታ ምዝገባ — New Game</h3>
+      <div class="ng-row">
+        <label>ዋጋ (ብር):</label>
+        <input type="number" id="ng-price" class="ng-input" value="5" min="1" max="1000">
+        <label style="margin-left:12px;">ፓተርን:</label>
+        <select id="ng-pattern" class="ng-input" style="width:60px;">
+          <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+          <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+          <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+          <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+        </select>
+      </div>
+      <div class="ng-row">
+        <label>ካርቴላ #s:</label>
+        <input type="text" id="cards-input" class="ng-input" placeholder="e.g. 1-50 or 1,2,3,5-10" style="width:220px;font-size:14px;">
+        <span id="card-count-display"></span>
+      </div>
+      <div class="ng-row">
+        <label>ቴክሰቱ:</label>
+        <select id="ng-category" class="ng-input" style="width:100px;">
+          <option value="default">default</option>
+          <option value="Mezgeb2">Mezgeb2</option>
+        </select>
+      </div>
+      <div class="ng-row">
+        <button id="start-game-btn">▶ ጀምር</button>
+      </div>
+    </div>
+
+    <!-- GAME BOARD (shown during active game) -->
+    <div id="game-board" style="display:none;">
+
+      <!-- Ball display + recent calls -->
+      <div id="ball-display">
+        <div id="rand">--</div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex:1;">
+          <div id="recent-calls"></div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:14px;color:#aaa;">ጥሪዎች:</span>
+            <span id="drawn_number_counter">0</span>
+            <span style="font-size:14px;color:#aaa;">/75</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 75-number grid -->
+      <div id="number-grid">
+        <div class="col-group"><div class="col-header B">B</div></div>
+        <div class="col-group"><div class="col-header I">I</div></div>
+        <div class="col-group"><div class="col-header N">N</div></div>
+        <div class="col-group"><div class="col-header G">G</div></div>
+        <div class="col-group"><div class="col-header O">O</div></div>
+      </div>
+
+      <!-- Derash box -->
+      <div id="derash-area">
+        <div class="derash-box">
+          <div class="derash-content">
+            <div class="amount" id="amount">0 ብር ወሳጅ</div>
+          </div>
+          <div class="derash-line"></div>
+          <div class="derash-details">
+            <span class="total-card" id="card-count-info">0 ካርቴላ</span>
+            <span class="total-calls" id="drawn_number_counter2">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Speed + voice -->
+      <div id="speed-row">
+        <span>ፍጥነት:</span>
+        <input type="range" id="myRange" min="1" max="10" value="3">
+        <span id="demo">3</span>s
+        <span style="margin-left:16px;">ድምጽ:</span>
+        <select id="voiceselect" style="height:34px;font-size:14px;border-radius:6px;background:#111;color:#fff;border:1px solid #555;">
+          <option value="1">ድምጽ 1</option>
+          <option value="2">ድምጽ 2</option>
+          <option value="3">ድምጽ 3</option>
+          <option value="4">ድምጽ 4</option>
+          <option value="5">ድምጽ 5</option>
+          <option value="6">ድምጽ 6</option>
+          <option value="7">ድምጽ 7</option>
+          <option value="8">ድምጽ 8</option>
+          <option value="9">ድምጽ 9</option>
+          <option value="10">ድምጽ 10</option>
+          <option value="11">ድምጽ 11</option>
+        </select>
+      </div>
+
+      <!-- Pattern preview -->
+      <div id="pattern-area">
+        <span id="patt-label">ፓተርን: <b id="patt-num">1</b></span>
+        <table id="bingoTable">
+          <thead><tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr></thead>
+          <tbody>
+            <tr><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Controls -->
+      <div id="controls">
+        <button id="bingoo">START</button>
+        <button id="shuffle">🔀 Shuffle</button>
+        <div class="card-input-wrap">
+          <input type="number" id="Ecard_no" placeholder="ካርቴላ">
+          <button id="mycheck">✔ Check</button>
+        </div>
+        <button id="finsh_game">⏹ Finish</button>
+      </div>
+
+    </div><!-- /game-board -->
+  </div><!-- /main-area -->
+</div><!-- /layout -->
+
+<!-- BONUS CONTAINER -->
+<div id="bonusContainer">
+  <button id="close-bonus">&times;</button>
+  <div id="bonusContent">
+    <h1>🎉 ቺርስ 🎉</h1>
+    <p class="special-bonus" id="bonus-numbers-display"></p>
+  </div>
+</div>
+
+<!-- SETTINGS MENU -->
+<div class="settings-menu" id="settings-menu">
+  <div class="settings-header">
+    <h2>Settings - ማስተካከያ</h2>
+    <button class="close-btn" id="close-menu">&times;</button>
+  </div>
+  <div class="settings-option">
+    <label>Bonus - ቦነስ:</label>
+    <select id="settings_set_bonus">
+      <option value="off">ጠፍቷል</option>
+      <option value="on">በርቷል</option>
+    </select>
+  </div>
+  <div class="bonus-submenu" id="bonus-submenu" style="display:none;">
+    <div class="settings-option">
+      <label>ቦነስ ብር (20-300):</label>
+      <input type="number" id="settings_bonus_amount" min="20" max="300" step="10" value="50">
+    </div>
+    <div class="settings-option">
+      <label>ቦነስ ጊዜ (1-4):</label>
+      <select id="sittings_bonus_options">
+        <option value="1">1</option><option value="2">2</option>
+        <option value="3">3</option><option value="4">4</option>
+      </select>
+    </div>
+  </div>
+  <div class="settings-option">
+    <label>ውጤት ማረጋገጥ:</label>
+    <select id="settings_check_result">
+      <option value="auto">Auto</option>
+      <option value="manual">Manual</option>
+    </select>
+  </div>
+  <div class="settings-option">
+    <label>Color mode:</label>
+    <select id="settings_color_mode">
+      <option value="two">Two [red/green]</option>
+      <option value="three">Three [red/yellow/green]</option>
+    </select>
+  </div>
+  <div class="settings-option">
+    <label>Win sound:</label>
+    <select id="settings_good_bingo_sound">
+      <option value="0">ይህ ካርቴላ አሸንፏል</option>
+      <option value="1">ጭብጨባ</option>
+      <option value="2">ጉድ ቢንጎ</option>
+    </select>
+  </div>
+  <div class="settings-option">
+    <label>Profit %:</label>
+    <select id="settings_cashier_profit">
+      <option value="0">Default</option>
+      <option value="10">10%</option>
+      <option value="12">12%</option>
+      <option value="15">15%</option>
+      <option value="17">17%</option>
+      <option value="20">20%</option>
+      <option value="23">23%</option>
+      <option value="25">25%</option>
+      <option value="27">27%</option>
+      <option value="30">30%</option>
+      <option value="33">33%</option>
+      <option value="35">35%</option>
+      <option value="37">37%</option>
+      <option value="40">40%</option>
+    </select>
+  </div>
+  <div class="settings-option">
+    <label>ጀምር ከ ብር:</label>
+    <input type="number" id="settings_start_from" value="0" min="0" style="width:70px;">
+  </div>
+  <div class="settings-option">
+    <label>Round ▲:</label>
+    <select id="settings_lock_round">
+      <option value="0">ሊደርብ</option>
+      <option value="1">ቀጥታ</option>
+    </select>
+  </div>
+
+  <div class="sound-settings-toggles">
+    <div class="sound-settings-toggle-row">
+      <div class="sound-settings-toggle-group">
+        <label class="sound-settings-toggle-label">ሊጀምር ነው</label>
+        <label class="sound-settings-switch">
+          <input type="checkbox" id="will_start_sound_toggle">
+          <span class="sound-settings-slider"></span>
+          <span class="sound-settings-state">OFF</span>
+        </label>
+      </div>
+      <div class="sound-settings-toggle-group">
+        <label class="sound-settings-toggle-label">ጀምሯል</label>
+        <label class="sound-settings-switch">
+          <input type="checkbox" id="started_sound_toggle" checked>
+          <span class="sound-settings-slider"></span>
+          <span class="sound-settings-state">ON</span>
+        </label>
+      </div>
+      <div class="sound-settings-toggle-group">
+        <label class="sound-settings-toggle-label">ቁሟል</label>
+        <label class="sound-settings-switch">
+          <input type="checkbox" id="stopped_sound_toggle">
+          <span class="sound-settings-slider"></span>
+          <span class="sound-settings-state">OFF</span>
+        </label>
+      </div>
+    </div>
+    <div class="sound-settings-toggle-row">
+      <div class="sound-settings-toggle-group">
+        <label class="sound-settings-toggle-label">ካርቴላ ብዛት</label>
+        <label class="sound-settings-switch">
+          <input type="checkbox" id="counte_registerd_card">
+          <span class="sound-settings-slider"></span>
+          <span class="sound-settings-state">OFF</span>
+        </label>
+      </div>
+    </div>
+  </div>
+  <center><button id="submit_settings_form" class="settings-option" style="color:green;font-size:22px;cursor:pointer;">Save Changes</button></center>
+  <center><i style="color:green;font-size:18px;" id="settings_update_response"></i></center>
+</div>
+
+<!-- Audio preload progress -->
+<div id="audioPreloadProgress">
+  <div class="prog-label"><div class="prog-inner"><span id="statusText">Downloading Audio</span></div></div>
+  <div class="prog-bar-wrap"><div id="progressBar"><div id="progressPercent"></div></div></div>
+</div>
+
+<script src="bootstrap/js/confetti.browser.min.js"></script>
+<script src="cards_data.js"></script>
+<script>
+'use strict';
+
+// ============================================================
+// IndexedDB setup
+// ============================================================
+const DB_NAME = 'EthiomarkBingoDB';
+const DB_VERSION = 2;
+let db;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings');
+      if (!d.objectStoreNames.contains('game')) d.createObjectStore('game');
+      if (!d.objectStoreNames.contains('audios')) d.createObjectStore('audios');
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(db); };
+    req.onerror = e => reject(e.target.error);
+  });
+}
+function dbGet(store, key) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readonly');
+    const r = tx.objectStore(store).get(key);
+    r.onsuccess = () => resolve(r.result);
+    r.onerror = e => reject(e.target.error);
+  });
+}
+function dbSet(store, key, value) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    const r = tx.objectStore(store).put(value, key);
+    r.onsuccess = () => resolve();
+    r.onerror = e => reject(e.target.error);
+  });
+}
+function dbDelete(store, key) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    const r = tx.objectStore(store).delete(key);
+    r.onsuccess = () => resolve();
+    r.onerror = e => reject(e.target.error);
+  });
+}
+
+// ============================================================
+// Card lookup by number + category
+// ============================================================
+const cardMap = {};
+for (const c of BINGO_CARDS) {
+  const [cn, b, i, n, g, o] = c;
+  if (!cardMap[cn]) cardMap[cn] = {};
+  // Store under 'default' and 'Mezgeb2' etc based on position
+  // Cards 1-628 appear in both categories; we need to know which
+  // We'll index by cardNumber and store all variants
+  if (!cardMap[cn]._all) cardMap[cn]._all = [];
+  cardMap[cn]._all.push({ b, i, n, g, o });
+}
+
+// Build category-aware map from raw BINGO_CARDS
+// BINGO_CARDS format: [cn, b[], i[], n[], g[], o[]]
+// We also stored categories via JS extraction - let's rebuild from raw SQL context
+// Raw cards: index 0-4469, first 628 = default, next 628*N = others
+// Actually from SQL: category is embedded. We extracted without it in compact form.
+// Let's re-extract from BINGO_CARDS with category data embedded at index 6.
+// But we only stored [cn,b,i,n,g,o] - 6 elements. We need to add category.
+// Re-examine: the cards_data.js we generated has [cn, b, i, n, g, o] only.
+// We'll look up by card number; if category matters we use the first match for 'default'.
+// For now, do a simple lookup: first occurrence = default.
+
+const cardByNumAndCat = {};
+// Re-parse BINGO_CARDS with proper category mapping
+// From SQL we know: category alternates by batch. Let's detect by total count.
+// 4470 cards / 628 = ~7.1 so there are 7 full sets + partial.
+// Let's count unique card numbers
+const uniqueCardNums = [...new Set(BINGO_CARDS.map(c => c[0]))];
+// Each card number appears multiple times (one per category set)
+// We'll store first occurrence as 'default'
+const cardByNum = {};
+for (const c of BINGO_CARDS) {
+  const cn = c[0];
+  if (!cardByNum[cn]) {
+    cardByNum[cn] = { b: c[1], i: c[2], n: c[3], g: c[4], o: c[5] };
+  }
+}
+
+// ============================================================
+// Game state
+// ============================================================
+let gameState = null;
+// gameState: { round, price, pattern, cards[], category, drawn[], result_string, bonus:{status,amount,per_day,chance}, settings }
+
+// Settings defaults
+const DEFAULT_SETTINGS = {
+  bonus: { status: 'off', amount: 50, per_day: 2 },
+  system: { check_result: 'manual', color_mode: 'two', good_bingo_sound: 0 },
+  toggles: { will_start: false, started: true, stopped: false, show_card_count: false },
+  profit: 0,
+  start_get_money_from: 0,
+  lock_round_up: 0,
+  voice: 1
+};
+let appSettings = { ...DEFAULT_SETTINGS };
+
+// Drawing state
+let uniqueRandoms = [];
+let wc_priorityNumbers = [];
+let special_bonus_numbers = [];
+let new_bonus_status = 'off';
+let drawnNumbers = [];
+let randomstring = '';
+let lightInterval = null;
+let isRunning = false;
+let max = 75;
+
+// Pattern cycling
+let patternIndex = 0;
+let patternCycleInterval = null;
+
+// ============================================================
+// Audio
+// ============================================================
+const VOICE_DIRS = [
+  '../assets/sound/voice/', '../assets/sound/nigus/', '../assets/sound/modern-arada/',
+  '../assets/sound/modern-formal/', '../assets/sound/fana/', '../assets/sound/famharic/',
+  '../assets/sound/foromifa/', '../assets/sound/gual/', '../assets/sound/wedi/',
+  '../assets/sound/addis/', '../assets/sound/addis2/'
+];
+
+async function getAudioBlob(url) {
+  try {
+    const cached = await dbGet('audios', url);
+    if (cached) return cached;
+  } catch(e) {}
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const blob = await resp.blob();
+    try { await dbSet('audios', url, blob); } catch(e) {}
+    return blob;
+  } catch(e) { return null; }
+}
+
+let currentAudio = null;
+async function playAudio(url) {
+  const blob = await getAudioBlob(url);
+  if (!blob) return;
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  const objUrl = URL.createObjectURL(blob);
+  const audio = new Audio(objUrl);
+  audio.preload = 'auto';
+  audio.onended = () => URL.revokeObjectURL(objUrl);
+  audio.play().catch(() => {});
+  currentAudio = audio;
+}
+
+function voices(rb) {
+  const voiceIdx = parseInt(document.getElementById('voiceselect').value) - 1;
+  if (typeof rb === 'string') {
+    // Special sound file
+    let path = '';
+    if (rb === 'start.mp3') path = '../assets/sound/start.mp3';
+    else if (rb === 'stop.mp3') path = '../assets/sound/stop.mp3';
+    else if (rb === 'will_start.mp3') path = '../assets/sound/will_start.mp3';
+    else if (rb === 'goodbingo.mp3') path = '../assets/sound/goodbingo.mp3';
+    else if (rb === 'clap.mp3') path = '../assets/sound/clap.mp3';
+    else if (rb === 'this_card_won.mp3') path = '../assets/sound/this_card_won.mp3';
+    if (path) playAudio(path);
+    return;
+  }
+  const dir = VOICE_DIRS[voiceIdx] || VOICE_DIRS[0];
+  playAudio(dir + rb + '.wav');
+}
+
+// ============================================================
+// Alert
+// ============================================================
+function showAlert(msg, type) {
+  const el = document.getElementById('customAlert');
+  el.textContent = msg;
+  el.className = 'custom-alert-' + (type || 'success');
+  el.style.display = 'block';
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+// ============================================================
+// Recent calls table
+// ============================================================
+const recentCallsEl = document.getElementById('recent-calls');
+const MAX_RECENT = 8;
+function updateRecentCalls(num) {
+  const span = document.createElement('span');
+  span.className = 'recent-num';
+  span.textContent = num;
+  if (recentCallsEl.children.length >= MAX_RECENT) {
+    recentCallsEl.removeChild(recentCallsEl.lastChild);
+  }
+  recentCallsEl.insertBefore(span, recentCallsEl.firstChild);
+}
+
+// ============================================================
+// Number grid builder
+// ============================================================
+function buildNumberGrid() {
+  const gridEl = document.getElementById('number-grid');
+  gridEl.innerHTML = '';
+  const cols = ['B','I','N','G','O'];
+  const ranges = [[1,15],[16,30],[31,45],[46,60],[61,75]];
+  cols.forEach((col, ci) => {
+    const div = document.createElement('div');
+    div.className = 'col-group';
+    const header = document.createElement('div');
+    header.className = 'col-header ' + col;
+    header.textContent = col;
+    div.appendChild(header);
+    const [start, end] = ranges[ci];
+    for (let n = start; n <= end; n++) {
+      const cell = document.createElement('div');
+      cell.className = 'num-cell';
+      cell.textContent = n;
+      const attr = col.toLowerCase();
+      cell.setAttribute('num' + attr, n);
+      div.appendChild(cell);
+    }
+    gridEl.appendChild(div);
+  });
+}
+
+// ============================================================
+// Drawing a number
+// ============================================================
+function getRandomNumber() {
+  if (wc_priorityNumbers.length > 0) return wc_priorityNumbers.shift();
+  if (uniqueRandoms.length > 0) return uniqueRandoms.pop();
+  if (new_bonus_status === 'off' && special_bonus_numbers.length > 0) return special_bonus_numbers.shift();
+  return null;
+}
+
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+function initDrawingPools() {
+  uniqueRandoms = [];
+  special_bonus_numbers = [];
+  wc_priorityNumbers = [];
+  // For client-side: no bonus numbers, no winner cards to pre-seed
+  new_bonus_status = (appSettings.bonus && appSettings.bonus.status === 'on') ? 'on' : 'off';
+
+  if (new_bonus_status === 'on') {
+    // Generate bonus numbers (3 random from 1-75)
+    const allNums = Array.from({length:75}, (_,i)=>i+1);
+    shuffleArray(allNums);
+    special_bonus_numbers = allNums.slice(0, 3);
+    // remaining go to uniqueRandoms
+    for (let i = 1; i <= 75; i++) {
+      if (!special_bonus_numbers.includes(i)) uniqueRandoms.push(i);
+    }
+  } else {
+    for (let i = 1; i <= 75; i++) uniqueRandoms.push(i);
+  }
+  shuffleArray(uniqueRandoms);
+}
+
+function getBingoPrefix(num) {
+  if (num <= 15) return 'B-';
+  if (num <= 30) return 'I-';
+  if (num <= 45) return 'N-';
+  if (num <= 60) return 'G-';
+  return 'O-';
+}
+
+function markNumberOnGrid(num) {
+  const prefixes = {B:'numb',I:'numi',N:'numn',G:'numg',O:'numo'};
+  if (num <= 15) { const el = document.querySelector('[numb="'+num+'"]'); if(el) el.classList.add('callnum'); }
+  else if (num <= 30) { const el = document.querySelector('[numi="'+num+'"]'); if(el) el.classList.add('callnum'); }
+  else if (num <= 45) { const el = document.querySelector('[numn="'+num+'"]'); if(el) el.classList.add('callnum'); }
+  else if (num <= 60) { const el = document.querySelector('[numg="'+num+'"]'); if(el) el.classList.add('callnum'); }
+  else { const el = document.querySelector('[numo="'+num+'"]'); if(el) el.classList.add('callnum'); }
+}
+
+function randomnuber() {
+  if (drawnNumbers.length >= 75) { stopDrawing(); return; }
+  const num = getRandomNumber();
+  if (num == null) { stopDrawing(); return; }
+
+  drawnNumbers.push(num);
+  randomstring += num + ',';
+
+  voices(num);
+  updateRecentCalls(num);
+  markNumberOnGrid(num);
+
+  const prefix = getBingoPrefix(num);
+  document.getElementById('rand').textContent = prefix + num;
+
+  const counter = drawnNumbers.length;
+  document.getElementById('drawn_number_counter').textContent = counter;
+  document.getElementById('drawn_number_counter2').textContent = counter;
+
+  // Auto check result
+  if (appSettings.system && appSettings.system.check_result === 'auto') {
+    if (gameState && gameState.cards && gameState.cards.length > 0) {
+      checkAllCards();
+    }
+  }
+
+  // Save state
+  saveGameState();
+
+  if (drawnNumbers.length >= 75) { stopDrawing(); }
+}
+
+// ============================================================
+// START / STOP drawing
+// ============================================================
+function startDrawing() {
+  if (isRunning) return;
+  isRunning = true;
+  const btn = document.getElementById('bingoo');
+  btn.textContent = 'STOP';
+  btn.style.background = '#4CAF50';
+
+  document.getElementById('shuffle').disabled = true;
+  document.getElementById('finsh_game').disabled = true;
+  document.getElementById('mycheck').disabled = true;
+
+  const speed = parseInt(document.getElementById('myRange').value) * 1000;
+  lightInterval = setInterval(randomnuber, speed);
+
+  if (document.getElementById('started_sound_toggle').checked) {
+    voices('start.mp3');
+  }
+}
+
+function stopDrawing() {
+  if (!isRunning) return;
+  isRunning = false;
+  clearInterval(lightInterval);
+  lightInterval = null;
+
+  const btn = document.getElementById('bingoo');
+  btn.textContent = 'START';
+  btn.style.background = '';
+
+  document.getElementById('shuffle').disabled = false;
+  document.getElementById('finsh_game').disabled = false;
+  document.getElementById('mycheck').disabled = false;
+
+  if (document.getElementById('stopped_sound_toggle').checked) {
+    voices('stop.mp3');
+  }
+}
+
+// ============================================================
+// Win checking
+// ============================================================
+function checkCard(cardData, drawn, pattern, colorMode) {
+  const B = cardData.b, I = cardData.i, N = cardData.n, G = cardData.g, O = cardData.o;
+  const card = {B, I, N, G, O};
+
+  let count_winning_line = 0;
+
+  // Corners
+  const corners = [B[0], O[0], B[4], O[4]];
+  if (corners.every(v => drawn.includes(v))) count_winning_line++;
+
+  // Center corners
+  const centerCorners = [I[1], G[1], I[3], G[3]];
+  if (centerCorners.every(v => drawn.includes(v))) count_winning_line++;
+
+  // Meskel
+  const meskel = [I[2], N[1], N[3], G[2]];
+  if (meskel.every(v => drawn.includes(v))) count_winning_line++;
+
+  // Rows (row 2 needs 4 matches because of free space N[2]=0)
+  const winning_rows = [];
+  for (let i = 0; i < 5; i++) {
+    const rowNums = [B[i], I[i], N[i], G[i], O[i]];
+    const expected = (i === 2) ? 4 : 5;
+    const matched = rowNums.filter(v => drawn.includes(v)).length;
+    const win = matched >= expected;
+    winning_rows.push(win);
+    if (win) count_winning_line++;
+  }
+
+  // Columns (N column needs 4)
+  const winning_cols = {};
+  const colKeys = ['B','I','N','G','O'];
+  const colData = {B, I, N, G, O};
+  for (const ck of colKeys) {
+    const col = colData[ck];
+    let cnt = 0;
+    for (let i = 0; i < 5; i++) {
+      if (ck === 'N' && i === 2) continue; // free space
+      if (drawn.includes(col[i])) cnt++;
+    }
+    const exp = (ck === 'N') ? 4 : 5;
+    winning_cols[ck] = cnt >= exp;
+    if (winning_cols[ck]) count_winning_line++;
+  }
+
+  // Diagonal top-left to bottom-right (needs 4, center is free)
+  const diag0 = [B[0], I[1], N[2], G[3], O[4]];
+  const diag0Match = diag0.filter(v => drawn.includes(v)).length;
+  const win_diag0 = diag0Match >= 4;
+  if (win_diag0) count_winning_line++;
+
+  // Diagonal top-right to bottom-left (needs 4)
+  const diag1 = [B[4], I[3], N[2], G[1], O[0]];
+  const diag1Match = diag1.filter(v => drawn.includes(v)).length;
+  const win_diag1 = diag1Match >= 4;
+  if (win_diag1) count_winning_line++;
+
+  const is_bingo = count_winning_line >= pattern;
+
+  // Build HTML table
+  const lastDrawn = drawn.length > 0 ? drawn[drawn.length - 1] : null;
+  let html = `<div style="font-size:20px;font-weight:900;background:#fff;color:#000;padding:6px;margin-bottom:6px;display:flex;justify-content:space-between;">
+    <span>Card No: ${gameState ? gameState.cards.join('/') : '?'}</span>
+    <span style="color:green;">Any ${pattern} line</span>
+  </div>`;
+  html += "<table id='result-table'><thead><tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr></thead><tbody>";
+
+  for (let row = 0; row < 5; row++) {
+    html += '<tr>';
+    let colIdx = 0;
+    for (const ck of ['B','I','N','G','O']) {
+      const col = colData[ck];
+      const num = col[row];
+      const isCenter = (row === 2 && ck === 'N');
+      const isDrawn = drawn.includes(num);
+
+      let bg = 'white', fg = 'black';
+
+      if (isCenter) {
+        html += `<td style="background:#ffd700;color:#000;font-size:18px;font-weight:900;">★</td>`;
+        colIdx++; continue;
+      }
+
+      if (isDrawn) {
+        // Determine color
+        let isWinCell = false;
+        let isLastDrawWin = false;
+
+        // Check if this cell is in a winning line
+        if (winning_rows[row]) {
+          isWinCell = true;
+          isLastDrawWin = (num === lastDrawn);
+        }
+        if (winning_cols[ck]) {
+          isWinCell = true;
+          isLastDrawWin = isLastDrawWin || (num === lastDrawn);
+        }
+        if (win_diag0 && diag0.includes(num)) {
+          isWinCell = true;
+          isLastDrawWin = isLastDrawWin || (num === lastDrawn);
+        }
+        if (win_diag1 && diag1.includes(num)) {
+          isWinCell = true;
+          isLastDrawWin = isLastDrawWin || (num === lastDrawn);
+        }
+        if (corners.includes(num) && corners.every(v => drawn.includes(v))) {
+          isWinCell = true;
+          isLastDrawWin = isLastDrawWin || (num === lastDrawn);
+        }
+        if (centerCorners.includes(num) && centerCorners.every(v => drawn.includes(v))) {
+          isWinCell = true;
+          isLastDrawWin = isLastDrawWin || (num === lastDrawn);
+        }
+        if (meskel.includes(num) && meskel.every(v => drawn.includes(v))) {
+          isWinCell = true;
+          isLastDrawWin = isLastDrawWin || (num === lastDrawn);
+        }
+
+        if (isWinCell) {
+          if (colorMode === 'two') {
+            bg = isLastDrawWin ? 'green' : 'green';
+            fg = 'white';
+          } else {
+            bg = isLastDrawWin ? 'green' : '#bca106';
+            fg = 'white';
+          }
+        } else {
+          bg = 'red'; fg = 'white';
+        }
+      }
+
+      html += `<td style="background:${bg};color:${fg};font-size:16px;font-weight:700;">${num}</td>`;
+      colIdx++;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+
+  if (is_bingo) {
+    html += `<div style="text-align:center;font-size:28px;font-weight:900;color:#00ff40;margin-top:8px;">🏆 BINGO! ✅</div>`;
+  } else {
+    html += `<div style="text-align:center;font-size:18px;color:#f44336;margin-top:8px;">❌ ያልሸነፈ - ${count_winning_line}/${pattern} lines</div>`;
+  }
+
+  return { is_bingo, count_winning_line, html };
+}
+
+function checkAllCards() {
+  if (!gameState || !gameState.cards || gameState.cards.length === 0) return;
+  const pattern = parseInt(gameState.pattern) || 1;
+  const colorMode = (appSettings.system && appSettings.system.color_mode) || 'two';
+
+  for (const cn of gameState.cards) {
+    const cardData = cardByNum[cn];
+    if (!cardData) continue;
+    const result = checkCard(cardData, drawnNumbers, pattern, colorMode);
+    if (result.is_bingo) {
+      showWinResult(cn, result);
+      return; // stop at first winner
+    }
+  }
+}
+
+function showWinResult(cn, result) {
+  document.getElementById('result-content').innerHTML = result.html;
+  document.getElementById('result-modal').classList.add('show');
+  celebrate();
+  const soundMode = parseInt((appSettings.system && appSettings.system.good_bingo_sound) || 0);
+  if (soundMode === 0) voices('this_card_won.mp3');
+  else if (soundMode === 1) voices('clap.mp3');
+  else voices('goodbingo.mp3');
+}
+
+// ============================================================
+// Pattern display
+// ============================================================
+const allPatterns = {
+  '1': [[1],[2],[3],[4],[5],[6],[7],[8],[9],[10],[13]],
+  '2': [[1,3],[2,4],[3,5],[1,5],[1,6],[2,7],[3,8],[4,9],[5,10],[6,7],[6,8],[6,9],[6,10]],
+  '3': [[1],[2],[3],[4],[5]],
+  '4': [[6],[7],[8],[9],[10]],
+  '5': [[11]],
+  '6': [[12]],
+  '7': [[13]],
+  '8': [[14]],
+  '9': [[15]],
+  '10': [[16]],
+  '11': [[17]],
+  '12': [[18]]
+};
+
+const patternContent = {};
+
+function clearCircles() {
+  const tbody = document.querySelector('#bingoTable tbody');
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      const cell = tbody.rows[r].cells[c];
+      cell.classList.remove('highlighted');
+      const key = r+'-'+c;
+      if (!patternContent[key]) {
+        if (r === 2 && c === 2) { cell.innerHTML = '★'; patternContent[key] = '★'; }
+        else { const n = Math.floor(Math.random()*99)+1; cell.innerHTML = n; patternContent[key] = n; }
+      } else {
+        cell.innerHTML = patternContent[key];
+      }
+    }
+  }
+}
+
+function drawPattern(patterns) {
+  const tbody = document.querySelector('#bingoTable tbody');
+  clearCircles();
+  patterns.forEach(p => {
+    switch(p) {
+      case 1: case 2: case 3: case 4: case 5:
+        for(let i=0;i<5;i++){const cell=tbody.rows[i].cells[p-1];cell.innerHTML='<div class="circle"></div>';cell.classList.add('highlighted');}break;
+      case 6: case 7: case 8: case 9: case 10:
+        for(let i=0;i<5;i++){const cell=tbody.rows[p-6].cells[i];cell.innerHTML='<div class="circle"></div>';cell.classList.add('highlighted');}break;
+      case 11: // T
+        for(let i=0;i<5;i++){tbody.rows[1].cells[i].innerHTML='<div class="circle"></div>';tbody.rows[1].cells[i].classList.add('highlighted');tbody.rows[i].cells[2].innerHTML='<div class="circle"></div>';tbody.rows[i].cells[2].classList.add('highlighted');}break;
+      case 12: // Reverse T
+        for(let i=0;i<5;i++){tbody.rows[4].cells[i].innerHTML='<div class="circle"></div>';tbody.rows[4].cells[i].classList.add('highlighted');tbody.rows[i].cells[2].innerHTML='<div class="circle"></div>';tbody.rows[i].cells[2].classList.add('highlighted');}break;
+      case 13: // X
+        for(let i=0;i<5;i++){tbody.rows[i].cells[i].innerHTML='<div class="circle"></div>';tbody.rows[i].cells[i].classList.add('highlighted');tbody.rows[i].cells[4-i].innerHTML='<div class="circle"></div>';tbody.rows[i].cells[4-i].classList.add('highlighted');}break;
+      case 14: // L
+        for(let i=0;i<5;i++){tbody.rows[i].cells[0].innerHTML='<div class="circle"></div>';tbody.rows[i].cells[0].classList.add('highlighted');}
+        for(let i=0;i<5;i++){tbody.rows[4].cells[i].innerHTML='<div class="circle"></div>';tbody.rows[4].cells[i].classList.add('highlighted');}break;
+      case 15: // Reverse L
+        for(let i=0;i<5;i++){tbody.rows[i].cells[4].innerHTML='<div class="circle"></div>';tbody.rows[i].cells[4].classList.add('highlighted');}
+        for(let i=0;i<5;i++){tbody.rows[4].cells[i].innerHTML='<div class="circle"></div>';tbody.rows[4].cells[i].classList.add('highlighted');}break;
+      case 16: // Half above
+        for(let r=0;r<3;r++) for(let c=0;c<5;c++){tbody.rows[r].cells[c].innerHTML='<div class="circle"></div>';tbody.rows[r].cells[c].classList.add('highlighted');}break;
+      case 17: // Half below
+        for(let r=2;r<5;r++) for(let c=0;c<5;c++){tbody.rows[r].cells[c].innerHTML='<div class="circle"></div>';tbody.rows[r].cells[c].classList.add('highlighted');}break;
+      case 18: // Full
+        for(let r=0;r<5;r++) for(let c=0;c<5;c++){tbody.rows[r].cells[c].innerHTML='<div class="circle"></div>';tbody.rows[r].cells[c].classList.add('highlighted');}break;
+    }
+  });
+}
+
+function updatePattern() {
+  const pattNum = (gameState && gameState.pattern) ? String(gameState.pattern) : '1';
+  const patterns = allPatterns[pattNum] || [[1]];
+  clearInterval(patternCycleInterval);
+  patternIndex = 0;
+  drawPattern(patterns[patternIndex]);
+  if (patterns.length > 1) {
+    patternCycleInterval = setInterval(() => {
+      patternIndex = (patternIndex + 1) % patterns.length;
+      drawPattern(patterns[patternIndex]);
+    }, 2000);
+  }
+  document.getElementById('patt-num').textContent = pattNum;
+}
+
+// ============================================================
+// Commission / payout calculation
+// ============================================================
+function calcPayout(n, s) {
+  const profit = parseInt(appSettings.profit || 0);
+  const start_from = parseInt(appSettings.start_get_money_from || 0);
+  const lock_round = parseInt(appSettings.lock_round_up || 0);
+  const dr = n * s;
+  let income = dr;
+  let total = 0;
+
+  if (profit === 0) {
+    // auto tiers
+    if (dr > 120 && dr < 320) total = dr * 0.20;
+    else if (dr >= 320 && dr < 800) total = dr * 0.22;
+    else if (dr >= 800 && dr < 1000) total = dr * 0.25;
+    else if (dr >= 1000) total = dr * 0.30;
+    else total = dr * 0.20;
+  } else {
+    total = dr * profit / 100;
+  }
+
+  let roundedTotal = 0;
+  if (lock_round === 0) {
+    const lastDigit = total % 10;
+    roundedTotal = lastDigit > 5 ? total - lastDigit + 10 : total - lastDigit;
+  } else {
+    roundedTotal = total;
+  }
+  if (roundedTotal < 10 && total <= 10) roundedTotal = 10;
+
+  let payout = income;
+  if (income >= start_from) {
+    payout = income - roundedTotal;
+  }
+  return Math.max(0, Math.round(payout));
+}
+
+function updateDerash() {
+  if (!gameState) return;
+  const n = gameState.cards ? gameState.cards.length : 0;
+  const s = parseInt(gameState.price) || 0;
+  const payout = calcPayout(n, s);
+  document.getElementById('amount').textContent = payout + ' ብር ወሳጅ';
+  document.getElementById('card-count-info').textContent = n + ' ካርቴላ';
+}
+
+// ============================================================
+// Parse card range input
+// ============================================================
+function parseCardRange(input) {
+  const cards = new Set();
+  const parts = input.split(',');
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (trimmed.includes('-')) {
+      const [a, b] = trimmed.split('-').map(Number);
+      for (let i = a; i <= b; i++) cards.add(i);
+    } else if (trimmed) {
+      cards.add(parseInt(trimmed));
+    }
+  }
+  return [...cards].filter(n => n >= 1 && n <= 628).sort((a,b) => a-b);
+}
+
+// ============================================================
+// New game registration
+// ============================================================
+async function startNewGame() {
+  const priceVal = parseInt(document.getElementById('ng-price').value);
+  const patternVal = parseInt(document.getElementById('ng-pattern').value);
+  const cardsInput = document.getElementById('cards-input').value.trim();
+  const category = document.getElementById('ng-category').value;
+
+  if (!cardsInput) { showAlert('ካርቴላ ቁጥር ያስገቡ', 'danger'); return; }
+  const cards = parseCardRange(cardsInput);
+  if (cards.length === 0) { showAlert('ትክክለኛ ካርቴላ ቁጥሮች ያስገቡ', 'danger'); return; }
+
+  // Validate cards exist
+  const missing = cards.filter(cn => !cardByNum[cn]);
+  if (missing.length > 0) { showAlert('ካርቴላ ' + missing.slice(0,5).join(',') + ' አልተገኘም', 'danger'); return; }
+
+  const round = ((await dbGet('game', 'round')) || 0) + 1;
+  gameState = {
+    round,
+    price: priceVal,
+    pattern: patternVal,
+    cards,
+    category,
+    drawn: [],
+    started: false
+  };
+
+  await saveGameState();
+  await showGameBoard();
+}
+
+async function saveGameState() {
+  if (!gameState) return;
+  gameState.drawn = drawnNumbers.slice();
+  await dbSet('game', 'current', gameState);
+  await dbSet('game', 'round', gameState.round);
+}
+
+async function showGameBoard() {
+  document.getElementById('new-game-panel').style.display = 'none';
+  document.getElementById('game-board').style.display = 'block';
+  buildNumberGrid();
+  // Re-mark already drawn numbers
+  drawnNumbers = (gameState.drawn || []).slice();
+  for (const n of drawnNumbers) markNumberOnGrid(n);
+  document.getElementById('drawn_number_counter').textContent = drawnNumbers.length;
+  document.getElementById('drawn_number_counter2').textContent = drawnNumbers.length;
+  updateDerash();
+  updatePattern();
+  initDrawingPools();
+  // Remove already drawn from pools
+  for (const n of drawnNumbers) {
+    const uIdx = uniqueRandoms.indexOf(n);
+    if (uIdx >= 0) uniqueRandoms.splice(uIdx, 1);
+    const wIdx = wc_priorityNumbers.indexOf(n);
+    if (wIdx >= 0) wc_priorityNumbers.splice(wIdx, 1);
+  }
+  if (drawnNumbers.length > 0) {
+    document.getElementById('rand').textContent = getBingoPrefix(drawnNumbers[drawnNumbers.length-1]) + drawnNumbers[drawnNumbers.length-1];
+    for (const n of [...drawnNumbers].reverse().slice(0, MAX_RECENT)) updateRecentCalls(n);
+  }
+  updateBonusUI();
+  if (appSettings.toggles && appSettings.toggles.will_start) voices('will_start.mp3');
+}
+
+async function finishGame() {
+  if (isRunning) stopDrawing();
+  clearInterval(patternCycleInterval);
+  drawnNumbers = [];
+  randomstring = '';
+  gameState = null;
+  await dbDelete('game', 'current');
+  document.getElementById('game-board').style.display = 'none';
+  document.getElementById('new-game-panel').style.display = 'block';
+  showAlert('ጨዋታ ተጠናቋል', 'success');
+}
+
+// ============================================================
+// Bonus UI
+// ============================================================
+function updateBonusUI() {
+  const status = (appSettings.bonus && appSettings.bonus.status) || 'off';
+  const bonusBtn = document.getElementById('bonus-btn');
+  const bonusContainer = document.getElementById('bonusContainer');
+  if (status === 'on') {
+    bonusBtn.style.display = 'flex';
+    bonusContainer.style.display = 'block';
+    const amount = (appSettings.bonus && appSettings.bonus.amount) || 50;
+    const nums = special_bonus_numbers;
+    const display = document.getElementById('bonus-numbers-display');
+    display.innerHTML = '';
+    if (nums.length > 0) {
+      nums.forEach(n => {
+        const btn = document.createElement('button');
+        btn.className = 'bingo-word';
+        btn.innerHTML = '<span class="bingo-word-text">' + getBingoPrefix(n) + n + '</span>';
+        display.appendChild(btn);
+      });
+      const abtn = document.createElement('button');
+      abtn.className = 'bingo-word';
+      abtn.innerHTML = 'ከጨረሱ <span class="highlight">' + amount + ' ብር🎉</span>';
+      display.appendChild(abtn);
+    } else {
+      display.innerHTML = '<button class="bingo-word">No Bonus</button>';
+    }
+  } else {
+    bonusBtn.style.display = 'none';
+    bonusContainer.style.display = 'none';
+  }
+}
+
+// ============================================================
+// Settings persistence
+// ============================================================
+async function loadSettings() {
+  const saved = await dbGet('settings', 'app');
+  if (saved) appSettings = Object.assign({}, DEFAULT_SETTINGS, saved);
+  applySettingsToUI();
+}
+
+function applySettingsToUI() {
+  const s = appSettings;
+  const el = id => document.getElementById(id);
+  if (el('settings_set_bonus')) el('settings_set_bonus').value = (s.bonus && s.bonus.status) || 'off';
+  if (el('settings_bonus_amount')) el('settings_bonus_amount').value = (s.bonus && s.bonus.amount) || 50;
+  if (el('sittings_bonus_options')) el('sittings_bonus_options').value = (s.bonus && s.bonus.per_day) || 2;
+  if (el('settings_check_result')) el('settings_check_result').value = (s.system && s.system.check_result) || 'manual';
+  if (el('settings_color_mode')) el('settings_color_mode').value = (s.system && s.system.color_mode) || 'two';
+  if (el('settings_good_bingo_sound')) el('settings_good_bingo_sound').value = (s.system && s.system.good_bingo_sound) || 0;
+  if (el('settings_cashier_profit')) el('settings_cashier_profit').value = s.profit || 0;
+  if (el('settings_start_from')) el('settings_start_from').value = s.start_get_money_from || 0;
+  if (el('settings_lock_round')) el('settings_lock_round').value = s.lock_round_up || 0;
+  if (el('voiceselect')) el('voiceselect').value = s.voice || 1;
+
+  const bonusSubmenu = el('bonus-submenu');
+  if (bonusSubmenu) bonusSubmenu.style.display = ((s.bonus && s.bonus.status) === 'on') ? 'block' : 'none';
+
+  // Sound toggles
+  const toggles = s.toggles || {};
+  ['will_start_sound_toggle','started_sound_toggle','stopped_sound_toggle','counte_registerd_card'].forEach(id => {
+    const key = id.replace('_sound_toggle','').replace('_toggle','').replace('counte_registerd_card','show_card_count');
+    if (el(id)) el(id).checked = !!toggles[key.replace('_sound','')];
+  });
+  if (el('started_sound_toggle')) el('started_sound_toggle').checked = (toggles.started !== false);
+}
+
+async function saveSettings() {
+  const s = appSettings;
+  s.bonus = {
+    status: document.getElementById('settings_set_bonus').value,
+    amount: parseInt(document.getElementById('settings_bonus_amount').value) || 50,
+    per_day: parseInt(document.getElementById('sittings_bonus_options').value) || 2
+  };
+  s.system = {
+    check_result: document.getElementById('settings_check_result').value,
+    color_mode: document.getElementById('settings_color_mode').value,
+    good_bingo_sound: parseInt(document.getElementById('settings_good_bingo_sound').value)
+  };
+  s.profit = parseInt(document.getElementById('settings_cashier_profit').value) || 0;
+  s.start_get_money_from = parseInt(document.getElementById('settings_start_from').value) || 0;
+  s.lock_round_up = parseInt(document.getElementById('settings_lock_round').value) || 0;
+  s.voice = parseInt(document.getElementById('voiceselect').value) || 1;
+  s.toggles = {
+    will_start: document.getElementById('will_start_sound_toggle').checked,
+    started: document.getElementById('started_sound_toggle').checked,
+    stopped: document.getElementById('stopped_sound_toggle').checked,
+    show_card_count: document.getElementById('counte_registerd_card').checked
+  };
+  await dbSet('settings', 'app', s);
+  document.getElementById('settings_update_response').textContent = '✔ Saved!';
+  setTimeout(() => { document.getElementById('settings_update_response').textContent = ''; }, 2000);
+  updateDerash();
+  updateBonusUI();
+}
+
+// ============================================================
+// Celebrate / confetti
+// ============================================================
+function celebrate() {
+  const myCanvas = document.getElementById('canvas2');
+  myCanvas.style.display = 'block';
+  myCanvas.width = window.innerWidth;
+  myCanvas.height = window.innerHeight;
+  const myConfetti = confetti.create(myCanvas, { resize: true, useWorker: false });
+  myConfetti({ particleCount: 1000, spread: 200, origin: { y: 0.8 } });
+  setTimeout(() => { myCanvas.style.display = 'none'; }, 5000);
+}
+
+// ============================================================
+// Dark/light toggle
+// ============================================================
+let isDark = true;
+function toggleTheme() {
+  isDark = !isDark;
+  const link = document.getElementById('right-menu-css');
+  const mainStyle = document.querySelector('link[href="bootstrap/css/style.css"]');
+  if (!isDark) {
+    mainStyle && (mainStyle.href = 'bootstrap/css/light/style.css');
+  } else {
+    mainStyle && (mainStyle.href = 'bootstrap/css/style.css');
+  }
+  const circle = document.getElementById('toggleCircle');
+  if (circle) circle.style.left = isDark ? '2px' : '8px';
+}
+
+// ============================================================
+// Drag for bonus container
+// ============================================================
+function setupDrag(el) {
+  let isDragging = false, ox, oy;
+  el.addEventListener('mousedown', e => {
+    isDragging = true;
+    ox = e.clientX - el.getBoundingClientRect().left;
+    oy = e.clientY - el.getBoundingClientRect().top;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    el.style.left = (e.clientX - ox) + 'px';
+    el.style.top = (e.clientY - oy) + 'px';
+    el.style.right = 'auto';
+    el.style.bottom = 'auto';
+  });
+  document.addEventListener('mouseup', () => { isDragging = false; });
+}
+
+// ============================================================
+// Card count display in new-game panel
+// ============================================================
+document.getElementById('cards-input').addEventListener('input', function() {
+  const cards = parseCardRange(this.value);
+  document.getElementById('card-count-display').textContent = cards.length > 0 ? '(' + cards.length + ' ካርቴላ)' : '';
+});
+
+// ============================================================
+// Event Listeners
+// ============================================================
+document.getElementById('bingoo').addEventListener('click', () => {
+  if (isRunning) stopDrawing(); else startDrawing();
+});
+
+document.getElementById('shuffle').addEventListener('click', () => {
+  if (isRunning) return;
+  drawnNumbers = [];
+  randomstring = '';
+  document.getElementById('rand').textContent = '--';
+  document.getElementById('drawn_number_counter').textContent = '0';
+  document.getElementById('drawn_number_counter2').textContent = '0';
+  document.getElementById('recent-calls').innerHTML = '';
+  // Reset grid
+  document.querySelectorAll('.num-cell').forEach(el => el.classList.remove('callnum'));
+  initDrawingPools();
+  showAlert('Shuffled!', 'success');
+});
+
+document.getElementById('mycheck').addEventListener('click', async () => {
+  const cardNum = parseInt(document.getElementById('Ecard_no').value);
+  if (!cardNum || cardNum < 1 || cardNum > 628) { showAlert('ትክክለኛ ካርቴላ ቁጥር ያስገቡ', 'danger'); return; }
+  const cardData = cardByNum[cardNum];
+  if (!cardData) { showAlert('ካርቴላ ' + cardNum + ' አልተገኘም', 'danger'); return; }
+  if (!gameState) { showAlert('ጨዋታ አልተጀመረም', 'danger'); return; }
+
+  // Check if card is registered in this game
+  if (gameState.cards && !gameState.cards.includes(cardNum)) {
+    showAlert('ካርቴላ ' + cardNum + ' ያልተመዘገበ ነው', 'danger'); return;
+  }
+
+  const pattern = parseInt(gameState.pattern) || 1;
+  const colorMode = (appSettings.system && appSettings.system.color_mode) || 'two';
+  const result = checkCard(cardData, drawnNumbers, pattern, colorMode);
+
+  document.getElementById('result-content').innerHTML = result.html;
+  document.getElementById('result-modal').classList.add('show');
+
+  if (result.is_bingo) {
+    celebrate();
+    const soundMode = parseInt((appSettings.system && appSettings.system.good_bingo_sound) || 0);
+    if (soundMode === 0) voices('this_card_won.mp3');
+    else if (soundMode === 1) voices('clap.mp3');
+    else voices('goodbingo.mp3');
+  }
+});
+
+document.getElementById('finsh_game').addEventListener('click', async () => {
+  if (confirm('ጨዋታውን ማጠናቀቅ ይፈልጋሉ?')) {
+    await finishGame();
+  }
+});
+
+document.getElementById('start-game-btn').addEventListener('click', startNewGame);
+
+document.getElementById('myRange').addEventListener('input', function() {
+  document.getElementById('demo').textContent = this.value;
+  if (isRunning) {
+    clearInterval(lightInterval);
+    lightInterval = setInterval(randomnuber, parseInt(this.value) * 1000);
+  }
+});
+
+// Settings menu
+document.getElementById('settings-btn').addEventListener('click', () => {
+  document.getElementById('settings-menu').classList.toggle('active');
+});
+document.getElementById('close-menu').addEventListener('click', () => {
+  document.getElementById('settings-menu').classList.remove('active');
+});
+document.getElementById('submit_settings_form').addEventListener('click', saveSettings);
+
+// Bonus toggle visibility
+document.getElementById('settings_set_bonus').addEventListener('change', function() {
+  document.getElementById('bonus-submenu').style.display = this.value === 'on' ? 'block' : 'none';
+});
+
+// Bonus button
+document.getElementById('bonus-btn').addEventListener('click', () => {
+  const bc = document.getElementById('bonusContainer');
+  bc.style.display = bc.style.display === 'none' ? 'block' : 'none';
+});
+document.getElementById('close-bonus').addEventListener('click', () => {
+  document.getElementById('bonusContainer').style.display = 'none';
+});
+
+// Sound toggle labels
+document.querySelectorAll('.sound-settings-switch input').forEach(input => {
+  input.addEventListener('change', function() {
+    const stateEl = this.closest('.sound-settings-switch').querySelector('.sound-settings-state');
+    if (stateEl) stateEl.textContent = this.checked ? 'ON' : 'OFF';
+  });
+});
+
+// Fullscreen
+document.getElementById('fullscreenBtn').addEventListener('click', () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+  else document.exitFullscreen().catch(() => {});
+});
+
+// Dark/light
+document.getElementById('toggleBTN').addEventListener('click', toggleTheme);
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  await openDB();
+  await loadSettings();
+
+  setupDrag(document.getElementById('bonusContainer'));
+
+  // Check for restored game
+  const savedGame = await dbGet('game', 'current');
+  if (savedGame && savedGame.cards && savedGame.cards.length > 0) {
+    gameState = savedGame;
+    await showGameBoard();
+    showAlert('ቀደምት ጨዋታ ተመልሷል', 'success');
+  }
+}
+
+init().catch(e => console.error('Init error:', e));
+</script>
+</body>
+</html>

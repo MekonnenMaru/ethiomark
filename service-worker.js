@@ -1,26 +1,35 @@
-const CACHE_NAME = 'ethiomark-cache-v1';
+const CACHE_NAME = 'ethiomark-bingo-v2';
 const urlsToCache = [
-  '/index.php',         // Add the index.php to the cache
-  '/manifest.json',
-  '/assets/icon/512X512.png'
+  '/',
+  '/index.html',
+  '/cards_data.js',
+  '/bootstrap/css/style.css',
+  '/bootstrap/css/bingon.css',
+  '/bootstrap/css/ball.css',
+  '/bootstrap/css/modal.css',
+  '/bootstrap/css/gift-unboxing.css',
+  '/cashier/right-menu.css',
+  '/bootstrap/js/confetti.browser.min.js'
 ];
 
-// Install the service worker and cache resources
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        return cache.addAll(urlsToCache);
-      })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache).catch(() => {}))
   );
 });
 
-// Fetch cached resources when offline
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
+});
+
 self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        return response || fetch(event.request);
-      })
+    caches.match(event.request).then(cached => cached || fetch(event.request))
   );
 });
