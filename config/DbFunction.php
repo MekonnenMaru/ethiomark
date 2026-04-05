@@ -34,10 +34,10 @@ if (isset($_POST['login_form_submitted']) && isset($_POST['cashier_id']) && isse
         $result19 = $stmt19->get_result();
 
         if ($result19->num_rows === 0) {
-            $login_response['login_status'] = "Fuck ....";
-        }
-        else
-        {
+        //     $login_response['login_status'] = "Fuck ....";
+        // }
+        // else
+        // {
 
             $updatingwith_remote_result = [
                 "status"  => "false",
