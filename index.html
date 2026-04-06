@@ -105,7 +105,7 @@ const dbPromise = (function() {
   width: 100%;
   height: 150px;
   box-sizing: border-box;
-  padding: 6px 4px;
+  padding: 6px 58px 6px 4px;
   gap: 10px;
   overflow: hidden;
 }
@@ -1273,15 +1273,17 @@ function getBingoLetter(num){
 function setBallColor(rn){
   const b3=document.querySelector('.ball3');
   const b4=document.querySelector('.ball4');
+  const numEl=document.getElementById('rand');
   if(!b3) return;
-  let c3,c4;
-  if(rn<=15){       c3='#cc0000';         c4='radial-gradient(circle at 60px 60px,#7a0000,#000)';}
-  else if(rn<=30){  c3='#0c3d75';         c4='radial-gradient(circle at 60px 60px,#061f4a,#000)';}
-  else if(rn<=45){  c3='#1a7a38';         c4='radial-gradient(circle at 60px 60px,#0a4020,#000)';}
-  else if(rn<=60){  c3='#cc6a00';         c4='radial-gradient(circle at 60px 60px,#7a3e00,#000)';}
-  else{             c3='rgb(10,89,31)';   c4='radial-gradient(circle at 60px 60px,#063d12,#000)';}
+  let c3,c4,cnum;
+  if(rn<=15){       c3='#cc0000';       c4='radial-gradient(circle at 60px 60px,#7a0000,#000)'; cnum='#ff5555';}
+  else if(rn<=30){  c3='#0c3d75';       c4='radial-gradient(circle at 60px 60px,#061f4a,#000)'; cnum='#5599ff';}
+  else if(rn<=45){  c3='#1a7a38';       c4='radial-gradient(circle at 60px 60px,#0a4020,#000)'; cnum='#44dd77';}
+  else if(rn<=60){  c3='#cc6a00';       c4='radial-gradient(circle at 60px 60px,#7a3e00,#000)'; cnum='#ffaa33';}
+  else{             c3='rgb(10,89,31)'; c4='radial-gradient(circle at 60px 60px,#063d12,#000)';  cnum='#22cc55';}
   b3.style.background=c3;
   if(b4) b4.style.background=c4;
+  if(numEl) numEl.style.color=cnum;
 }
 
 function randomnuber(){
