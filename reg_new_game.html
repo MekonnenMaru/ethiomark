@@ -6,6 +6,7 @@
 <title>Register Cards — Ethiomark Bingo</title>
 <script src="/bootstrap/js/jquery.js"></script>
 <script src="/cards_data.js"></script>
+<script src="/db.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -454,11 +455,28 @@ let currentFilter  = '';
 let currentPage    = 1;
 const PAGE_SIZE    = 100;
 
-function getGameState()   { try { return JSON.parse(localStorage.getItem('game_state'))    || {}; } catch(e) { return {}; } }
-function getAppSettings() { try { return JSON.parse(localStorage.getItem('app_settings'))  || {}; } catch(e) { return {}; } }
-function saveGameState(s) { localStorage.setItem('game_state', JSON.stringify(s)); }
+/* ── IDB-backed state with sync memory cache ── */
+window._gameStateCache   = {};
+window._appSettingsCache = {};
 
-function init() {
+function getGameState()   { return window._gameStateCache; }
+function getAppSettings() { return window._appSettingsCache; }
+function saveGameState(s) {
+  window._gameStateCache = s;
+  EthiomarkDB.dbSaveGameState(s);
+}
+
+async function init() {
+  /* migrate localStorage → IDB on first run */
+  const lsState    = localStorage.getItem('game_state');
+  const lsSettings = localStorage.getItem('app_settings');
+  if (lsState)    { try { await EthiomarkDB.dbSaveGameState(JSON.parse(lsState));      localStorage.removeItem('game_state'); }    catch(e){} }
+  if (lsSettings) { try { await EthiomarkDB.dbSaveAppSettings(JSON.parse(lsSettings)); localStorage.removeItem('app_settings'); } catch(e){} }
+
+  /* load caches */
+  window._gameStateCache   = await EthiomarkDB.dbGetGameState();
+  window._appSettingsCache = await EthiomarkDB.dbGetAppSettings();
+
   const gs = getGameState();
   document.getElementById('roundDisplay').textContent = gs.round || 1;
 
@@ -468,15 +486,18 @@ function init() {
   if (gs.sound)       document.getElementById('bp_voice').value   = gs.sound;
   if (gs.speed_range) document.getElementById('bp_speed').value   = gs.speed_range;
 
-  const src = (typeof BINGO_CARDS !== 'undefined') ? BINGO_CARDS
-            : (typeof cardsData  !== 'undefined') ? cardsData : [];
-  if (src.length) {
+  /* load all card IDs from IndexedDB */
+  try {
+    allCardNumbers = await EthiomarkDB.getAllCardIds();
+  } catch(e) {
+    /* fallback to BINGO_CARDS array if IDB not yet seeded */
+    const src = (typeof BINGO_CARDS !== 'undefined') ? BINGO_CARDS : [];
     const seen = new Set();
     allCardNumbers = src.map(c => c[0])
       .filter(n => { if (seen.has(n)) return false; seen.add(n); return true; })
       .sort((a, b) => a - b);
-    document.getElementById('totalCards').textContent = allCardNumbers.length;
   }
+  document.getElementById('totalCards').textContent = allCardNumbers.length;
 
   renderGrid();
   updateStats();

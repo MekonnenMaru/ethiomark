@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Report - Ethiomark Bingo</title>
 <script src="/bootstrap/js/jquery.js"></script>
+<script src="/db.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#0a1628;color:#fff;font-family:Arial,sans-serif;display:flex;min-height:100vh;}
@@ -104,7 +105,7 @@ table.report-table .badge{display:inline-block;padding:2px 10px;border-radius:12
       <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
       <span>Contact</span>
     </a>
-    <a href="#" onclick="if(confirm('Logout?')){localStorage.removeItem('game_state');window.location.href='/';}">
+    <a href="#" onclick="if(confirm('Logout?')){EthiomarkDB.dbClearGameState().then(()=>{window.location.href='/';});}">
       <svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
       <span>Logout</span>
     </a>
@@ -180,9 +181,14 @@ table.report-table .badge{display:inline-block;padding:2px 10px;border-radius:12
 <script>
 const PATTERN_NAMES = {1:'Any 1 Line',2:'Any 2 Lines',3:'Horizontal',4:'Vertical',5:'X Pattern',6:'Four Corners',7:'Center Corners',8:'Meskel',9:'T',10:'Reverse T',11:'L',12:'Full Card'};
 
-function getHistory(){try{return JSON.parse(localStorage.getItem('game_history'))||[];}catch(e){return [];}}
-function getGameState(){try{return JSON.parse(localStorage.getItem('game_state'))||{};}catch(e){return {};}}
-function getAppSettings(){try{return JSON.parse(localStorage.getItem('app_settings'))||{};}catch(e){return {};}}
+/* IDB caches — populated in init() */
+window._gameStateCache   = {};
+window._appSettingsCache = {};
+window._historyCache     = [];
+
+function getHistory()     { return window._historyCache; }
+function getGameState()   { return window._gameStateCache; }
+function getAppSettings() { return window._appSettingsCache; }
 
 function calcProfit(revenue, settings){
   const profitPct = parseInt(settings.system?.profit)||0;
@@ -197,7 +203,18 @@ function calcProfit(revenue, settings){
   return Math.round(profitAmt);
 }
 
-function init(){
+async function init(){
+  /* load all data from IndexedDB */
+  window._gameStateCache   = await EthiomarkDB.dbGetGameState();
+  window._appSettingsCache = await EthiomarkDB.dbGetAppSettings();
+  window._historyCache     = await EthiomarkDB.dbGetHistory();
+
+  /* migrate from localStorage if first run */
+  const lsHistory = localStorage.getItem('game_history');
+  if (lsHistory) { try { const h=JSON.parse(lsHistory); for(const e of h) await EthiomarkDB.dbAddHistory(e); window._historyCache=await EthiomarkDB.dbGetHistory(); localStorage.removeItem('game_history'); } catch(e){} }
+  const lsState = localStorage.getItem('game_state');
+  if (lsState) { try { window._gameStateCache=JSON.parse(lsState); await EthiomarkDB.dbSaveGameState(window._gameStateCache); localStorage.removeItem('game_state'); } catch(e){} }
+
   const gs = getGameState();
   const history = getHistory();
 

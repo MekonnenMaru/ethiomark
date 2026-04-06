@@ -67,6 +67,7 @@ const dbPromise = (function() {
 <script src="/bootstrap/js/jquery.js"></script>
 <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="/cards_data.js"></script>
+<script src="/db.js"></script>
 
 <style>
 .bonus-notification {
@@ -210,7 +211,37 @@ const voiceFiles = [
 ];
 let activeAudios = [];
 
-window.onload = () => {
+window.onload = async () => {
+  /* ── Step 1: seed IndexedDB from BINGO_CARDS if not yet done ── */
+  const barEl  = document.getElementById('audioPreloadBar');
+  const pctEl  = document.getElementById('audioPreloadPercent');
+  const wrapEl = document.getElementById('audioPreloadProgress');
+  if (wrapEl) wrapEl.style.display = 'block';
+
+  await EthiomarkDB.seedCards(pct => {
+    if (barEl) barEl.style.width = pct + '%';
+    if (pctEl) pctEl.textContent  = pct + '%';
+  });
+
+  /* ── Step 2: one-time migration from localStorage → IndexedDB ── */
+  const lsState    = localStorage.getItem('game_state');
+  const lsSettings = localStorage.getItem('app_settings');
+  const lsHistory  = localStorage.getItem('game_history');
+  if (lsState)    { try { await EthiomarkDB.dbSaveGameState(JSON.parse(lsState));      localStorage.removeItem('game_state'); }    catch(e){} }
+  if (lsSettings) { try { await EthiomarkDB.dbSaveAppSettings(JSON.parse(lsSettings)); localStorage.removeItem('app_settings'); } catch(e){} }
+  if (lsHistory)  { try { const h=JSON.parse(lsHistory); for(const e of h) await EthiomarkDB.dbAddHistory(e); localStorage.removeItem('game_history'); } catch(e){} }
+
+  /* ── Step 3: populate memory caches ── */
+  window._gameStateCache   = await EthiomarkDB.dbGetGameState();
+  window._appSettingsCache = await EthiomarkDB.dbGetAppSettings();
+
+  /* ── Step 4: preload selected cards into fast-lookup map ── */
+  const _gs = window._gameStateCache;
+  if (_gs.cards && _gs.cards.length) {
+    window._loadedCards = await EthiomarkDB.getCardsBatch(_gs.cards);
+  }
+
+  /* ── Step 5: normal game startup ── */
   initGameState();
   preloadAudios().catch(err=>console.error('Audio preload error:',err));
 };
@@ -336,8 +367,7 @@ function updateBonusModalImage(bonusStatus) {
 function saveGameToHistory(status) {
   const gs = getGameState();
   if (!gs.cards || !gs.cards.length) return;
-  const history = JSON.parse(localStorage.getItem('game_history') || '[]');
-  history.push({
+  EthiomarkDB.dbAddHistory({
     round: gs.round || 1,
     date: new Date().toISOString(),
     cards: gs.cards,
@@ -347,7 +377,6 @@ function saveGameToHistory(status) {
     randomstring: gs.randomstring || '',
     status: status || 'played'
   });
-  localStorage.setItem('game_history', JSON.stringify(history));
 }
 </script>
 </head>
@@ -405,9 +434,17 @@ function saveGameToHistory(status) {
 
 <!-- ─── LocalStorage helpers ─── -->
 <script>
-function getGameState(){try{return JSON.parse(localStorage.getItem('game_state'))||{};}catch(e){return {};}}
-function getAppSettings(){try{return JSON.parse(localStorage.getItem('app_settings'))||{};}catch(e){return {};}}
-function saveGameState(s){localStorage.setItem('game_state',JSON.stringify(s));}
+/* ── IDB-backed state with sync memory cache ── */
+window._gameStateCache    = {};
+window._appSettingsCache  = {};
+window._loadedCards       = {};   /* card id → card array, preloaded at game start */
+
+function getGameState()   { return window._gameStateCache; }
+function getAppSettings() { return window._appSettingsCache; }
+function saveGameState(s) {
+  window._gameStateCache = s;
+  EthiomarkDB.dbSaveGameState(s);
+}
 
 function initGameState(){
   const gs=getGameState(), settings=getAppSettings();
@@ -767,7 +804,8 @@ $("#submit_settings_form").on('click',function(e){
     system:{check_result:$("#settings_check_result").val(),color_mode:$("#settings_color_mode").val(),profit:$("#settings_cashier_profit").val(),good_bingo_sound:$("#settings_good_bingo_sound").val()},
     toggles:{will_start:$("#will_start_sound_toggle").is(":checked"),started:$("#started_sound_toggle").is(":checked"),stopped:$("#stopped_sound_toggle").is(":checked"),show_card_count:$("#counte_registerd_card").is(":checked")}
   };
-  localStorage.setItem('app_settings',JSON.stringify(settings));
+  window._appSettingsCache = settings;
+  EthiomarkDB.dbSaveAppSettings(settings);
   document.getElementById("new_bonus_status").innerText=settings.bonus.status;
   document.getElementById("new_bonus_amount").innerText=settings.bonus.amount;
   document.getElementById("max_new_bonus_per_day").innerText=settings.bonus.per_day;
@@ -1401,8 +1439,11 @@ document.getElementById("finsh_game").addEventListener("click",function(){
 <!-- ─── Client-side card check ─── -->
 <script>
 function lookupCard(cn){
-  const src = (typeof BINGO_CARDS!=='undefined') ? BINGO_CARDS : (typeof cardsData!=='undefined') ? cardsData : [];
-  return src.find(c=>c[0]===cn)||null;
+  /* fast path: check in-memory preloaded cards */
+  if (window._loadedCards && window._loadedCards[cn]) return window._loadedCards[cn];
+  /* fallback: check raw BINGO_CARDS array (still in memory on first load) */
+  const src = (typeof BINGO_CARDS!=='undefined') ? BINGO_CARDS : [];
+  return src.find(c=>c[0]===cn) || null;
 }
 
 function checkCardWin(card, drawn, pattern){
