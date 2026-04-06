@@ -137,6 +137,20 @@ const dbPromise = (function() {
 }
 .info-results-col .tgable-container {
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+.info-results-col #bingo-table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+}
+.info-results-col .bingo-call {
+  font-size: 30px !important;
+  height: 2.2rem !important;
+  margin-left: 0 !important;
+  padding: 0 2px;
+  width: auto;
 }
 .info-derash-col {
   flex: 0 0 200px;
@@ -1242,6 +1256,7 @@ let randomstring="";
       const last5=drawn.slice(-5).reverse();
       last5.forEach((num,idx)=>{if(cells[idx]){cells[idx].textContent=num;cells[idx].setAttribute('t',num);}});
       document.getElementById('rand').innerText=getBingoLetter(drawn[drawn.length-1])+drawn[drawn.length-1];
+      setBallColor(drawn[drawn.length-1]);
     }
   }
 })();
@@ -1253,6 +1268,20 @@ function getBingoLetter(num){
   if(num>=46&&num<=60) return 'G-';
   if(num>=61&&num<=75) return 'O-';
   return '';
+}
+
+function setBallColor(rn){
+  const b3=document.querySelector('.ball3');
+  const b4=document.querySelector('.ball4');
+  if(!b3) return;
+  let c3,c4;
+  if(rn<=15){       c3='#cc0000';         c4='radial-gradient(circle at 60px 60px,#7a0000,#000)';}
+  else if(rn<=30){  c3='#0c3d75';         c4='radial-gradient(circle at 60px 60px,#061f4a,#000)';}
+  else if(rn<=45){  c3='#1a7a38';         c4='radial-gradient(circle at 60px 60px,#0a4020,#000)';}
+  else if(rn<=60){  c3='#cc6a00';         c4='radial-gradient(circle at 60px 60px,#7a3e00,#000)';}
+  else{             c3='rgb(10,89,31)';   c4='radial-gradient(circle at 60px 60px,#063d12,#000)';}
+  b3.style.background=c3;
+  if(b4) b4.style.background=c4;
 }
 
 function randomnuber(){
@@ -1274,6 +1303,7 @@ function randomnuber(){
   else if(rn<=45){document.getElementById('rand').innerText='N-'+rn;const el=document.querySelector('[numn="'+rn+'"]');if(el) el.className+=' callnum';}
   else if(rn<=60){document.getElementById('rand').innerText='G-'+rn;const el=document.querySelector('[numg="'+rn+'"]');if(el) el.className+=' callnum';}
   else if(rn<=75){document.getElementById('rand').innerText='O-'+rn;const el=document.querySelector('[numo="'+rn+'"]');if(el) el.className+=' callnum';}
+  setBallColor(rn);
   const gs=getGameState(); gs.randomstring=randomstring; saveGameState(gs);
 }
 
