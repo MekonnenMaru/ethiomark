@@ -96,6 +96,69 @@ const dbPromise = (function() {
 .bingo-button.wave-animation { animation:wave 1s; }
 #selected-numbers { display:flex;flex-wrap:wrap;justify-content:flex-start;gap:10px;padding:10px; }
 @keyframes blink { 0%{opacity:1;} 50%{opacity:0;} 100%{opacity:1;} }
+
+/* ── Info bar (top game section) ── */
+.info-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  height: 150px;
+  box-sizing: border-box;
+  padding: 6px 4px;
+  gap: 10px;
+  overflow: hidden;
+}
+.info-ball-col {
+  flex: 0 0 auto;
+  width: 160px;
+  height: 138px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.info-ball-col .ball2 {
+  width: 9rem !important;
+  height: 9rem !important;
+}
+.info-results-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 138px;
+  overflow: hidden;
+}
+.info-results-col .lastcall {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+}
+.info-results-col .tgable-container {
+  overflow: hidden;
+}
+.info-derash-col {
+  flex: 0 0 200px;
+  height: 138px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.info-derash-col .derash-box {
+  width: 100% !important;
+  height: 100% !important;
+}
+.info-derash-col .amount {
+  font-size: 34px !important;
+}
+.info-derash-col .total-calls {
+  font-size: 24px !important;
+}
+.info-derash-col .total-card {
+  font-size: 14px !important;
+}
 </style>
 
 <!-- ─────────────── Voice directories ─────────────── -->
@@ -884,17 +947,18 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
 
   <!-- ─── Game display ─── -->
   <div class="container" style="margin-left:5px;">
-    <div class="row" style="height:150px;overflow:hidden;align-items:center;">
-      <div id="col-11"></div>
-      <div id="col-2" class="col-3">
-        <div class="contains" style="overflow:hidden;max-height:150px;">
-          <div class="ball2"><div class="ball3"><div class="ball4"><div class="ball5">
-            <p class="num" id="rand"></p>
-          </div></div></div></div>
-        </div>
+    <div class="info-bar">
+
+      <!-- Ball -->
+      <div class="info-ball-col" id="col-2">
+        <div class="ball2"><div class="ball3"><div class="ball4"><div class="ball5">
+          <p class="num" id="rand"></p>
+        </div></div></div></div>
       </div>
-      <div id="col-4" class="col-5">
-        <p class="lastcall">Recent Results for (<a href="#" style="color:red;text-align:center;font-size:25px;font-weight:900;" id="round_number_bellow_5">yyyyy</a>)</p>
+
+      <!-- Recent results -->
+      <div class="info-results-col" id="col-4">
+        <p class="lastcall">Recent Results for (<a href="#" style="color:red;font-size:20px;font-weight:900;" id="round_number_bellow_5">yyyyy</a>)</p>
         <div class="tgable-container">
           <table id="bingo-table">
             <tr>
@@ -907,18 +971,21 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
           </table>
         </div>
       </div>
-      <div class="col-3">
+
+      <!-- Derash box -->
+      <div class="info-derash-col">
         <div class="derash-box">
           <div class="derash-content">
             <span class="amount"><span id="amount1"></span><span>&nbsp;ደራሽ</span></span>
           </div>
-          <span class="derash-line" style="display:block;width:80%;height:8px;background:#2C866A;margin:8px auto;"></span>
+          <span class="derash-line"></span>
           <div class="derash-details">
-            <span class="total-card" id="cardCounter">ብዛት : 0</span>&nbsp;&nbsp;&nbsp;&nbsp;
+            <span class="total-card" id="cardCounter">ብዛት : 0</span>
             <span class="total-calls">ጥሪ : <span id="drawn_number_counter">0</span></span>
           </div>
         </div>
       </div>
+
     </div>
 
     <!-- ─── B/I/N/G/O number grid ─── -->
