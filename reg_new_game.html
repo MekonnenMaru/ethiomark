@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Register Cards - Ethiomark Bingo</title>
+<link rel="stylesheet" href="/bootstrap/css/style.css">
+<link rel="stylesheet" href="/bootstrap/css/register_new_game.css">
+<script src="/bootstrap/js/jquery.js"></script>
+<script src="/cards_data.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0a1628;color:#fff;font-family:Arial,sans-serif;min-height:100vh;overflow-x:hidden;}
+
+/* Top bar */
+.top-bar{background:#0d1f3c;border-bottom:2px solid #1e3a5f;padding:8px 15px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:100;}
+.top-bar .round-badge{background:#1565c0;color:#fff;font-size:22px;font-weight:bold;padding:6px 16px;border-radius:6px;white-space:nowrap;}
+.top-bar .typed-box{display:flex;align-items:center;gap:6px;}
+.top-bar .typed-box label{font-size:16px;color:#90caf9;}
+.top-bar .typed-box input{width:110px;padding:5px 8px;font-size:18px;border-radius:5px;border:2px solid #1976d2;background:#0d1f3c;color:#fff;text-align:center;}
+.top-bar .info-text{color:#90caf9;font-size:16px;flex:1;text-align:center;}
+.top-bar .help-btn{background:#1976d2;color:#fff;border:none;padding:6px 14px;border-radius:5px;font-size:16px;cursor:pointer;}
+.top-bar .back-btn{background:#c62828;color:#fff;border:none;padding:6px 14px;border-radius:5px;font-size:16px;cursor:pointer;}
+
+/* Stats bar */
+.stats-bar{background:#0f2744;padding:6px 15px;display:flex;gap:20px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #1e3a5f;}
+.stat-chip{background:#1565c0;border-radius:20px;padding:4px 14px;font-size:15px;font-weight:600;}
+.stat-chip span{color:#90caf9;}
+
+/* Card grid */
+.card-grid-wrapper{padding:10px 10px 120px;}
+.card-grid{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-start;}
+.card-ball{
+  width:52px;height:52px;border-radius:50%;
+  background:radial-gradient(circle,rgb(255,255,255) 0%,rgb(220,220,220) 40%,rgb(1,38,46) 80%,rgba(12,87,142,1) 100%);
+  border:2px solid #333;color:#000;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:700;cursor:pointer;
+  transition:all 0.15s;user-select:none;
+}
+.card-ball:hover{background:radial-gradient(circle,rgb(155,155,23) 0%,rgb(40,53,72) 40%,rgb(1,38,46) 80%,rgba(12,87,142,1) 100%);color:#fff;}
+.card-ball.selected{background:radial-gradient(circle,#5cff5c 0%,#1b8a1b 50%,#0a3d0a 100%);color:#fff;border-color:#5cff5c;}
+.card-ball.not-in-db{opacity:0.3;cursor:not-allowed;}
+
+/* Bottom fixed panel */
+.bottom-panel{position:fixed;bottom:0;left:0;right:0;background:#0d1f3c;border-top:2px solid #1e3a5f;padding:10px 15px;z-index:200;}
+.bottom-panel .row1{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
+.bottom-panel label{color:#90caf9;font-size:14px;}
+.bottom-panel select,.bottom-panel input[type=number]{padding:5px 8px;border-radius:5px;border:1px solid #1976d2;background:#0a1628;color:#fff;font-size:16px;}
+.bottom-panel .selected-list{background:#0a1628;border:1px solid #1976d2;border-radius:6px;padding:6px 10px;font-size:13px;color:#90caf9;max-height:50px;overflow-y:auto;flex:1;min-width:200px;}
+.btn-register{background:#2e7d32;color:#fff;border:none;padding:8px 24px;font-size:20px;border-radius:6px;cursor:pointer;font-weight:bold;}
+.btn-register:hover{background:#1b5e20;}
+.btn-clear-sel{background:#c62828;color:#fff;border:none;padding:8px 14px;font-size:18px;border-radius:6px;cursor:pointer;}
+.btn-clear-sel:hover{background:#7f0000;}
+.count-badge{background:#1976d2;border-radius:12px;padding:3px 12px;font-size:16px;font-weight:700;white-space:nowrap;}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="round-badge">Game Round <span id="roundDisplay">1</span></div>
+  <div class="typed-box">
+    <label>Typing:</label>
+    <input type="text" id="searchInput" placeholder="Search card..." autocomplete="off">
+    <span style="font-size:13px;color:#90caf9;" id="searchStatus">Number typed</span>
+  </div>
+  <div class="info-text">&#x1265; ኮርቱ ወሳዮዎን ይፍሉ (Click cards to select)</div>
+  <button class="help-btn" onclick="toggleHelp()">? Help</button>
+  <button class="help-btn" style="background:#0277bd;" onclick="selectRange()">Range</button>
+  <button class="back-btn" onclick="window.location.href='/'">← Back</button>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-chip">Total Cards: <span id="totalCards">0</span></div>
+  <div class="stat-chip">Selected: <span id="selectedCount">0</span></div>
+  <div class="stat-chip">Revenue: <span id="revenuePreview">0</span> ብር</div>
+  <div class="stat-chip">Profit Est: <span id="profitPreview">0</span> ብር</div>
+</div>
+
+<div class="card-grid-wrapper">
+  <div class="card-grid" id="cardGrid"></div>
+</div>
+
+<div class="bottom-panel">
+  <div class="row1">
+    <div>
+      <label>Pattern:</label><br>
+      <select id="bp_pattern">
+        <option value="1">Any 1 line</option><option value="2">Any 2 lines</option>
+        <option value="3">Horizontal</option><option value="4">Vertical</option>
+        <option value="5">X Pattern</option><option value="6">Four Corners</option>
+        <option value="7">Center Corners</option><option value="8">Meskel</option>
+        <option value="9">T</option><option value="10">Reverse T</option>
+        <option value="11">L</option><option value="12">Full Card</option>
+      </select>
+    </div>
+    <div>
+      <label>Price (ብር):</label><br>
+      <input type="number" id="bp_price" value="10" min="1" style="width:80px;">
+    </div>
+    <div>
+      <label>Voice:</label><br>
+      <select id="bp_voice">
+        <option value="11">New voice</option><option value="10">Addis</option>
+        <option value="1">Bereket</option><option value="2">Nigus</option>
+        <option value="3">Amharic Arada</option><option value="4">Amharic formal</option>
+        <option value="5">Amharic yordi</option><option value="6">Amharic Beti</option>
+        <option value="7">Oromifa Female</option><option value="8">Tigrigna Female</option>
+        <option value="9">Tigrigna Male</option>
+      </select>
+    </div>
+    <div>
+      <label>Speed:</label><br>
+      <input type="number" id="bp_speed" value="3" min="1" max="15" style="width:70px;">
+    </div>
+    <div class="selected-list" id="selectedList">No cards selected yet</div>
+    <span class="count-badge"><span id="selCount2">0</span> cards</span>
+    <button class="btn-clear-sel" onclick="clearSelection()">✕ Clear</button>
+    <button class="btn-register" onclick="saveAndGo()">✔ Register &amp; Play</button>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────
+let selectedCards = new Set();
+let allCardNumbers = [];
+
+function getGameState(){try{return JSON.parse(localStorage.getItem('game_state'))||{};}catch(e){return {};}}
+function getAppSettings(){try{return JSON.parse(localStorage.getItem('app_settings'))||{};}catch(e){return {};}}
+function saveGameState(s){localStorage.setItem('game_state',JSON.stringify(s));}
+
+// ── Build card number list from cardsData ───────
+function init(){
+  const gs = getGameState();
+  const settings = getAppSettings();
+
+  document.getElementById('roundDisplay').textContent = gs.round || 1;
+
+  // Restore previous selections
+  if(gs.cards && gs.cards.length){
+    gs.cards.forEach(n=>selectedCards.add(n));
+  }
+  if(gs.pattern) document.getElementById('bp_pattern').value = gs.pattern;
+  if(gs.price) document.getElementById('bp_price').value = gs.price;
+  if(gs.sound) document.getElementById('bp_voice').value = gs.sound;
+  if(gs.speed_range) document.getElementById('bp_speed').value = gs.speed_range;
+
+  // Build sorted unique list of available card numbers from BINGO_CARDS
+  const cardSrc = (typeof BINGO_CARDS!=='undefined') ? BINGO_CARDS : (typeof cardsData!=='undefined') ? cardsData : [];
+  if(cardSrc.length){
+    const seen = new Set();
+    allCardNumbers = cardSrc.map(c=>c[0]).filter(n=>{ if(seen.has(n)) return false; seen.add(n); return true; }).sort((a,b)=>a-b);
+    document.getElementById('totalCards').textContent = allCardNumbers.length;
+  }
+
+  renderGrid();
+  updateStats();
+}
+
+function renderGrid(filter=''){
+  const grid = document.getElementById('cardGrid');
+  grid.innerHTML = '';
+  const nums = filter
+    ? allCardNumbers.filter(n=>String(n).includes(filter))
+    : allCardNumbers;
+
+  nums.forEach(num=>{
+    const div = document.createElement('div');
+    div.className = 'card-ball' + (selectedCards.has(num)?' selected':'');
+    div.textContent = num;
+    div.dataset.num = num;
+    div.onclick = ()=>toggleCard(num, div);
+    grid.appendChild(div);
+  });
+}
+
+function toggleCard(num, el){
+  if(selectedCards.has(num)){
+    selectedCards.delete(num);
+    el.classList.remove('selected');
+  } else {
+    selectedCards.add(num);
+    el.classList.add('selected');
+  }
+  updateStats();
+}
+
+function updateStats(){
+  const count = selectedCards.size;
+  const price = parseInt(document.getElementById('bp_price').value)||0;
+  const revenue = count * price;
+  const settings = getAppSettings();
+  const profit = parseInt(settings.system?.profit)||0;
+  let profitAmt = 0;
+  if(profit===0){
+    if(revenue>120&&revenue<320) profitAmt=Math.round(revenue*0.2);
+    else if(revenue>=320&&revenue<800) profitAmt=Math.round(revenue*0.22);
+    else if(revenue>=800&&revenue<1000) profitAmt=Math.round(revenue*0.25);
+    else if(revenue>=1000) profitAmt=Math.round(revenue*0.3);
+    else profitAmt=Math.round(revenue*0.2);
+  } else { profitAmt=Math.round(revenue*profit/100); }
+
+  document.getElementById('selectedCount').textContent = count;
+  document.getElementById('selCount2').textContent = count;
+  document.getElementById('revenuePreview').textContent = revenue;
+  document.getElementById('profitPreview').textContent = profitAmt;
+
+  const list = document.getElementById('selectedList');
+  if(count===0){list.textContent='No cards selected yet';}
+  else{
+    const sorted = Array.from(selectedCards).sort((a,b)=>a-b);
+    list.textContent = sorted.join(', ');
+  }
+}
+
+function clearSelection(){
+  selectedCards.clear();
+  document.querySelectorAll('.card-ball.selected').forEach(el=>el.classList.remove('selected'));
+  updateStats();
+}
+
+function saveAndGo(){
+  if(selectedCards.size===0){alert('Please select at least one card.');return;}
+  const gs = getGameState();
+  const cards = Array.from(selectedCards).sort((a,b)=>a-b);
+  const newGs = {
+    round: gs.round || 1,
+    cards: cards,
+    pattern: parseInt(document.getElementById('bp_pattern').value)||1,
+    price: parseInt(document.getElementById('bp_price').value)||10,
+    sound: parseInt(document.getElementById('bp_voice').value)||1,
+    speed_range: parseInt(document.getElementById('bp_speed').value)||3,
+    randomstring: gs.randomstring || '',
+    locked_cards: gs.locked_cards || []
+  };
+  saveGameState(newGs);
+  window.location.href = '/';
+}
+
+// ── Search / filter ─────────────────────────────
+document.getElementById('searchInput').addEventListener('input', function(){
+  const v = this.value.trim();
+  document.getElementById('searchStatus').textContent = v ? 'Filtering...' : 'Number typed';
+  renderGrid(v);
+});
+
+// Enter on search → select/deselect that exact card
+document.getElementById('searchInput').addEventListener('keydown', function(e){
+  if(e.key==='Enter'){
+    const num = parseInt(this.value.trim());
+    if(!isNaN(num)){
+      const el = document.querySelector(`.card-ball[data-num="${num}"]`);
+      if(el) toggleCard(num, el);
+    }
+  }
+});
+
+// ── Range select dialog ─────────────────────────
+function selectRange(){
+  const from = parseInt(prompt('From card number:','1'));
+  const to   = parseInt(prompt('To card number:','100'));
+  if(isNaN(from)||isNaN(to)) return;
+  allCardNumbers.forEach(num=>{
+    if(num>=from && num<=to){
+      selectedCards.add(num);
+      const el = document.querySelector(`.card-ball[data-num="${num}"]`);
+      if(el) el.classList.add('selected');
+    }
+  });
+  updateStats();
+}
+
+function toggleHelp(){
+  alert('Click any numbered ball to select it for this round.\nClick again to deselect.\nUse the search box to filter by card number.\nUse "Range" to bulk-select a range of cards.');
+}
+
+// Update revenue when price changes
+document.getElementById('bp_price').addEventListener('input', updateStats);
+
+// ── Init ───────────────────────────────────────
+init();
+</script>
+</body>
+</html>

@@ -12,13 +12,15 @@ A fully client-side Bingo management and gaming system for the Ethiopian market,
 
 ## Key Files
 
-- `index.html` — The entire app (new game setup, game board, bingo grid, win checker, settings)
-- `cards_data.js` — 386KB bundled card data: `[cardNumber, [b1..5], [i1..5], [n1..5], [g1..5], [o1..5]]`
+- `index.html` — Main game app (board, bingo grid, win checker, settings, bonus image)
+- `reg_new_game.html` — Visual card registration: clickable numbered ball grid (1–628), search, range-select, pattern/price/voice/speed configuration
+- `report.html` — Dashboard: sidebar nav, summary stats, date-range game history table, CSV export
+- `cards_data.js` — 386KB bundled card data (`BINGO_CARDS` variable): `[cardNumber, [b1..5], [i1..5], [n1..5], [g1..5], [o1..5]]`
+- `assets/images/bonus-removebg.png` — Bonus mode image shown in main modal when bonus is ON
 - `start.sh` — Starts a simple PHP file server (no DB, no PHP logic used)
 - `service-worker.js` — PWA service worker caching static assets
 - `bootstrap/css/` — Existing CSS assets (style.css, bingon.css, ball.css, modal.css, etc.)
 - `bootstrap/js/confetti.browser.min.js` — Confetti animation library
-- `cashier/right-menu.css` — Settings menu CSS
 
 ## Game Flow
 

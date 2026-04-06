@@ -241,6 +241,36 @@ function showAlert(message, type) {
   d.className = 'custom-alert alert-' + type;
   setTimeout(()=>{ d.style.display='none'; }, 3000);
 }
+
+function updateBonusModalImage(bonusStatus) {
+  const imgBonus = document.getElementById('bonus-modal-img');
+  const imgCard  = document.getElementById('selected-numbers-container-img');
+  if (!imgBonus || !imgCard) return;
+  if (bonusStatus === 'on') {
+    imgBonus.style.display = '';
+    imgCard.style.display  = 'none';
+  } else {
+    imgBonus.style.display = 'none';
+    imgCard.style.display  = '';
+  }
+}
+
+function saveGameToHistory(status) {
+  const gs = getGameState();
+  if (!gs.cards || !gs.cards.length) return;
+  const history = JSON.parse(localStorage.getItem('game_history') || '[]');
+  history.push({
+    round: gs.round || 1,
+    date: new Date().toISOString(),
+    cards: gs.cards,
+    price: gs.price || 0,
+    pattern: gs.pattern || 1,
+    sound: gs.sound || 1,
+    randomstring: gs.randomstring || '',
+    status: status || 'played'
+  });
+  localStorage.setItem('game_history', JSON.stringify(history));
+}
 </script>
 </head>
 <body>
@@ -332,6 +362,7 @@ function initGameState(){
   const bonusCont=document.getElementById('bonusContainer');
   if(bonusStatus==='on'){if(bonusBtn)bonusBtn.style.display='';if(bonusCont)bonusCont.style.display='block';}
   else{if(bonusBtn)bonusBtn.style.display='none';}
+  updateBonusModalImage(bonusStatus);
 
   const today=new Date().toDateString();
   const bonusMeta=JSON.parse(localStorage.getItem('bonus_meta')||'{}');
@@ -642,6 +673,10 @@ $("#submit_settings_form").on('click',function(e){
   document.getElementById("auto_check_result").innerText=settings.system.check_result;
   document.getElementById("good_bingo_sound").innerText=settings.system.good_bingo_sound;
   document.getElementById("profit").innerText=settings.system.profit;
+  updateBonusModalImage(settings.bonus.status);
+  const bb2=document.getElementById('bonus');const bc2=document.getElementById('bonusContainer');
+  if(settings.bonus.status==='on'){if(bb2)bb2.style.display='';if(bc2)bc2.style.display='block';}
+  else{if(bb2)bb2.style.display='none';}
   const cc=document.getElementById("cardCounter");
   if(cc) cc.style.display=settings.toggles.show_card_count?"inline":"none";
   $("#settings_update_response").html("በተሳካ ሁኔታ ተመዝግቧል!").css("color","green");
@@ -707,6 +742,7 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
           <h2 id="amount">ኢትዮ-ማርክ ቢንጎ</h2>
           <div style="min-height:300px;margin:0px;">
             <img id="selected-numbers-container-img" src="/assets/images/card1.png" style="user-drag:none;-webkit-user-drag:none;width:70%;max-height:400px;" onerror="this.style.display='none'">
+            <img id="bonus-modal-img" src="/assets/images/bonus-removebg.png" style="display:none;user-drag:none;-webkit-user-drag:none;width:70%;max-height:400px;" onerror="this.style.display='none'">
             <div id="selected-numbers-container" style="background:rgba(255,255,255,.8);padding:10px;border-radius:5px;display:none;max-height:300px;overflow-y:auto;">
               <h2>የተመዘገቡ ካርድ ቁጥሮች</h2>
               <div id="selected-numbers" style="font-size:24px;color:#000;"></div>
@@ -766,17 +802,12 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
   </div>
 
   <script>
-  document.getElementById('report_button').onclick=function(){};
+  document.getElementById('report_button').onclick=function(){window.location.href='/report.html';};
   document.getElementById('logoutbtn').onclick=function(){
     if(confirm('Logout? Game state will be preserved.')){location.reload();}
   };
   document.getElementById('register_game_button').onclick=function(){
-    const gs=getGameState();
-    if(gs.cards) document.getElementById('reg_card_numbers').value=gs.cards.join(',');
-    if(gs.pattern) document.getElementById('reg_pattern').value=gs.pattern;
-    if(gs.price) document.getElementById('reg_price').value=gs.price;
-    if(gs.sound) document.getElementById('reg_voice').value=gs.sound;
-    $('#registerCardModal').modal('show');
+    window.location.href='/reg_new_game.html';
   };
 
   function saveRegistration(){
@@ -1205,6 +1236,7 @@ document.getElementById("shuffle").addEventListener("click",function(){
 
 document.getElementById("finsh_game").addEventListener("click",function(){
   if(!confirm('ጨዋታውን ጨርሰዋል? (Finish this game?)')) return;
+  saveGameToHistory('played');
   const gs=getGameState();
   const newRound=(gs.round||1)+1;
   saveGameState({round:newRound,cards:gs.cards||[],pattern:gs.pattern||1,price:gs.price||0,sound:gs.sound||1,speed_range:gs.speed_range||3,randomstring:''});
@@ -1226,8 +1258,8 @@ document.getElementById("finsh_game").addEventListener("click",function(){
 <!-- ─── Client-side card check ─── -->
 <script>
 function lookupCard(cn){
-  if(typeof cardsData==='undefined') return null;
-  return cardsData.find(c=>c[0]===cn)||null;
+  const src = (typeof BINGO_CARDS!=='undefined') ? BINGO_CARDS : (typeof cardsData!=='undefined') ? cardsData : [];
+  return src.find(c=>c[0]===cn)||null;
 }
 
 function checkCardWin(card, drawn, pattern){
@@ -1401,6 +1433,7 @@ $("#mycheck").on('click',function(event){
 
 $(document).ready(function(){
   $("#goodbingo").on('click',function(){
+    saveGameToHistory('win');
     const el=document.getElementById('canvas');
     el.style.display='block'; el.style.pointerEvents='none';
     el.style.zIndex='9999'; el.style.position='absolute';

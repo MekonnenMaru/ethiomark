@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Report - Ethiomark Bingo</title>
+<script src="/bootstrap/js/jquery.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0a1628;color:#fff;font-family:Arial,sans-serif;display:flex;min-height:100vh;}
+
+/* ── Sidebar ── */
+.sidebar{width:220px;min-height:100vh;background:#fff;color:#222;display:flex;flex-direction:column;flex-shrink:0;}
+.sidebar-logo{padding:16px;border-bottom:1px solid #e0e0e0;display:flex;flex-direction:column;align-items:center;}
+.sidebar-logo img{width:60px;height:60px;border-radius:50%;object-fit:cover;margin-bottom:6px;background:#0a1628;}
+.sidebar-logo .brand{font-size:16px;font-weight:700;color:#0d47a1;text-align:center;}
+.sidebar-logo .username{font-size:13px;color:#e53935;font-weight:600;margin-top:2px;}
+.sidebar-nav{flex:1;}
+.sidebar-nav a{display:flex;align-items:center;gap:10px;padding:13px 18px;color:#333;text-decoration:none;font-size:15px;border-left:3px solid transparent;transition:all .2s;}
+.sidebar-nav a:hover,.sidebar-nav a.active{background:#e3f2fd;color:#0d47a1;border-left-color:#0d47a1;}
+.sidebar-nav a svg{width:18px;height:18px;flex-shrink:0;}
+.sidebar-nav .divider{height:1px;background:#e0e0e0;margin:4px 0;}
+
+/* ── Main area ── */
+.main-area{flex:1;display:flex;flex-direction:column;min-height:100vh;}
+
+/* Top bar */
+.top-bar{background:#0d2240;padding:10px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;border-bottom:1px solid #1e3a5f;}
+.top-bar .stat-pill{background:#0a1628;border:1px solid #1e3a5f;border-radius:6px;padding:6px 14px;font-size:14px;}
+.top-bar .stat-pill .label{color:#90caf9;font-size:12px;}
+.top-bar .stat-pill .value{font-size:18px;font-weight:700;color:#fff;}
+
+/* Filter row */
+.filter-row{background:#0f2744;padding:12px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid #1e3a5f;}
+.filter-row label{color:#90caf9;font-size:14px;font-weight:600;}
+.filter-row input[type=date]{padding:6px 10px;border-radius:5px;border:1px solid #1976d2;background:#0a1628;color:#fff;font-size:14px;}
+.filter-row button{padding:7px 20px;border-radius:5px;border:none;font-size:15px;cursor:pointer;font-weight:600;}
+.btn-search{background:#1976d2;color:#fff;}
+.btn-search:hover{background:#0d47a1;}
+.btn-today{background:#388e3c;color:#fff;}
+.btn-today:hover{background:#1b5e20;}
+.btn-export{background:#f57c00;color:#fff;}
+.btn-export:hover{background:#bf360c;}
+
+/* Content */
+.content-area{flex:1;padding:20px;overflow-y:auto;}
+
+/* Summary cards */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:20px;}
+.summary-card{background:#0d2240;border:1px solid #1e3a5f;border-radius:8px;padding:14px 16px;}
+.summary-card .sc-label{color:#90caf9;font-size:13px;margin-bottom:4px;}
+.summary-card .sc-value{font-size:28px;font-weight:700;color:#fff;}
+.summary-card .sc-sub{font-size:12px;color:#546e7a;margin-top:2px;}
+
+/* Table */
+.table-wrap{background:#0d2240;border:1px solid #1e3a5f;border-radius:8px;overflow:hidden;}
+.table-wrap h3{padding:12px 16px;font-size:16px;border-bottom:1px solid #1e3a5f;color:#90caf9;}
+table.report-table{width:100%;border-collapse:collapse;}
+table.report-table th{background:#0a1628;color:#90caf9;padding:10px 12px;font-size:13px;text-align:left;border-bottom:1px solid #1e3a5f;}
+table.report-table td{padding:10px 12px;font-size:14px;border-bottom:1px solid #0f2744;vertical-align:middle;}
+table.report-table tr:hover td{background:rgba(25,118,210,.1);}
+table.report-table .badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;}
+.badge-win{background:#1b5e20;color:#a5d6a7;}
+.badge-pending{background:#0d47a1;color:#90caf9;}
+.badge-stopped{background:#4a148c;color:#ce93d8;}
+.empty-state{text-align:center;padding:60px 20px;color:#546e7a;}
+.empty-state h3{font-size:22px;margin-bottom:8px;}
+
+/* Pattern badges */
+.patt-names{1:any 1 line;2:any 2 lines;3:horizontal;4:vertical;5:X;6:corners;7:center;8:meskel;9:T;10:rev-T;11:L;12:full}
+
+/* Responsive */
+@media(max-width:640px){.sidebar{width:60px;}.sidebar-logo .brand,.sidebar-logo .username,.sidebar-nav a span{display:none;}.sidebar-nav a{justify-content:center;padding:14px 0;}}
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#0d47a1,#1565c0);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;">EB</div>
+    <div class="brand">Ethiomark Bingo</div>
+    <div class="username" id="sideUsername">@cashier</div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="#" onclick="showSection('cashier')">
+      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+      <span>Cashier Option</span>
+    </a>
+    <a href="/reg_new_game.html">
+      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+      <span>Register Players Card</span>
+    </a>
+    <a href="/">
+      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      <span>Play Bingo</span>
+    </a>
+    <a href="/report.html" class="active">
+      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      <span>Report</span>
+    </a>
+    <div class="divider"></div>
+    <a href="#" onclick="showSection('settings')">
+      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+      <span>Contact</span>
+    </a>
+    <a href="#" onclick="if(confirm('Logout?')){localStorage.removeItem('game_state');window.location.href='/';}">
+      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+      <span>Logout</span>
+    </a>
+  </nav>
+</div>
+
+<!-- ── Main ── -->
+<div class="main-area">
+
+  <!-- Top bar stats -->
+  <div class="top-bar">
+    <div class="stat-pill">
+      <div class="label">Total Rounds Played</div>
+      <div class="value" id="topTotalRounds">0</div>
+    </div>
+    <div class="stat-pill">
+      <div class="label">Total Revenue</div>
+      <div class="value" id="topRevenue">0 ብር</div>
+    </div>
+    <div class="stat-pill">
+      <div class="label">Total Cards (All Time)</div>
+      <div class="value" id="topCards">0</div>
+    </div>
+    <div class="stat-pill">
+      <div class="label">Current Round</div>
+      <div class="value" id="topCurrentRound">1</div>
+    </div>
+  </div>
+
+  <!-- Filter row -->
+  <div class="filter-row">
+    <label>From Date:</label>
+    <input type="date" id="dateFrom">
+    <label>To Date:</label>
+    <input type="date" id="dateTo">
+    <button class="btn-search" onclick="loadReport()">Search</button>
+    <button class="btn-today" onclick="setToday()">Today</button>
+    <button class="btn-export" onclick="exportCSV()">Export CSV</button>
+  </div>
+
+  <!-- Content -->
+  <div class="content-area">
+    <!-- Summary -->
+    <div class="summary-grid" id="summaryGrid"></div>
+
+    <!-- Game history table -->
+    <div class="table-wrap">
+      <h3>Game History</h3>
+      <table class="report-table" id="reportTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Round</th>
+            <th>Date</th>
+            <th>Cards</th>
+            <th>Price</th>
+            <th>Revenue</th>
+            <th>Profit</th>
+            <th>Net</th>
+            <th>Pattern</th>
+            <th>Calls</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="reportBody">
+          <tr><td colspan="11" class="empty-state" style="text-align:center;padding:40px;color:#546e7a;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const PATTERN_NAMES = {1:'Any 1 Line',2:'Any 2 Lines',3:'Horizontal',4:'Vertical',5:'X Pattern',6:'Four Corners',7:'Center Corners',8:'Meskel',9:'T',10:'Reverse T',11:'L',12:'Full Card'};
+
+function getHistory(){try{return JSON.parse(localStorage.getItem('game_history'))||[];}catch(e){return [];}}
+function getGameState(){try{return JSON.parse(localStorage.getItem('game_state'))||{};}catch(e){return {};}}
+function getAppSettings(){try{return JSON.parse(localStorage.getItem('app_settings'))||{};}catch(e){return {};}}
+
+function calcProfit(revenue, settings){
+  const profitPct = parseInt(settings.system?.profit)||0;
+  let profitAmt = 0;
+  if(profitPct===0){
+    if(revenue>120&&revenue<320) profitAmt=revenue*0.2;
+    else if(revenue>=320&&revenue<800) profitAmt=revenue*0.22;
+    else if(revenue>=800&&revenue<1000) profitAmt=revenue*0.25;
+    else if(revenue>=1000) profitAmt=revenue*0.3;
+    else profitAmt=revenue*0.2;
+  } else { profitAmt=revenue*profitPct/100; }
+  return Math.round(profitAmt);
+}
+
+function init(){
+  const gs = getGameState();
+  const history = getHistory();
+
+  // Sidebar username
+  document.getElementById('sideUsername').textContent = '@cashier';
+
+  // Top stats
+  const allRounds = history.length;
+  const totalRev = history.reduce((s,g)=>s+(g.cards.length*g.price),0);
+  const totalCards = history.reduce((s,g)=>s+g.cards.length,0);
+  document.getElementById('topTotalRounds').textContent = allRounds;
+  document.getElementById('topRevenue').textContent = totalRev.toLocaleString() + ' ብር';
+  document.getElementById('topCards').textContent = totalCards;
+  document.getElementById('topCurrentRound').textContent = gs.round || 1;
+
+  setToday();
+}
+
+function setToday(){
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('dateFrom').value = today;
+  document.getElementById('dateTo').value = today;
+  loadReport();
+}
+
+function loadReport(){
+  const from = new Date(document.getElementById('dateFrom').value + 'T00:00:00');
+  const to   = new Date(document.getElementById('dateTo').value + 'T23:59:59');
+  const history = getHistory();
+  const settings = getAppSettings();
+
+  const filtered = history.filter(g=>{
+    const d = new Date(g.date);
+    return d >= from && d <= to;
+  });
+
+  renderSummary(filtered, settings);
+  renderTable(filtered, settings);
+}
+
+function renderSummary(games, settings){
+  const totalGames = games.length;
+  const totalCards = games.reduce((s,g)=>s+g.cards.length,0);
+  const totalRev   = games.reduce((s,g)=>s+(g.cards.length*g.price),0);
+  const totalProfit= games.reduce((s,g)=>s+calcProfit(g.cards.length*g.price,settings),0);
+  const totalNet   = totalRev - totalProfit;
+
+  document.getElementById('summaryGrid').innerHTML = `
+    <div class="summary-card"><div class="sc-label">Games Played</div><div class="sc-value">${totalGames}</div></div>
+    <div class="summary-card"><div class="sc-label">Total Cards</div><div class="sc-value">${totalCards}</div></div>
+    <div class="summary-card"><div class="sc-label">Gross Revenue</div><div class="sc-value">${totalRev.toLocaleString()}</div><div class="sc-sub">ብር</div></div>
+    <div class="summary-card"><div class="sc-label">Profit Paid</div><div class="sc-value">${totalProfit.toLocaleString()}</div><div class="sc-sub">ብር</div></div>
+    <div class="summary-card"><div class="sc-label">Net Income</div><div class="sc-value" style="color:#a5d6a7;">${totalNet.toLocaleString()}</div><div class="sc-sub">ብር</div></div>
+    <div class="summary-card"><div class="sc-label">Avg Cards/Game</div><div class="sc-value">${totalGames?Math.round(totalCards/totalGames):0}</div></div>
+  `;
+}
+
+function renderTable(games, settings){
+  const tbody = document.getElementById('reportBody');
+  if(!games.length){
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:50px;color:#546e7a;">No games found for the given date.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = games.map((g,idx)=>{
+    const revenue = g.cards.length * g.price;
+    const profit  = calcProfit(revenue, settings);
+    const net     = revenue - profit;
+    const calls   = g.randomstring ? g.randomstring.split(',').filter(Boolean).length : 0;
+    const statusBadge = g.status === 'win' ? '<span class="badge badge-win">Win</span>'
+      : g.status === 'stopped' ? '<span class="badge badge-stopped">Stopped</span>'
+      : '<span class="badge badge-pending">Played</span>';
+    const dateStr = new Date(g.date).toLocaleString('en-ET',{hour12:true,month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const pattName = PATTERN_NAMES[g.pattern] || ('Pattern '+g.pattern);
+    return `<tr>
+      <td>${idx+1}</td>
+      <td style="font-weight:700;">Round ${g.round}</td>
+      <td style="font-size:12px;">${dateStr}</td>
+      <td>${g.cards.length}</td>
+      <td>${g.price} ብር</td>
+      <td style="font-weight:600;">${revenue.toLocaleString()}</td>
+      <td style="color:#ef9a9a;">${profit.toLocaleString()}</td>
+      <td style="color:#a5d6a7;font-weight:700;">${net.toLocaleString()}</td>
+      <td style="font-size:12px;">${pattName}</td>
+      <td>${calls}</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportCSV(){
+  const games = getHistory();
+  const settings = getAppSettings();
+  if(!games.length){alert('No history to export.');return;}
+
+  let csv = 'Round,Date,Cards,Price,Revenue,Profit,Net,Pattern,Calls,Status\n';
+  games.forEach(g=>{
+    const revenue = g.cards.length * g.price;
+    const profit  = calcProfit(revenue, settings);
+    const net     = revenue - profit;
+    const calls   = g.randomstring ? g.randomstring.split(',').filter(Boolean).length : 0;
+    const date    = new Date(g.date).toLocaleString();
+    csv += `${g.round},"${date}",${g.cards.length},${g.price},${revenue},${profit},${net},${PATTERN_NAMES[g.pattern]||g.pattern},${calls},${g.status||'played'}\n`;
+  });
+
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ethiomark_bingo_report.csv';
+  a.click();
+}
+
+function showSection(s){
+  // placeholder for future sections
+  if(s==='cashier'){window.location.href='/';}
+}
+
+init();
+</script>
+</body>
+</html>
