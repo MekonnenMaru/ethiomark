@@ -379,10 +379,21 @@ function initGameState(){
 
 function renderRegisteredCards(cards,price,round){
   document.getElementById('modal-round-number').innerHTML='Round '+round;
+  const patternNames={1:'Any 1 Line',2:'Any 2 Lines',3:'Any Horizontal',4:'Any Vertical',5:'X Pattern',6:'Four Corners',7:'Center Corners',8:'Meskel',9:'T Shape',10:'Reverse T',11:'L Shape',12:'Full Card'};
   if(cards.length>0){
     document.getElementById('selected-numbers-container').style.display='block';
     document.getElementById('selected-numbers-container-img').style.display='none';
     document.getElementById('selected-numbers').innerHTML=cards.map(cn=>`<button class="bingo-button">${cn}</button>`).join('');
+    const gs=getGameState();
+    const pn=patternNames[gs.pattern||1]||('Pattern '+(gs.pattern||1));
+    const gi=document.getElementById('modal-game-info');
+    if(gi){ gi.style.display='flex'; }
+    const miPat=document.getElementById('mi-pattern');
+    const miCards=document.getElementById('mi-cards');
+    const miPrice=document.getElementById('mi-price');
+    if(miPat) miPat.textContent=pn;
+    if(miCards) miCards.textContent=cards.length+' cards';
+    if(miPrice) miPrice.textContent=(price||0)+' ብር/card';
   }
 }
 
@@ -464,6 +475,17 @@ function startbingo(){
       document.getElementById('amount').innerText=(income-roundedTotal)+" ብር ወሳጅ";
       document.getElementById('amount1').innerText=(income-roundedTotal);
     }
+  }
+  // Show game status bar
+  const patNamesGSB={1:'Any 1 Line',2:'Any 2 Lines',3:'Any Horizontal',4:'Any Vertical',5:'X Pattern',6:'Four Corners',7:'Center Corners',8:'Meskel',9:'T Shape',10:'Reverse T',11:'L Shape',12:'Full Card'};
+  const gsBar=document.getElementById('game-status-bar');
+  if(gsBar){
+    gsBar.style.display='flex';
+    const gsGs=getGameState();
+    document.getElementById('gsb-round').textContent='Round '+round_number;
+    document.getElementById('gsb-pattern').textContent=patNamesGSB[gsGs.pattern||1]||'Pattern '+(gsGs.pattern||1);
+    document.getElementById('gsb-cards').textContent=n;
+    document.getElementById('gsb-price').textContent=s;
   }
   $('#myModal').modal('hide');
   hasBeenCalled=false;
@@ -743,17 +765,25 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
           </div>
         </div>
         <div class="modal-body">
-          <div id="amount" style="font-size:30px;font-weight:900;text-align:center;">ኢትዮ-ማርክ ቢንጎ</div>
-          <div class="em-media-area" style="width:100%;display:flex;justify-content:center;max-height:200px;overflow:hidden;border-radius:12px;margin:4px 0;">
-            <img id="selected-numbers-container-img" src="/assets/images/card1.png" style="max-width:65%;max-height:200px;object-fit:contain;" onerror="this.style.display='none'">
-            <img id="bonus-modal-img" src="/assets/images/bonus-removebg.png" style="display:none;max-width:65%;max-height:200px;object-fit:contain;" onerror="this.style.display='none'">
+          <div id="amount" style="font-size:28px;font-weight:900;text-align:center;margin-bottom:6px;">ኢትዮ-ማርክ ቢንጎ</div>
+
+          <!-- Game info badges row (shown when cards are registered) -->
+          <div id="modal-game-info" style="display:none;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:8px;flex-direction:row;align-items:center;">
+            <span style="background:rgba(0,198,255,0.15);border:1px solid rgba(0,198,255,0.4);color:#00c6ff;padding:4px 12px;border-radius:20px;font-size:14px;font-weight:600;" id="mi-pattern">—</span>
+            <span style="background:rgba(0,230,118,0.15);border:1px solid rgba(0,230,118,0.4);color:#00e676;padding:4px 12px;border-radius:20px;font-size:14px;font-weight:600;" id="mi-cards">0 cards</span>
+            <span style="background:rgba(255,215,64,0.15);border:1px solid rgba(255,215,64,0.4);color:#ffd740;padding:4px 12px;border-radius:20px;font-size:14px;font-weight:600;" id="mi-price">0 ብር</span>
           </div>
-          <div id="selected-numbers-container" style="display:none;width:100%;max-height:170px;overflow-y:auto;">
-            <h2 style="font-size:16px;margin-bottom:8px;">የተመዘገቡ ካርድ ቁጥሮች</h2>
-            <div id="selected-numbers" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+
+          <div class="em-media-area" style="width:100%;display:flex;justify-content:center;max-height:180px;overflow:hidden;border-radius:12px;margin:4px 0;">
+            <img id="selected-numbers-container-img" src="/assets/images/card1.png" style="max-width:65%;max-height:180px;object-fit:contain;" onerror="this.style.display='none'">
+            <img id="bonus-modal-img" src="/assets/images/bonus-removebg.png" style="display:none;max-width:65%;max-height:180px;object-fit:contain;" onerror="this.style.display='none'">
           </div>
-          <p id="bala_alert" style="color:#ff5252;font-size:16px;min-height:20px;text-align:center;animation:blink 2s infinite;"></p>
-          <button type="submit" id="mybtn" onclick="return startbingo();" style="margin-top:4px;">▶ ጀምር</button>
+          <div id="selected-numbers-container" style="display:none;width:100%;max-height:140px;overflow-y:auto;">
+            <h2 style="font-size:14px;margin-bottom:6px;opacity:0.7;">የተመዘገቡ ካርድ ቁጥሮች</h2>
+            <div id="selected-numbers" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+          </div>
+          <p id="bala_alert" style="color:#ff5252;font-size:16px;min-height:18px;text-align:center;animation:blink 2s infinite;"></p>
+          <button type="submit" id="mybtn" onclick="return startbingo();" style="margin-top:6px;">▶ ጀምር</button>
         </div>
       </div>
     </div>
@@ -841,6 +871,16 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
     location.reload();
   }
   </script>
+
+  <!-- ─── Game Status Bar ─── -->
+  <div id="game-status-bar" style="display:none;position:sticky;top:0;z-index:500;background:linear-gradient(90deg,#031730,#051f4a);border-bottom:1px solid rgba(0,198,255,0.25);padding:6px 14px;display:none;align-items:center;gap:14px;flex-wrap:wrap;">
+    <span style="color:#00c6ff;font-weight:700;font-size:15px;" id="gsb-round">Round 1</span>
+    <span style="width:1px;height:18px;background:rgba(255,255,255,0.2);display:inline-block;"></span>
+    <span style="color:#aaa;font-size:13px;">Pattern: <b style="color:#fff;" id="gsb-pattern">—</b></span>
+    <span style="color:#aaa;font-size:13px;">Cards: <b style="color:#00e676;" id="gsb-cards">0</b></span>
+    <span style="color:#aaa;font-size:13px;">Price: <b style="color:#ffd740;" id="gsb-price">0</b> ብር</span>
+    <span style="color:#aaa;font-size:13px;">Calls: <b style="color:#ff7043;" id="gsb-calls">0</b></span>
+  </div>
 
   <!-- ─── Game display ─── -->
   <div class="container" style="margin-left:5px;">
@@ -1155,6 +1195,8 @@ function randomnuber(){
   let drawnCount=rArr.length;
   let ce=document.getElementById("drawn_number_counter");
   if(ce) ce.innerText=drawnCount;
+  const gsbCalls=document.getElementById('gsb-calls');
+  if(gsbCalls) gsbCalls.textContent=drawnCount;
   if(rArr.filter(Boolean).length===75){change();return;}
   let rn=getRandomNumber();
   if(rn===undefined) return;
@@ -1271,26 +1313,87 @@ function checkCardWin(card, drawn, pattern){
   const drawnSet=new Set(drawn);
   const FREE=n[2];
   function hit(v){return drawnSet.has(v)||v===FREE;}
-  function lineHit(arr){return arr.filter(v=>hit(v)).length>=4;}
-
-  const corners=[b[0],o[0],b[4],o[4]];
-  const cCorners=[ic[1],g[1],ic[3],g[3]];
-  const meskel=[ic[2],n[1],n[3],g[2]];
+  function allHit(arr){return arr.every(v=>hit(v));}
   const rows=[[b[0],ic[0],n[0],g[0],o[0]],[b[1],ic[1],n[1],g[1],o[1]],[b[2],ic[2],n[2],g[2],o[2]],[b[3],ic[3],n[3],g[3],o[3]],[b[4],ic[4],n[4],g[4],o[4]]];
   const cols=[b,ic,n,g,o];
   const diag1=[b[0],ic[1],n[2],g[3],o[4]];
   const diag2=[b[4],ic[3],n[2],g[1],o[0]];
+  const corners=[b[0],o[0],b[4],o[4]];
+  const cCorners=[ic[1],g[1],ic[3],g[3]];
+  const meskel=[ic[2],n[1],n[3],g[2]];
+  function rowHit(i){return rows[i].filter(v=>hit(v)).length>=(i===2?4:5);}
+  function colHit(c){return c.filter(v=>hit(v)).length>=(c===n?4:5);}
+  function diagHit(d){return d.filter(v=>hit(v)).length>=4;}
+  function countLines(){
+    let cnt=0;
+    if(allHit(corners)) cnt++;
+    if(allHit(cCorners)) cnt++;
+    if(allHit(meskel)) cnt++;
+    for(let i=0;i<5;i++) if(rowHit(i)) cnt++;
+    cols.forEach(c=>{if(colHit(c)) cnt++;});
+    if(diagHit(diag1)) cnt++;
+    if(diagHit(diag2)) cnt++;
+    return cnt;
+  }
+  let win=false;
+  switch(pattern){
+    case 1: win=countLines()>=1; break;
+    case 2: win=countLines()>=2; break;
+    case 3: win=rows.some((_,i)=>rowHit(i)); break;
+    case 4: win=cols.some(c=>colHit(c)); break;
+    case 5: win=diagHit(diag1)&&diagHit(diag2); break;
+    case 6: win=allHit(corners); break;
+    case 7: win=allHit(cCorners); break;
+    case 8: win=allHit(meskel); break;
+    case 9: win=rowHit(0)&&colHit(n); break;
+    case 10: win=rowHit(4)&&colHit(n); break;
+    case 11: win=colHit(b)&&rowHit(4); break;
+    case 12: win=[b,ic,n,g,o].every(c=>c.every(v=>hit(v))); break;
+    default: win=false;
+  }
+  return {count_winning_line:win?1:0, expected_pattern:1};
+}
 
-  let cnt=0;
-  if(corners.every(v=>hit(v))) cnt++;
-  if(cCorners.every(v=>hit(v))) cnt++;
-  if(meskel.every(v=>hit(v))) cnt++;
-  rows.forEach(r=>{if(lineHit(r)) cnt++;});
-  cols.forEach(c=>{if(lineHit(c)) cnt++;});
-  if(lineHit(diag1)) cnt++;
-  if(lineHit(diag2)) cnt++;
-
-  return {count_winning_line:cnt, expected_pattern:pattern};
+function getWinningCells(card, drawn, pattern){
+  const b=card[1],ic=card[2],n=card[3],g=card[4],o=card[5];
+  const drawnSet=new Set(drawn);
+  const FREE=n[2];
+  function hit(v){return drawnSet.has(v)||v===FREE;}
+  function allHit(arr){return arr.every(v=>hit(v));}
+  const rows=[[b[0],ic[0],n[0],g[0],o[0]],[b[1],ic[1],n[1],g[1],o[1]],[b[2],ic[2],n[2],g[2],o[2]],[b[3],ic[3],n[3],g[3],o[3]],[b[4],ic[4],n[4],g[4],o[4]]];
+  const cols=[b,ic,n,g,o];
+  const diag1=[b[0],ic[1],n[2],g[3],o[4]];
+  const diag2=[b[4],ic[3],n[2],g[1],o[0]];
+  const corners=[b[0],o[0],b[4],o[4]];
+  const cCorners=[ic[1],g[1],ic[3],g[3]];
+  const meskel=[ic[2],n[1],n[3],g[2]];
+  function rowHit(i){return rows[i].filter(v=>hit(v)).length>=(i===2?4:5);}
+  function colHit(c){return c.filter(v=>hit(v)).length>=(c===n?4:5);}
+  function diagHit(d){return d.filter(v=>hit(v)).length>=4;}
+  const W=new Set();
+  function add(arr){arr.forEach(v=>W.add(v));}
+  switch(pattern){
+    case 1: case 2:
+      if(allHit(corners)) add(corners);
+      if(allHit(cCorners)) add(cCorners);
+      if(allHit(meskel)) add(meskel);
+      rows.forEach((r,i)=>{if(rowHit(i)) add(r);});
+      cols.forEach(c=>{if(colHit(c)) add(c);});
+      if(diagHit(diag1)) add(diag1);
+      if(diagHit(diag2)) add(diag2);
+      break;
+    case 3: rows.forEach((r,i)=>{if(rowHit(i)) add(r);}); break;
+    case 4: cols.forEach(c=>{if(colHit(c)) add(c);}); break;
+    case 5: if(diagHit(diag1)&&diagHit(diag2)){add(diag1);add(diag2);} break;
+    case 6: if(allHit(corners)) add(corners); break;
+    case 7: if(allHit(cCorners)) add(cCorners); break;
+    case 8: if(allHit(meskel)) add(meskel); break;
+    case 9: if(rowHit(0)&&colHit(n)){add(rows[0]);add(n);} break;
+    case 10: if(rowHit(4)&&colHit(n)){add(rows[4]);add(n);} break;
+    case 11: if(colHit(b)&&rowHit(4)){add(b);add(rows[4]);} break;
+    case 12: [b,ic,n,g,o].forEach(c=>add(c)); break;
+  }
+  return W;
 }
 
 function buildCardHTML(card, drawn, pattern, cardNo){
@@ -1299,28 +1402,16 @@ function buildCardHTML(card, drawn, pattern, cardNo){
   const lastCalled=drawn[drawn.length-1];
   const FREE=n[2];
   function hit(v){return drawnSet.has(v)||v===FREE;}
-  function lineHit(arr){return arr.filter(v=>hit(v)).length>=4;}
 
-  const corners=[b[0],o[0],b[4],o[4]];
-  const cCorners=[ic[1],g[1],ic[3],g[3]];
-  const meskel=[ic[2],n[1],n[3],g[2]];
-  const rows=[[b[0],ic[0],n[0],g[0],o[0]],[b[1],ic[1],n[1],g[1],o[1]],[b[2],ic[2],n[2],g[2],o[2]],[b[3],ic[3],n[3],g[3],o[3]],[b[4],ic[4],n[4],g[4],o[4]]];
-  const cols=[b,ic,n,g,o];
-  const diag1=[b[0],ic[1],n[2],g[3],o[4]];
-  const diag2=[b[4],ic[3],n[2],g[1],o[0]];
-
-  const allCorners=corners.every(v=>hit(v));
-  const allCC=cCorners.every(v=>hit(v));
-  const allMk=meskel.every(v=>hit(v));
-  const winRows=rows.map(r=>lineHit(r));
-  const winCols=cols.map(c=>lineHit(c));
-  const winD1=lineHit(diag1), winD2=lineHit(diag2);
-
+  const patternNames={1:'Any 1 Line',2:'Any 2 Lines',3:'Any Horizontal',4:'Any Vertical',5:'X Pattern',6:'Four Corners',7:'Center Corners',8:'Meskel',9:'T Shape',10:'Reverse T',11:'L Shape',12:'Full Card'};
+  const pName=patternNames[pattern]||('Pattern '+pattern);
+  const isWinner=checkCardWin(card,drawn,pattern).count_winning_line>=1;
+  const winCells=isWinner?getWinningCells(card,drawn,pattern):new Set();
   const colorMode=document.getElementById('settings_color_mode')?.value||document.getElementById('color')?.innerText?.trim()||'two';
   const colData=[b,ic,n,g,o];
 
-  let html=`<div style='font-size:30px;font-weight:bolder;background-color:white;color:black;padding:5px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;'>
-    <span>Card No: ${cardNo}</span><span style='color:green;'>Any ${pattern} line</span></div>`;
+  let html=`<div style='font-size:26px;font-weight:bolder;background-color:white;color:black;padding:6px 10px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;border-radius:4px;'>
+    <span>Card No: <b style='color:#00478B;'>${cardNo}</b></span><span style='color:green;font-size:18px;'>${pName}</span></div>`;
   html+=`<table id='tablefetch' style='width:90%;margin:0 auto;text-align:center;border-collapse:collapse;'>
     <thead><tr style='line-height:2.5;'>
       <th style='background-color:#00478B;color:white;'>B</th><th style='background-color:#00478B;color:white;'>I</th>
@@ -1335,15 +1426,11 @@ function buildCardHTML(card, drawn, pattern, cardNo){
       const isFree=(col===2&&row===2);
       const isHit=hit(num);
       let bg='white',fg='black';
-      if(isHit){
-        const inWR=winRows[row], inWC=winCols[col];
-        const inD1=diag1.includes(num)&&winD1, inD2=diag2.includes(num)&&winD2;
-        const inCorn=corners.includes(num)&&allCorners;
-        const inCC=cCorners.includes(num)&&allCC;
-        const inMk=meskel.includes(num)&&allMk;
-        const isWin=inWR||inWC||inD1||inD2||inCorn||inCC||inMk||isFree;
-        if(isWin){
-          if(num===lastCalled||isFree){bg='green';fg='white';}
+      if(isFree){
+        bg=isWinner?'green':'#1a6b1a'; fg='white';
+      } else if(isHit){
+        if(isWinner&&winCells.has(num)){
+          if(num===lastCalled){bg='blue';fg='white';}
           else if(colorMode==='two'){bg='green';fg='white';}
           else{bg='#bca106';fg='white';}
         } else {bg='red';fg='white';}

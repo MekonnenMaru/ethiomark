@@ -426,8 +426,13 @@ html, body {
 
   <!-- Ball grid -->
   <div class="grid-area">
-    <div class="grid-hint">
-      Click a numbered ball to select it — turns green when selected. Use Range Select to pick a block at once.
+    <div class="grid-hint" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span>Click a numbered ball to select it — turns green when selected.</span>
+      <div id="pagination-controls" style="display:flex;align-items:center;gap:6px;">
+        <button id="pg-prev" onclick="changePage(-1)" style="background:rgba(0,198,255,0.15);border:1px solid rgba(0,198,255,0.4);color:#00c6ff;padding:4px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;">‹ Prev</button>
+        <span style="color:#90caf9;font-size:13px;">Page <b id="pg-current" style="color:#fff;">1</b> of <b id="pg-total" style="color:#fff;">1</b></span>
+        <button id="pg-next" onclick="changePage(1)" style="background:rgba(0,198,255,0.15);border:1px solid rgba(0,198,255,0.4);color:#00c6ff;padding:4px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;">Next ›</button>
+      </div>
     </div>
     <div class="card-grid" id="cardGrid"></div>
   </div>
@@ -445,6 +450,9 @@ html, body {
 <script>
 let selectedCards  = new Set();
 let allCardNumbers = [];
+let currentFilter  = '';
+let currentPage    = 1;
+const PAGE_SIZE    = 100;
 
 function getGameState()   { try { return JSON.parse(localStorage.getItem('game_state'))    || {}; } catch(e) { return {}; } }
 function getAppSettings() { try { return JSON.parse(localStorage.getItem('app_settings'))  || {}; } catch(e) { return {}; } }
@@ -474,14 +482,38 @@ function init() {
   updateStats();
 }
 
+function getFilteredNums() {
+  return currentFilter
+    ? allCardNumbers.filter(n => String(n).includes(currentFilter))
+    : allCardNumbers;
+}
+
+function changePage(delta) {
+  const nums = getFilteredNums();
+  const totalPages = Math.max(1, Math.ceil(nums.length / PAGE_SIZE));
+  currentPage = Math.min(Math.max(1, currentPage + delta), totalPages);
+  renderGrid();
+}
+
 function renderGrid(filter) {
+  if (filter !== undefined) {
+    currentFilter = filter;
+    currentPage = 1;
+  }
+  const nums = getFilteredNums();
+  const totalPages = Math.max(1, Math.ceil(nums.length / PAGE_SIZE));
+  currentPage = Math.min(currentPage, totalPages);
+
+  document.getElementById('pg-current').textContent = currentPage;
+  document.getElementById('pg-total').textContent   = totalPages;
+  document.getElementById('pg-prev').style.opacity  = currentPage <= 1 ? '0.35' : '1';
+  document.getElementById('pg-next').style.opacity  = currentPage >= totalPages ? '0.35' : '1';
+
+  const pageNums = nums.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const grid = document.getElementById('cardGrid');
   grid.innerHTML = '';
-  const nums = filter
-    ? allCardNumbers.filter(n => String(n).includes(filter))
-    : allCardNumbers;
 
-  nums.forEach(num => {
+  pageNums.forEach(num => {
     const el = document.createElement('div');
     el.className = 'card-ball' + (selectedCards.has(num) ? ' selected' : '');
     el.textContent = num;
@@ -525,7 +557,7 @@ function updateStats() {
 
 function clearSelection() {
   selectedCards.clear();
-  document.querySelectorAll('.card-ball.selected').forEach(el => el.classList.remove('selected'));
+  renderGrid();
   updateStats();
 }
 
@@ -552,9 +584,11 @@ document.getElementById('searchInput').addEventListener('input', function () {
 document.getElementById('searchInput').addEventListener('keydown', function (e) {
   if (e.key === 'Enter') {
     const num = parseInt(this.value.trim());
-    if (!isNaN(num)) {
-      const el = document.querySelector(`.card-ball[data-num="${num}"]`);
-      if (el) toggleCard(num, el);
+    if (!isNaN(num) && allCardNumbers.includes(num)) {
+      if (selectedCards.has(num)) { selectedCards.delete(num); }
+      else { selectedCards.add(num); }
+      renderGrid(this.value.trim());
+      updateStats();
     }
   }
 });
@@ -564,12 +598,9 @@ function selectRange() {
   const to   = parseInt(prompt('To card number:',   '100'));
   if (isNaN(from) || isNaN(to)) return;
   allCardNumbers.forEach(num => {
-    if (num >= from && num <= to) {
-      selectedCards.add(num);
-      const el = document.querySelector(`.card-ball[data-num="${num}"]`);
-      if (el) el.classList.add('selected');
-    }
+    if (num >= from && num <= to) selectedCards.add(num);
   });
+  renderGrid();
   updateStats();
 }
 
