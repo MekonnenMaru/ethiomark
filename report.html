@@ -75,6 +75,7 @@ table.report-table .badge{display:inline-block;padding:2px 10px;border-radius:12
 </style>
 </head>
 <body>
+<script>if(!localStorage.getItem('em_cashier_id')){location.replace('/login.html');}</script>
 
 <!-- ── Sidebar ── -->
 <div class="sidebar">
@@ -219,7 +220,7 @@ async function init(){
   const history = getHistory();
 
   // Sidebar username
-  document.getElementById('sideUsername').textContent = '@cashier';
+  document.getElementById('sideUsername').textContent = localStorage.getItem('em_cashier_id') || '@cashier';
 
   // Top stats
   const allRounds = history.length;

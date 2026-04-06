@@ -8,7 +8,7 @@
    ═══════════════════════════════════════════════ */
 
 const DB_NAME    = 'EthiomarkBingoDB';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 let _db = null;
 
 /* ── open / upgrade ── */
@@ -26,6 +26,8 @@ function openDB() {
         db.createObjectStore('app_settings');
       if (!db.objectStoreNames.contains('game_history'))
         db.createObjectStore('game_history', { autoIncrement: true });
+      if (!db.objectStoreNames.contains('cashiers'))
+        db.createObjectStore('cashiers', { keyPath: 'id' });
     };
     req.onsuccess  = e => { _db = e.target.result; resolve(_db); };
     req.onerror    = e => reject(e.target.error);
@@ -169,11 +171,33 @@ async function dbAddHistory(entry) {
   });
 }
 
+/* ── cashiers ── */
+async function seedCashiers(list) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction('cashiers', 'readwrite');
+    const st  = tx.objectStore('cashiers');
+    list.forEach(c => { st.put(c); });
+    tx.oncomplete = resolve;
+    tx.onerror    = e => reject(e.target.error);
+  });
+}
+
+async function getCashier(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction('cashiers','readonly').objectStore('cashiers').get(id);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
 /* ── export namespace ── */
 window.EthiomarkDB = {
   openDB, seedCards,
   getCard, getCardsBatch, getAllCardIds,
   dbGetGameState, dbSaveGameState, dbClearGameState,
   dbGetAppSettings, dbSaveAppSettings,
-  dbGetHistory, dbAddHistory
+  dbGetHistory, dbAddHistory,
+  seedCashiers, getCashier
 };

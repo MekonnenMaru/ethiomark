@@ -41,6 +41,22 @@ A fully client-side Bingo management and gaming system for the Ethiopian market,
 - Meskel: I[2], N[1], N[3], G[2]
 - `count_winning_line >= pattern` = BINGO
 
+## Authentication / Login System
+
+- `login.html` — Glassmorphism dark login page. Cashier ID + password (MD5 hashed). Inline MD5 JS function (RFC 1321). On success, stores cashier ID in `localStorage.em_cashier_id`.
+- Session guard: All three pages (index.html, reg_new_game.html, report.html) redirect to `/login.html` if `em_cashier_id` is absent.
+- Logout clears `em_cashier_id` and redirects to `/login.html`.
+- Cashier seed accounts stored in IndexedDB `cashiers` store: `{ id, password_hash, settings_json }`.
+- Default account (from SQL dump): `@temp1` / hash `a01610228fe998f515a72dd730294d87`.
+
+## IndexedDB Schema (DB_VERSION = 4)
+
+Stores: `cards`, `game_state`, `app_settings`, `game_history`, `cashiers`
+
+## Startup Modal (index.html)
+
+The modal shown on game start displays a **2×2 stats grid**: Pattern, Cards, Price/Card, Revenue — no card number bubble list. When no cards are registered, the media area (bonus/logo image) is shown instead. Revenue is auto-calculated as cards × price.
+
 ## Removed Features (per project spec)
 
 - PHP backend, MariaDB, all AJAX server calls

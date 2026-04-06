@@ -212,11 +212,22 @@ const voiceFiles = [
 let activeAudios = [];
 
 window.onload = async () => {
+  /* ── Session guard ── */
+  if (!localStorage.getItem('em_cashier_id')) {
+    location.replace('/login.html'); return;
+  }
+
   /* ── Step 1: seed IndexedDB from BINGO_CARDS if not yet done ── */
   const barEl  = document.getElementById('audioPreloadBar');
   const pctEl  = document.getElementById('audioPreloadPercent');
   const wrapEl = document.getElementById('audioPreloadProgress');
   if (wrapEl) wrapEl.style.display = 'block';
+
+  /* seed cashier accounts */
+  await EthiomarkDB.seedCashiers([
+    { id: '@temp1', password_hash: 'a01610228fe998f515a72dd730294d87',
+      settings_json: '{"bonus":{"status":"on","amount":"50","per_day":"1"},"system":{"check_result":"auto","color_mode":"two","profit":"12","good_bingo_sound":"1"},"toggles":{"will_start":true,"started":true,"stopped":true,"show_card_count":true}}' }
+  ]);
 
   await EthiomarkDB.seedCards(pct => {
     if (barEl) barEl.style.width = pct + '%';
@@ -494,20 +505,27 @@ function initGameState(){
 function renderRegisteredCards(cards,price,round){
   document.getElementById('modal-round-number').innerHTML='Round '+round;
   const patternNames={1:'Any 1 Line',2:'Any 2 Lines',3:'Any Horizontal',4:'Any Vertical',5:'X Pattern',6:'Four Corners',7:'Center Corners',8:'Meskel',9:'T Shape',10:'Reverse T',11:'L Shape',12:'Full Card'};
+  const gi=document.getElementById('modal-game-info');
+  const mediaArea=document.getElementById('modal-media-area');
+  const imgCard=document.getElementById('selected-numbers-container-img');
   if(cards.length>0){
-    document.getElementById('selected-numbers-container').style.display='block';
-    document.getElementById('selected-numbers-container-img').style.display='none';
-    document.getElementById('selected-numbers').innerHTML=cards.map(cn=>`<button class="bingo-button">${cn}</button>`).join('');
+    if(gi){ gi.style.display='block'; }
+    if(mediaArea) mediaArea.style.display='none';
     const gs=getGameState();
     const pn=patternNames[gs.pattern||1]||('Pattern '+(gs.pattern||1));
-    const gi=document.getElementById('modal-game-info');
-    if(gi){ gi.style.display='flex'; }
+    const revenue=(cards.length*(price||0));
     const miPat=document.getElementById('mi-pattern');
     const miCards=document.getElementById('mi-cards');
     const miPrice=document.getElementById('mi-price');
-    if(miPat) miPat.textContent=pn;
-    if(miCards) miCards.textContent=cards.length+' cards';
-    if(miPrice) miPrice.textContent=(price||0)+' ብር/card';
+    const miRev=document.getElementById('mi-revenue');
+    if(miPat)   miPat.textContent=pn;
+    if(miCards) miCards.textContent=cards.length;
+    if(miPrice) miPrice.textContent=(price||0)+' ብር';
+    if(miRev)   miRev.textContent=revenue.toLocaleString()+' ብር';
+  } else {
+    if(gi) gi.style.display='none';
+    if(mediaArea) mediaArea.style.display='flex';
+    if(imgCard) imgCard.style.display='';
   }
 }
 
@@ -880,25 +898,38 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
           </div>
         </div>
         <div class="modal-body">
-          <div id="amount" style="font-size:28px;font-weight:900;text-align:center;margin-bottom:6px;">ኢትዮ-ማርክ ቢንጎ</div>
+          <div id="amount" style="font-size:26px;font-weight:900;text-align:center;margin-bottom:10px;letter-spacing:0.5px;">ኢትዮ-ማርክ ቢንጎ</div>
 
-          <!-- Game info badges row (shown when cards are registered) -->
-          <div id="modal-game-info" style="display:none;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:8px;flex-direction:row;align-items:center;">
-            <span style="background:rgba(0,198,255,0.15);border:1px solid rgba(0,198,255,0.4);color:#00c6ff;padding:4px 12px;border-radius:20px;font-size:14px;font-weight:600;" id="mi-pattern">—</span>
-            <span style="background:rgba(0,230,118,0.15);border:1px solid rgba(0,230,118,0.4);color:#00e676;padding:4px 12px;border-radius:20px;font-size:14px;font-weight:600;" id="mi-cards">0 cards</span>
-            <span style="background:rgba(255,215,64,0.15);border:1px solid rgba(255,215,64,0.4);color:#ffd740;padding:4px 12px;border-radius:20px;font-size:14px;font-weight:600;" id="mi-price">0 ብር</span>
+          <!-- Stats grid (shown when cards are registered) -->
+          <div id="modal-game-info" style="display:none;margin-bottom:14px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div style="background:rgba(0,198,255,0.08);border:1px solid rgba(0,198,255,0.25);border-radius:14px;padding:12px 10px;text-align:center;">
+                <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:rgba(0,198,255,0.7);text-transform:uppercase;margin-bottom:5px;">Pattern</div>
+                <div style="font-size:15px;font-weight:800;color:#00c6ff;" id="mi-pattern">—</div>
+              </div>
+              <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.25);border-radius:14px;padding:12px 10px;text-align:center;">
+                <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:rgba(0,230,118,0.7);text-transform:uppercase;margin-bottom:5px;">Cards</div>
+                <div style="font-size:15px;font-weight:800;color:#00e676;" id="mi-cards">0</div>
+              </div>
+              <div style="background:rgba(255,215,64,0.08);border:1px solid rgba(255,215,64,0.25);border-radius:14px;padding:12px 10px;text-align:center;">
+                <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:rgba(255,215,64,0.7);text-transform:uppercase;margin-bottom:5px;">Price/Card</div>
+                <div style="font-size:15px;font-weight:800;color:#ffd740;" id="mi-price">0 ብር</div>
+              </div>
+              <div style="background:rgba(200,120,255,0.08);border:1px solid rgba(200,120,255,0.25);border-radius:14px;padding:12px 10px;text-align:center;">
+                <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:rgba(200,120,255,0.7);text-transform:uppercase;margin-bottom:5px;">Revenue</div>
+                <div style="font-size:15px;font-weight:800;color:#c878ff;" id="mi-revenue">0 ብር</div>
+              </div>
+            </div>
           </div>
 
-          <div class="em-media-area" style="width:100%;display:flex;justify-content:center;max-height:180px;overflow:hidden;border-radius:12px;margin:4px 0;">
-            <img id="selected-numbers-container-img" src="/assets/images/card1.png" style="max-width:65%;max-height:180px;object-fit:contain;" onerror="this.style.display='none'">
-            <img id="bonus-modal-img" src="/assets/images/bonus-removebg.png" style="display:none;max-width:65%;max-height:180px;object-fit:contain;" onerror="this.style.display='none'">
+          <!-- Media area (bonus image / default logo) -->
+          <div class="em-media-area" id="modal-media-area" style="width:100%;display:flex;justify-content:center;max-height:160px;overflow:hidden;border-radius:12px;margin:4px 0;">
+            <img id="selected-numbers-container-img" src="/assets/images/card1.png" style="max-width:60%;max-height:160px;object-fit:contain;" onerror="this.style.display='none'">
+            <img id="bonus-modal-img" src="/assets/images/bonus-removebg.png" style="display:none;max-width:60%;max-height:160px;object-fit:contain;" onerror="this.style.display='none'">
           </div>
-          <div id="selected-numbers-container" style="display:none;width:100%;max-height:140px;overflow-y:auto;">
-            <h2 style="font-size:14px;margin-bottom:6px;opacity:0.7;">የተመዘገቡ ካርድ ቁጥሮች</h2>
-            <div id="selected-numbers" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
-          </div>
-          <p id="bala_alert" style="color:#ff5252;font-size:16px;min-height:18px;text-align:center;animation:blink 2s infinite;"></p>
-          <button type="submit" id="mybtn" onclick="return startbingo();" style="margin-top:6px;">▶ ጀምር</button>
+
+          <p id="bala_alert" style="color:#ff5252;font-size:15px;min-height:18px;text-align:center;animation:blink 2s infinite;margin-top:8px;"></p>
+          <button type="submit" id="mybtn" onclick="return startbingo();" style="margin-top:10px;">▶ ጀምር</button>
         </div>
       </div>
     </div>
@@ -953,7 +984,10 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
   <script>
   document.getElementById('report_button').onclick=function(){window.location.href='/report.html';};
   document.getElementById('logoutbtn').onclick=function(){
-    if(confirm('Logout? Game state will be preserved.')){location.reload();}
+    if(confirm('Logout? Game state will be preserved.')){
+      localStorage.removeItem('em_cashier_id');
+      location.replace('/login.html');
+    }
   };
   document.getElementById('register_game_button').onclick=function(){
     window.location.href='/reg_new_game.html';
