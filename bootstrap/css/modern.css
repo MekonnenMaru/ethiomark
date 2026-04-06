@@ -1,0 +1,486 @@
+/* ═══════════════════════════════════════════════════════════
+   Ethiomark Bingo — Modern Design Override
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  --bg-deep:    #020b18;
+  --bg-panel:   #071428;
+  --bg-card:    #0d1f3c;
+  --accent:     #00c6ff;
+  --accent2:    #0072ff;
+  --green:      #00e676;
+  --red:        #ff1744;
+  --gold:       #ffd740;
+  --glass:      rgba(255,255,255,0.04);
+  --glow:       rgba(0,198,255,0.25);
+  --border:     rgba(0,198,255,0.18);
+  --text:       #ffffff;
+  --subtext:    #90caf9;
+}
+
+/* ── Base body ───────────────────────────────────── */
+body {
+  background: radial-gradient(ellipse at top, #071428 0%, #020b18 100%) !important;
+  background-attachment: fixed !important;
+  min-height: 100vh;
+}
+
+/* ═══════════════════════════════════════════════════
+   STARTUP / ROUND MODAL
+   ═══════════════════════════════════════════════════ */
+#myModal .modal-dialog {
+  max-width: 640px !important;
+}
+
+#myModal .modal-content {
+  background: linear-gradient(160deg, #0d1f3c 0%, #071428 100%) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 24px !important;
+  box-shadow:
+    0 0 60px rgba(0,114,255,0.3),
+    0 0 120px rgba(0,198,255,0.1),
+    inset 0 1px 0 rgba(255,255,255,0.08) !important;
+  overflow: hidden !important;
+  color: #fff !important;
+}
+
+/* Modal header */
+#myModal .modal-header {
+  background: linear-gradient(90deg, #031730 0%, #051f4a 100%);
+  border-bottom: 1px solid var(--border) !important;
+  padding: 16px 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+#myModal .modal-header .em-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#myModal .modal-header .em-brand {
+  font-size: 26px;
+  font-weight: 900;
+  background: linear-gradient(90deg, #00c6ff, #7b61ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 1px;
+}
+
+#myModal .modal-header .em-round-badge {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--subtext);
+  background: rgba(0,198,255,0.08);
+  border: 1px solid var(--border);
+  padding: 5px 16px;
+  border-radius: 20px;
+}
+
+#myModal .modal-header .em-nav-row {
+  display: flex;
+  gap: 8px;
+}
+
+.em-nav-btn {
+  flex: 1;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+
+.em-btn-report {
+  background: rgba(33,150,243,0.12);
+  color: #64b5f6;
+  border: 1px solid rgba(33,150,243,0.35) !important;
+}
+.em-btn-report:hover { background: #1565c0 !important; color: #fff !important; }
+
+.em-btn-register {
+  background: rgba(0,200,83,0.12);
+  color: #69f0ae;
+  border: 1px solid rgba(0,200,83,0.35) !important;
+}
+.em-btn-register:hover { background: #00c853 !important; color: #fff !important; }
+
+.em-btn-logout {
+  background: rgba(255,82,82,0.12);
+  color: #ff8a80;
+  border: 1px solid rgba(255,82,82,0.35) !important;
+}
+.em-btn-logout:hover { background: #c62828 !important; color: #fff !important; }
+
+/* Modal body */
+#myModal .modal-body {
+  background: transparent !important;
+  padding: 24px 28px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 18px !important;
+}
+
+#myModal #amount {
+  font-size: 30px !important;
+  font-weight: 900 !important;
+  background: linear-gradient(90deg, #00c6ff, #7b61ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: center !important;
+  text-shadow: none !important;
+  filter: drop-shadow(0 0 12px rgba(0,198,255,0.4));
+}
+
+#myModal .em-media-area {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  max-height: 210px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+#myModal #selected-numbers-container-img,
+#myModal #bonus-modal-img {
+  max-width: 65%;
+  max-height: 210px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+#myModal #selected-numbers-container {
+  width: 100% !important;
+  background: rgba(0,198,255,0.05) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+  padding: 14px 16px !important;
+  max-height: 170px !important;
+  overflow-y: auto !important;
+}
+
+#myModal #selected-numbers-container h2 {
+  font-size: 16px !important;
+  color: var(--subtext) !important;
+  margin-bottom: 10px !important;
+  font-weight: 600 !important;
+}
+
+#myModal .bingo-button {
+  width: 52px !important;
+  height: 52px !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  background: rgba(0,198,255,0.08) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  color: #c0d4ff !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 3px !important;
+}
+
+#myModal #bala_alert {
+  color: #ff5252 !important;
+  font-size: 16px !important;
+  min-height: 20px !important;
+  text-align: center !important;
+}
+
+/* Start button */
+#mybtn, #myModal .modal-start-btn {
+  background: linear-gradient(135deg, #0072ff, #00c6ff) !important;
+  color: white !important;
+  border: none !important;
+  padding: 16px 0 !important;
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  border-radius: 50px !important;
+  cursor: pointer !important;
+  letter-spacing: 3px !important;
+  box-shadow: 0 0 35px rgba(0,198,255,0.45) !important;
+  transition: all 0.25s !important;
+  width: 100% !important;
+  max-width: 400px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+#mybtn::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 35%;
+  height: 200%;
+  background: rgba(255,255,255,0.18);
+  transform: skewX(-20deg);
+  animation: btnShine 3s ease-in-out infinite;
+}
+
+@keyframes btnShine {
+  0%   { left: -60%; }
+  60%  { left: 160%; }
+  100% { left: 160%; }
+}
+
+#mybtn:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 0 55px rgba(0,198,255,0.65) !important;
+}
+
+#mybtn:active { transform: translateY(0) !important; }
+
+/* snake-border override */
+.snake-border { animation: none !important; }
+
+/* ═══════════════════════════════════════════════════
+   GAME BOARD — BALL DISPLAY
+   ═══════════════════════════════════════════════════ */
+.ball2 {
+  background: radial-gradient(circle at 38% 35%,
+    #c8e8ff 0%, #7ab8f5 20%,
+    #1a3a6e 55%, #0a1628 80%, #020b18 100%) !important;
+  box-shadow:
+    0 0 30px rgba(0,198,255,0.5),
+    0 0 60px rgba(0,198,255,0.2),
+    inset 0 0 20px rgba(255,255,255,0.08) !important;
+}
+
+.num {
+  color: #fff !important;
+  text-shadow: 0 0 20px #fff, 0 0 8px rgba(0,198,255,0.6) !important;
+  font-size: 52px !important;
+  font-weight: 900 !important;
+}
+
+/* Recent calls table */
+.tgable-container {
+  background: rgba(0,198,255,0.04) !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--border) !important;
+  padding: 8px !important;
+}
+
+.bingo-call {
+  border-radius: 8px !important;
+  font-weight: 800 !important;
+  font-size: 28px !important;
+  transition: all 0.3s !important;
+  min-width: 52px !important;
+}
+
+/* Derash box */
+.derash-box {
+  background: linear-gradient(145deg, #071428 0%, #0d1f3c 100%) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 0 25px rgba(0,198,255,0.12) !important;
+  border-radius: 16px !important;
+}
+
+.derash-box .amount {
+  font-size: 38px !important;
+  font-weight: 900 !important;
+  background: linear-gradient(90deg, #00c6ff, #00e676);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.derash-details .total-calls {
+  font-size: 28px !important;
+  font-weight: 800 !important;
+  color: #ffd740 !important;
+}
+
+.derash-details .total-card {
+  font-size: 15px !important;
+  color: var(--subtext) !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   B / I / N / G / O GRID
+   ═══════════════════════════════════════════════════ */
+.txtbox {
+  border-radius: 10px !important;
+  font-size: 26px !important;
+  font-weight: 900 !important;
+  letter-spacing: 1px !important;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6) !important;
+}
+
+.numbox {
+  border-radius: 7px !important;
+  font-weight: 700 !important;
+  transition: all 0.25s cubic-bezier(.34,1.56,.64,1) !important;
+  font-size: 17px !important;
+}
+
+.numbox.callnum {
+  transform: scale(1.25) !important;
+  z-index: 1 !important;
+  position: relative !important;
+  box-shadow: 0 0 16px rgba(255,215,0,0.6) !important;
+  animation: popIn 0.4s cubic-bezier(.34,1.56,.64,1) forwards !important;
+}
+
+@keyframes popIn {
+  0%   { transform: scale(0.7); opacity: 0.5; }
+  60%  { transform: scale(1.3); }
+  100% { transform: scale(1.2); opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════
+   CONTROL BUTTONS
+   ═══════════════════════════════════════════════════ */
+.btnbingo, .btnshuffle {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1.5px !important;
+  transition: all 0.2s !important;
+  font-size: 17px !important;
+  text-transform: uppercase !important;
+}
+
+.btnbingo:hover, .btnshuffle:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
+}
+
+.card-input {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  color: #fff !important;
+  padding: 8px 14px !important;
+  font-size: 18px !important;
+  transition: border 0.2s !important;
+}
+.card-input:focus { border-color: var(--accent) !important; outline: none !important; }
+
+.slider { accent-color: var(--accent) !important; }
+
+/* Speed label */
+.slidecontainer p {
+  color: var(--subtext) !important;
+  font-size: 20px !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   SETTINGS MENU
+   ═══════════════════════════════════════════════════ */
+.settings-menu {
+  background: linear-gradient(145deg, #0d1f3c, #071428) !important;
+  border-left: 1px solid var(--border) !important;
+  box-shadow: -10px 0 50px rgba(0,0,0,0.6) !important;
+}
+
+.settings-header {
+  background: linear-gradient(90deg, #031730, #051f4a) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.settings-header h2 {
+  background: linear-gradient(90deg, #00c6ff, #7b61ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.settings-option {
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   CARD CHECK MODAL
+   ═══════════════════════════════════════════════════ */
+#myModalcard .modal-content,
+#helpmodal .modal-content {
+  background: linear-gradient(145deg, #0d1f3c, #071428) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 0 60px rgba(0,114,255,0.25) !important;
+  color: #fff !important;
+}
+
+#myModalcard .modal-header,
+#helpmodal .modal-header {
+  background: linear-gradient(90deg, #031730, #051f4a) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.modal-button {
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  transition: all 0.2s !important;
+}
+
+.modal-button:hover { transform: translateY(-1px) !important; }
+
+/* ═══════════════════════════════════════════════════
+   TOP-RIGHT ICON BUTTONS
+   ═══════════════════════════════════════════════════ */
+#buttonContainer button {
+  transition: all 0.2s !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+#buttonContainer button:hover {
+  transform: scale(1.1) !important;
+  filter: brightness(1.3) !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   BONUS PANEL
+   ═══════════════════════════════════════════════════ */
+#bonusContainer {
+  background: linear-gradient(145deg, #1a0a3c, #2d0052) !important;
+  border: 2px solid rgba(180,100,255,0.4) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 0 30px rgba(150,0,255,0.3) !important;
+}
+
+#bonusContent h1 {
+  font-size: 28px !important;
+  text-align: center !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   ALERTS & NOTIFICATIONS
+   ═══════════════════════════════════════════════════ */
+.custom-alert {
+  border-radius: 14px !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5) !important;
+  padding: 14px 24px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.alert-success { background: rgba(0,200,83,0.9) !important; color: #fff !important; }
+.alert-danger  { background: rgba(255,23,68,0.9)  !important; color: #fff !important; }
+
+/* Audio progress bar */
+#audioPreloadProgress {
+  backdrop-filter: blur(8px) !important;
+  background: rgba(2,11,24,0.85) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 16px !important;
+  padding: 10px 14px !important;
+}
+
+/* scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(0,198,255,0.3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,198,255,0.5); }

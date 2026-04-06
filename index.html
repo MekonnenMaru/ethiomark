@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/bootstrap/css/reg_card.css">
 <link rel="stylesheet" href="/cashier/side-nav.css">
 <link rel="stylesheet" href="/cashier/container.css">
+<link rel="stylesheet" href="/bootstrap/css/modern.css">
 
 <script>
 /* ── Thin IDB wrapper matching the idb library API used throughout ── */
@@ -464,6 +465,7 @@ function startbingo(){
       document.getElementById('amount1').innerText=(income-roundedTotal);
     }
   }
+  $('#myModal').modal('hide');
   hasBeenCalled=false;
   btn.disabled=false;
 }
@@ -727,29 +729,31 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
 
   <!-- ─── Start / Register Modal ─── -->
   <div id="myModal" class="modal fade" data-keyboard="false" data-backdrop="static" style="display:none;overflow-y:auto;">
-    <div class="modal-dialog">
-      <div class="modal-content" style="width:600px;height:400px;opacity:.9;">
-        <div class="modal-header">
-          <h2 id="modal-round-number">Round 1</h2>
-          <div class="hidden-info"></div>
-          <div class="button-group">
-            <button class="modal-button" id="report_button">Report</button>&nbsp;
-            <button class="modal-button" id="logoutbtn">Logout</button>
-            <button id="register_game_button" class="modal-button-register"><h3>Register Card</h3></button>
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header" style="flex-direction:column;gap:12px;">
+          <div class="em-title-row">
+            <span class="em-brand">ኢትዮ-ማርክ ቢንጎ</span>
+            <span class="em-round-badge" id="modal-round-number">Round 1</span>
+          </div>
+          <div class="em-nav-row">
+            <button class="em-nav-btn em-btn-report" id="report_button">📊 Report</button>
+            <button class="em-nav-btn em-btn-register" id="register_game_button">🎴 Register Card</button>
+            <button class="em-nav-btn em-btn-logout" id="logoutbtn">↩ Logout</button>
           </div>
         </div>
-        <div class="modal-body" style="background-color:#f6f7f9;">
-          <h2 id="amount">ኢትዮ-ማርክ ቢንጎ</h2>
-          <div style="min-height:300px;margin:0px;">
-            <img id="selected-numbers-container-img" src="/assets/images/card1.png" style="user-drag:none;-webkit-user-drag:none;width:70%;max-height:400px;" onerror="this.style.display='none'">
-            <img id="bonus-modal-img" src="/assets/images/bonus-removebg.png" style="display:none;user-drag:none;-webkit-user-drag:none;width:70%;max-height:400px;" onerror="this.style.display='none'">
-            <div id="selected-numbers-container" style="background:rgba(255,255,255,.8);padding:10px;border-radius:5px;display:none;max-height:300px;overflow-y:auto;">
-              <h2>የተመዘገቡ ካርድ ቁጥሮች</h2>
-              <div id="selected-numbers" style="font-size:24px;color:#000;"></div>
-            </div>
+        <div class="modal-body">
+          <div id="amount" style="font-size:30px;font-weight:900;text-align:center;">ኢትዮ-ማርክ ቢንጎ</div>
+          <div class="em-media-area" style="width:100%;display:flex;justify-content:center;max-height:200px;overflow:hidden;border-radius:12px;margin:4px 0;">
+            <img id="selected-numbers-container-img" src="/assets/images/card1.png" style="max-width:65%;max-height:200px;object-fit:contain;" onerror="this.style.display='none'">
+            <img id="bonus-modal-img" src="/assets/images/bonus-removebg.png" style="display:none;max-width:65%;max-height:200px;object-fit:contain;" onerror="this.style.display='none'">
           </div>
-          <p id="bala_alert" style="color:red;animation:blink 2s infinite;"></p>
-          <button type="submit" class="exe modal-start-btn snake-border" id="mybtn" onclick="return startbingo();">Start</button>
+          <div id="selected-numbers-container" style="display:none;width:100%;max-height:170px;overflow-y:auto;">
+            <h2 style="font-size:16px;margin-bottom:8px;">የተመዘገቡ ካርድ ቁጥሮች</h2>
+            <div id="selected-numbers" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+          </div>
+          <p id="bala_alert" style="color:#ff5252;font-size:16px;min-height:20px;text-align:center;animation:blink 2s infinite;"></p>
+          <button type="submit" id="mybtn" onclick="return startbingo();" style="margin-top:4px;">▶ ጀምር</button>
         </div>
       </div>
     </div>
