@@ -884,41 +884,52 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
 
   <!-- ─── Game display ─── -->
   <div class="container" style="margin-left:5px;">
-    <div class="row">
-      <div id="col-11"></div>
-      <div id="col-2" class="col-2">
+    <div class="row" style="align-items:center;">
+
+      <!-- LEFT: Recent results + Derash info -->
+      <div class="col-8" style="display:flex;align-items:stretch;gap:14px;padding-right:6px;">
+
+        <!-- Recent results label + 5-cell table -->
+        <div style="flex:1;min-width:0;">
+          <p class="lastcall" style="margin-bottom:6px;">Recent Results for (<a href="#" style="color:red;font-size:22px;font-weight:900;" id="round_number_bellow_5">yyyyy</a>)</p>
+          <div class="tgable-container">
+            <table id="bingo-table">
+              <tr>
+                <td class="bingo-call" style="color:red;" t="0"></td>
+                <td class="bingo-call" t="1"></td>
+                <td class="bingo-call" t="2"></td>
+                <td class="bingo-call" t="3"></td>
+                <td class="bingo-call" t="4"></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- Derash box -->
+        <div style="flex:0 0 auto;">
+          <div class="derash-box">
+            <div class="derash-content">
+              <span class="amount"><span id="amount1"></span><span>&nbsp;ደራሽ</span></span>
+            </div>
+            <span class="derash-line">-</span><br><br>
+            <div class="derash-details">
+              <span class="total-card" id="cardCounter">ብዛት : 0</span>&nbsp;&nbsp;&nbsp;&nbsp;
+              <span class="total-calls">ጥሪ : <span id="drawn_number_counter">0</span></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: Big ball -->
+      <div id="col-2" class="col-4" style="display:flex;justify-content:center;align-items:center;">
         <div class="contains">
           <div class="ball2"><div class="ball3"><div class="ball4"><div class="ball5">
             <p class="num" id="rand"></p>
           </div></div></div></div>
         </div>
       </div>
-      <div id="col-4" class="col-4">
-        <p class="lastcall">Recent Results for (<a href="#" style="color:red;text-align:center;font-size:25px;font-weight:900;" id="round_number_bellow_5">yyyyy</a>)</p>
-        <div class="tgable-container">
-          <table id="bingo-table">
-            <tr>
-              <td class="bingo-call" style="color:red;" t="0"></td>
-              <td class="bingo-call" t="1"></td>
-              <td class="bingo-call" t="2"></td>
-              <td class="bingo-call" t="3"></td>
-              <td class="bingo-call" t="4"></td>
-            </tr>
-          </table>
-        </div>
-      </div>
-      <div class="col-3">
-        <div class="derash-box">
-          <div class="derash-content">
-            <span class="amount"><span id="amount1"></span><span>&nbsp;ደራሽ</span></span>
-          </div>
-          <span class="derash-line">-</span><br><br>
-          <div class="derash-details">
-            <span class="total-card" id="cardCounter">ብዛት : 0</span>&nbsp;&nbsp;&nbsp;&nbsp;
-            <span class="total-calls">ጥሪ : <span id="drawn_number_counter">0</span></span>
-          </div>
-        </div>
-      </div>
+
     </div>
 
     <br><br>
