@@ -886,14 +886,14 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
   <div class="container" style="margin-left:5px;">
     <div class="row">
       <div id="col-11"></div>
-      <div id="col-2" class="col-2">
+      <div id="col-2" class="col-3">
         <div class="contains">
           <div class="ball2"><div class="ball3"><div class="ball4"><div class="ball5">
             <p class="num" id="rand"></p>
           </div></div></div></div>
         </div>
       </div>
-      <div id="col-4" class="col-4">
+      <div id="col-4" class="col-5">
         <p class="lastcall">Recent Results for (<a href="#" style="color:red;text-align:center;font-size:25px;font-weight:900;" id="round_number_bellow_5">yyyyy</a>)</p>
         <div class="tgable-container">
           <table id="bingo-table">
@@ -912,7 +912,7 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
           <div class="derash-content">
             <span class="amount"><span id="amount1"></span><span>&nbsp;ደራሽ</span></span>
           </div>
-          <span class="derash-line">-</span><br><br>
+          <span class="derash-line" style="display:block;width:80%;height:8px;background:#2C866A;margin:8px auto;"></span>
           <div class="derash-details">
             <span class="total-card" id="cardCounter">ብዛት : 0</span>&nbsp;&nbsp;&nbsp;&nbsp;
             <span class="total-calls">ጥሪ : <span id="drawn_number_counter">0</span></span>
@@ -920,8 +920,6 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
         </div>
       </div>
     </div>
-
-    <br><br>
 
     <!-- ─── B/I/N/G/O number grid ─── -->
     <div class="row">
@@ -997,7 +995,7 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
     <!-- ─── Control row ─── -->
     <div class="row">
       <div class="col-12">
-        <div class="setting_box" style="display:flex;justify-content:center;align-items:center;width:80%;margin:20px auto;">
+        <div class="setting_box" style="display:flex;justify-content:center;align-items:center;width:100%;margin:10px 0;flex-wrap:wrap;gap:6px;">
           <button style="border:5px solid white;max-width:150px;" onclick="change()" id="bingoo" class="btnbingo">Bingo</button>
           <button style="border:5px solid white;max-width:150px;" id="shuffle" class="btnshuffle">Shuffle</button>
           <button style="border:5px solid red;max-width:150px;" id="finsh_game" class="btnbingo">Finsh</button>
@@ -1015,17 +1013,12 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
             <input type="text" placeholder="Card Number..." id="Ecard_no" class="card-input" required>
           </div>
           <button style="border:5px solid white;max-width:150px;" type="submit" class="btnbingo" id="mycheck">Check</button>
-        </div>
-        <div class="row">
-          <div class="col-1"></div>
-          <div class="col-3"></div>
-          <div class="slidecontainer col-4" style="display:inline-block;">
-            <p style="margin-bottom:-1.0rem;font-size:32px;font-weight:600;text-align:center;">
+          <div class="slidecontainer" style="flex:1 1 200px;min-width:180px;max-width:300px;color:white;padding:0 10px;">
+            <p style="margin-bottom:0;font-size:22px;font-weight:600;text-align:center;line-height:1.2;">
               Play speed: <span id="demo">3</span>
             </p>
-            <input type="range" min="1" max="15" value="3" class="slider" id="myRange" style="height:60px;letter-spacing:1px;margin-top:-2.0rem;">
+            <input type="range" min="1" max="15" value="3" class="slider" id="myRange" style="height:40px;width:100%;margin-top:4px;">
           </div>
-          <div class="col-4"></div>
         </div>
 
         <canvas id="canvas" style="display:none;"></canvas>
