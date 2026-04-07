@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ethiomark — Key Generator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#07101f;color:#e3eaf6;font-family:'Segoe UI',Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:30px 16px 60px;}
+
+/* ── auth gate ── */
+#gate{width:100%;max-width:380px;background:#0d1b35;border:1px solid #1a2d50;border-radius:20px;padding:36px 32px;text-align:center;margin-top:60px;}
+#gate h2{font-size:22px;font-weight:900;color:#ffd740;margin-bottom:6px;}
+#gate p{font-size:13px;color:#4a6880;margin-bottom:24px;}
+#gate label{display:block;font-size:10.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#4a6880;margin-bottom:8px;text-align:left;}
+#gate input{width:100%;padding:11px 14px;background:#07101f;border:1px solid #1a2d50;border-radius:10px;color:#e3eaf6;font-size:15px;outline:none;transition:border-color .2s;margin-bottom:16px;}
+#gate input:focus{border-color:#0072ff;}
+#gate button{width:100%;padding:13px;background:linear-gradient(135deg,#ff6f00,#ffa000);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:900;cursor:pointer;transition:opacity .2s;}
+#gate button:hover{opacity:.88;}
+#gate-err{color:#ff5252;font-size:12px;font-weight:700;margin-top:10px;min-height:16px;}
+
+/* ── main tool ── */
+#tool{display:none;width:100%;max-width:620px;}
+.page-title{text-align:center;margin-bottom:28px;}
+.page-title h1{font-size:26px;font-weight:900;background:linear-gradient(90deg,#ffd740,#ff8f00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.page-title p{font-size:13px;color:#4a6880;margin-top:5px;}
+
+.card{background:#0d1b35;border:1px solid #1a2d50;border-radius:18px;padding:26px 28px;margin-bottom:20px;}
+.card h3{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#4a6880;margin-bottom:18px;}
+
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#4a6880;margin-bottom:7px;}
+.field input,.field select{width:100%;padding:11px 14px;background:#07101f;border:1px solid #1a2d50;border-radius:10px;color:#e3eaf6;font-size:14px;outline:none;transition:border-color .2s;font-family:monospace;}
+.field input:focus,.field select:focus{border-color:#0072ff;}
+.field small{display:block;font-size:11px;color:#2d4a68;margin-top:5px;}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+#genBtn{width:100%;padding:14px;background:linear-gradient(135deg,#0072ff,#00c6ff);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 4px 18px rgba(0,114,255,.35);transition:all .2s;}
+#genBtn:hover{box-shadow:0 4px 28px rgba(0,114,255,.55);transform:translateY(-1px);}
+#genBtn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+/* ── output ── */
+#keyOut{display:none;}
+.key-box{background:#07101f;border:2px solid rgba(0,198,255,.35);border-radius:14px;padding:18px 20px;margin-bottom:12px;position:relative;}
+.key-text{font-family:monospace;font-size:22px;font-weight:900;color:#00c6ff;letter-spacing:2px;word-break:break-all;cursor:pointer;user-select:all;}
+.key-len{font-size:11px;color:#4a6880;margin-top:6px;font-weight:600;}
+.key-meta{font-size:13px;color:#7986cb;margin-top:10px;line-height:1.7;}
+.copy-hint{position:absolute;top:12px;right:14px;font-size:10px;color:#2d4a68;font-weight:700;letter-spacing:.5px;}
+.copy-toast{display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#00e676;color:#07101f;padding:10px 22px;border-radius:50px;font-size:13px;font-weight:900;z-index:9999;}
+
+/* ── history ── */
+#histWrap{display:none;}
+.hist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.hist-head h3{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#4a6880;}
+#exportBtn{font-size:12px;font-weight:800;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,183,77,.3);background:rgba(255,183,77,.08);color:#ffb74d;cursor:pointer;}
+#exportBtn:hover{background:rgba(255,183,77,.18);}
+.hist-table{width:100%;border-collapse:collapse;font-size:13px;}
+.hist-table th{padding:8px 10px;font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#2d4a68;text-align:left;border-bottom:1px solid #1a2d50;}
+.hist-table td{padding:10px;border-bottom:1px solid rgba(26,45,80,.5);vertical-align:middle;}
+.hist-table tr:last-child td{border-bottom:none;}
+.hist-table .key-cell{font-family:monospace;font-size:12px;color:#00c6ff;cursor:pointer;}
+.hist-table .key-cell:hover{color:#64b5f6;}
+
+@media(max-width:520px){.row2{grid-template-columns:1fr;}.key-text{font-size:16px;}}
+</style>
+</head>
+<body>
+
+<!-- ── password gate ── -->
+<div id="gate">
+  <h2>🔑 Admin Access</h2>
+  <p>Key Generator — Ethiomark Bingo</p>
+  <label>Admin Password</label>
+  <input type="password" id="gatePass" placeholder="••••••••••••" onkeydown="if(event.key==='Enter')checkGate()">
+  <button onclick="checkGate()">Enter</button>
+  <div id="gate-err"></div>
+</div>
+
+<!-- ── main tool ── -->
+<div id="tool">
+  <div class="page-title">
+    <h1>🔑 License Key Generator</h1>
+    <p>Ethiomark Bingo — Admin Only</p>
+  </div>
+
+  <!-- inputs -->
+  <div class="card">
+    <h3>Key Parameters</h3>
+
+    <div class="field">
+      <label>Machine ID (from cashier's screen)</label>
+      <input type="text" id="machineId" placeholder="e.g. 76058E59" maxlength="9" oninput="this.value=this.value.replace(/[^0-9A-Fa-f\-]/g,'').toUpperCase()">
+      <small>8 hex characters — shown on cashier's Package overlay</small>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>Package Amount (ብር)</label>
+        <select id="amount">
+          <option value="1000">1,000 ብር</option>
+          <option value="2000">2,000 ብር</option>
+          <option value="3000">3,000 ብር</option>
+          <option value="5000" selected>5,000 ብር</option>
+          <option value="10000">10,000 ብር</option>
+          <option value="20000">20,000 ብር</option>
+          <option value="50000">50,000 ብር</option>
+          <option value="100000">100,000 ብር</option>
+          <option value="custom">Custom…</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Serial # (auto-increments)</label>
+        <input type="number" id="serial" min="1" value="1" placeholder="1">
+        <small>Unique per machine — never reuse</small>
+      </div>
+    </div>
+
+    <div class="field" id="customAmtWrap" style="display:none;">
+      <label>Custom Amount (ብር)</label>
+      <input type="number" id="customAmt" min="1" placeholder="Enter amount">
+    </div>
+
+    <button id="genBtn" onclick="generate()">⚡ Generate Key</button>
+  </div>
+
+  <!-- output -->
+  <div id="keyOut" class="card">
+    <h3>Generated Key</h3>
+    <div class="key-box" onclick="copyKey()">
+      <div class="copy-hint">CLICK TO COPY</div>
+      <div class="key-text" id="keyText">—</div>
+      <div class="key-len" id="keyLen"></div>
+    </div>
+    <div class="key-meta" id="keyMeta"></div>
+  </div>
+
+  <!-- session history -->
+  <div id="histWrap" class="card">
+    <div class="hist-head">
+      <h3>Session Log (<span id="histCount">0</span> keys)</h3>
+      <button id="exportBtn" onclick="exportJSON()">⬇ Export JSON</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="hist-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Machine</th>
+            <th>Amount</th>
+            <th>Serial</th>
+            <th>Key (click to copy)</th>
+          </tr>
+        </thead>
+        <tbody id="histBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- copy toast -->
+<div class="copy-toast" id="copyToast">✓ Copied!</div>
+
+<script>
+/* ── HMAC-SHA256 (SubtleCrypto) ── */
+const SECRET = 'EMbingo!X9pQ#2025-EthioMark-Lic3ns3-S3cr3t@Key';
+const ADMIN_MD5 = '9f9237baae65e39a07539308888c24cb'; /* MD5 of EthioAdmin@2025 */
+
+async function hmac8(data) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(SECRET),
+    {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(data));
+  return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('').substring(0,8).toUpperCase();
+}
+
+async function generateKey(mid, sn, amt) {
+  mid = mid.replace(/-/g,'').trim().toUpperCase();
+  const sig = await hmac8([mid, sn, amt].join('|'));
+  return 'EM-' + mid + '-' + amt + '-' + sn + '-' + sig;
+}
+
+/* ── MD5 (minimal, for gate check) ── */
+function md5(s){
+  function safeAdd(x,y){const lsw=(x&0xffff)+(y&0xffff);const msw=(x>>16)+(y>>16)+(lsw>>16);return(msw<<16)|(lsw&0xffff);}
+  function bitRotateLeft(x,n){return(x<<n)|(x>>>(32-n));}
+  function md5cmn(q,a,b,x,s,t){return safeAdd(bitRotateLeft(safeAdd(safeAdd(a,q),safeAdd(x,t)),s),b);}
+  function md5ff(a,b,c,d,x,s,t){return md5cmn((b&c)|(~b&d),a,b,x,s,t);}
+  function md5gg(a,b,c,d,x,s,t){return md5cmn((b&d)|(c&~d),a,b,x,s,t);}
+  function md5hh(a,b,c,d,x,s,t){return md5cmn(b^c^d,a,b,x,s,t);}
+  function md5ii(a,b,c,d,x,s,t){return md5cmn(c^(b|~d),a,b,x,s,t);}
+  s=unescape(encodeURIComponent(s));
+  let n=[];for(let i=0;i<s.length;i++)n[i>>2]|=(s.charCodeAt(i)&0xff)<<((i%4)*8);
+  n[s.length>>2]|=0x80<<((s.length%4)*8);n[(((s.length+8)>>>6)<<4)+14]=s.length*8;
+  let a=1732584193,b=-271733879,c=-1732584194,d=271733878,aa,bb,cc,dd;
+  for(let i=0;i<n.length;i+=16){
+    aa=a;bb=b;cc=c;dd=d;
+    a=md5ff(a,b,c,d,n[i+0],7,-680876936);d=md5ff(d,a,b,c,n[i+1],12,-389564586);c=md5ff(c,d,a,b,n[i+2],17,606105819);b=md5ff(b,c,d,a,n[i+3],22,-1044525330);
+    a=md5ff(a,b,c,d,n[i+4],7,-176418897);d=md5ff(d,a,b,c,n[i+5],12,1200080426);c=md5ff(c,d,a,b,n[i+6],17,-1473231341);b=md5ff(b,c,d,a,n[i+7],22,-45705983);
+    a=md5ff(a,b,c,d,n[i+8],7,1770035416);d=md5ff(d,a,b,c,n[i+9],12,-1958414417);c=md5ff(c,d,a,b,n[i+10],17,-42063);b=md5ff(b,c,d,a,n[i+11],22,-1990404162);
+    a=md5ff(a,b,c,d,n[i+12],7,1804603682);d=md5ff(d,a,b,c,n[i+13],12,-40341101);c=md5ff(c,d,a,b,n[i+14],17,-1502002290);b=md5ff(b,c,d,a,n[i+15],22,1236535329);
+    a=md5gg(a,b,c,d,n[i+1],5,-165796510);d=md5gg(d,a,b,c,n[i+6],9,-1069501632);c=md5gg(c,d,a,b,n[i+11],14,643717713);b=md5gg(b,c,d,a,n[i+0],20,-373897302);
+    a=md5gg(a,b,c,d,n[i+5],5,-701558691);d=md5gg(d,a,b,c,n[i+10],9,38016083);c=md5gg(c,d,a,b,n[i+15],14,-660478335);b=md5gg(b,c,d,a,n[i+4],20,-405537848);
+    a=md5gg(a,b,c,d,n[i+9],5,568446438);d=md5gg(d,a,b,c,n[i+14],9,-1019803690);c=md5gg(c,d,a,b,n[i+3],14,-187363961);b=md5gg(b,c,d,a,n[i+8],20,1163531501);
+    a=md5gg(a,b,c,d,n[i+13],5,-1444681467);d=md5gg(d,a,b,c,n[i+2],9,-51403784);c=md5gg(c,d,a,b,n[i+7],14,1735328473);b=md5gg(b,c,d,a,n[i+12],20,-1926607734);
+    a=md5hh(a,b,c,d,n[i+5],4,-378558);d=md5hh(d,a,b,c,n[i+8],11,-2022574463);c=md5hh(c,d,a,b,n[i+11],16,1839030562);b=md5hh(b,c,d,a,n[i+14],23,-35309556);
+    a=md5hh(a,b,c,d,n[i+1],4,-1530992060);d=md5hh(d,a,b,c,n[i+4],11,1272893353);c=md5hh(c,d,a,b,n[i+7],16,-155497632);b=md5hh(b,c,d,a,n[i+10],23,-1094730640);
+    a=md5hh(a,b,c,d,n[i+13],4,681279174);d=md5hh(d,a,b,c,n[i+0],11,-358537222);c=md5hh(c,d,a,b,n[i+3],16,-722521979);b=md5hh(b,c,d,a,n[i+6],23,76029189);
+    a=md5hh(a,b,c,d,n[i+9],4,-640364487);d=md5hh(d,a,b,c,n[i+12],11,-421815835);c=md5hh(c,d,a,b,n[i+15],16,530742520);b=md5hh(b,c,d,a,n[i+2],23,-995338651);
+    a=md5ii(a,b,c,d,n[i+0],6,-198630844);d=md5ii(d,a,b,c,n[i+7],10,1126891415);c=md5ii(c,d,a,b,n[i+14],15,-1416354905);b=md5ii(b,c,d,a,n[i+5],21,-57434055);
+    a=md5ii(a,b,c,d,n[i+12],6,1700485571);d=md5ii(d,a,b,c,n[i+3],10,-1894986606);c=md5ii(c,d,a,b,n[i+10],15,-1051523);b=md5ii(b,c,d,a,n[i+1],21,-2054922799);
+    a=md5ii(a,b,c,d,n[i+8],6,1873313359);d=md5ii(d,a,b,c,n[i+15],10,-30611744);c=md5ii(c,d,a,b,n[i+6],15,-1560198380);b=md5ii(b,c,d,a,n[i+13],21,1309151649);
+    a=md5ii(a,b,c,d,n[i+4],6,-145523070);d=md5ii(d,a,b,c,n[i+11],10,-1120210379);c=md5ii(c,d,a,b,n[i+2],15,718787259);b=md5ii(b,c,d,a,n[i+9],21,-343485551);
+    a=safeAdd(a,aa);b=safeAdd(b,bb);c=safeAdd(c,cc);d=safeAdd(d,dd);
+  }
+  function hex(n){let s='',v;for(let i=0;i<4;i++){v=(n>>>(i*8))&0xff;s+=('0'+v.toString(16)).slice(-2);}return s;}
+  return hex(a)+hex(b)+hex(c)+hex(d);
+}
+
+/* ── Session log ── */
+let sessionLog = [];
+
+/* ── Gate ── */
+function checkGate() {
+  const pw = document.getElementById('gatePass').value;
+  const h  = md5(pw);
+  if (h === ADMIN_MD5) {
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('tool').style.display = 'block';
+    /* restore serial from sessionStorage */
+    const saved = sessionStorage.getItem('em_keygen_serial');
+    document.getElementById('serial').value = saved ? parseInt(saved)+1 : 1;
+  } else {
+    document.getElementById('gate-err').textContent = 'Wrong password. Try again.';
+    document.getElementById('gatePass').value = '';
+    document.getElementById('gatePass').focus();
+  }
+}
+document.getElementById('gatePass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkGate();
+});
+
+/* ── Amount select ── */
+document.getElementById('amount').addEventListener('change', function() {
+  document.getElementById('customAmtWrap').style.display =
+    this.value === 'custom' ? 'block' : 'none';
+});
+
+/* ── Generate ── */
+async function generate() {
+  const midRaw = document.getElementById('machineId').value.replace(/-/g,'').trim().toUpperCase();
+  const snRaw  = document.getElementById('serial').value.trim();
+  const sn     = String(parseInt(snRaw) || 0);
+  let amtVal   = document.getElementById('amount').value;
+  if (amtVal === 'custom') amtVal = document.getElementById('customAmt').value.trim();
+  const amt = Number(amtVal);
+
+  if (midRaw.length !== 8) { alert('Machine ID must be exactly 8 hex characters (e.g. 76058E59)'); return; }
+  if (!amt || isNaN(amt) || amt <= 0) { alert('Select or enter a valid package amount.'); return; }
+  if (!snRaw || parseInt(snRaw) <= 0) { alert('Serial must be a positive number (1, 2, 3 …)'); return; }
+
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true; btn.textContent = 'Generating…';
+
+  try {
+    const key  = await generateKey(midRaw, sn, amt);
+    const date = new Date().toLocaleString('en-ET', {dateStyle:'short',timeStyle:'short'});
+
+    /* show output */
+    document.getElementById('keyText').textContent = key;
+    document.getElementById('keyLen').textContent  = key.length + ' characters';
+    document.getElementById('keyMeta').innerHTML   =
+      `Machine: <strong style="color:#90caf9;">${midRaw.match(/.{1,4}/g).join('-')}</strong>` +
+      ` &nbsp;|&nbsp; Amount: <strong style="color:#69f0ae;">${Number(amt).toLocaleString()} ብር</strong>` +
+      ` &nbsp;|&nbsp; Serial: <strong style="color:#ffd740;">#${sn}</strong>` +
+      `<br><span style="color:rgba(255,165,0,.7);font-size:11px;margin-top:6px;display:block;">⚠ Single-use. Only valid on machine ${midRaw.match(/.{1,4}/g).join('-')}.</span>`;
+    document.getElementById('keyOut').style.display = 'block';
+
+    /* session log */
+    sessionLog.push({ no: sessionLog.length+1, machineId: midRaw, amount: amt, serial: sn, date, key });
+    sessionStorage.setItem('em_keygen_serial', sn);
+    document.getElementById('serial').value = parseInt(sn) + 1;
+    renderHistory();
+
+  } catch(e) {
+    alert('Error generating key: ' + e.message);
+  }
+
+  btn.disabled = false; btn.textContent = '⚡ Generate Key';
+}
+
+/* ── Copy key ── */
+function copyKey() {
+  const txt = document.getElementById('keyText').textContent;
+  if (!txt || txt === '—') return;
+  navigator.clipboard.writeText(txt).then(() => {
+    const t = document.getElementById('copyToast');
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 2000);
+  });
+}
+
+/* ── History ── */
+function renderHistory() {
+  if (!sessionLog.length) return;
+  document.getElementById('histWrap').style.display = 'block';
+  document.getElementById('histCount').textContent   = sessionLog.length;
+  const rows = [...sessionLog].reverse().map(e => `
+    <tr>
+      <td style="color:#2d4a68;font-weight:700;">${e.no}</td>
+      <td style="font-family:monospace;color:#7986cb;">${e.machineId.match(/.{1,4}/g).join('-')}</td>
+      <td style="color:#69f0ae;font-weight:800;">${Number(e.amount).toLocaleString()} ብር</td>
+      <td style="color:#ffd740;">#${e.serial}</td>
+      <td class="key-cell" onclick="copyText('${e.key}')" title="Click to copy">${e.key}</td>
+    </tr>`).join('');
+  document.getElementById('histBody').innerHTML = rows;
+}
+
+function copyText(txt) {
+  navigator.clipboard.writeText(txt).then(() => {
+    const t = document.getElementById('copyToast');
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 2000);
+  });
+}
+
+/* ── Export JSON ── */
+function exportJSON() {
+  if (!sessionLog.length) return;
+  const blob = new Blob([JSON.stringify(sessionLog, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ethiomark_keys_' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+}
+</script>
+</body>
+</html>
