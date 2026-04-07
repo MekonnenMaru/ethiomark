@@ -648,10 +648,6 @@ function _doStartBingo(){
 }
 </script>
 
-<!-- ═══════════════════════════════════════════════════════
-     PACKAGE / LICENSE OVERLAY
-     Appears fullscreen when balance is exhausted or on demand.
-════════════════════════════════════════════════════════ -->
 <style>
 #pkg-key-input::placeholder { color: rgba(255,255,255,0.25); }
 #pkg-key-input:focus { border-color: rgba(0,198,255,0.5) !important; box-shadow: 0 0 0 3px rgba(0,198,255,0.1); }
@@ -1119,7 +1115,19 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
     if(errEl) errEl.style.display='none';
     if(sucEl) sucEl.style.display='none';
     document.getElementById('pkg-key-input').value='';
+    /* move the overlay to document.body so it is NEVER inside
+       Bootstrap's focus-trap and can always receive clicks/typing */
+    if(overlay.parentNode !== document.body) document.body.appendChild(overlay);
     overlay.style.display='flex';
+    /* remove aria-hidden that Bootstrap may have set on non-modal elements */
+    overlay.removeAttribute('aria-hidden');
+    overlay.removeAttribute('inert');
+    overlay.setAttribute('tabindex','-1');
+    /* focus the textarea so the user can paste immediately */
+    setTimeout(()=>{
+      const inp = document.getElementById('pkg-key-input');
+      if(inp){ inp.removeAttribute('disabled'); inp.removeAttribute('inert'); inp.focus(); }
+    }, 80);
     refreshBalanceDisplay();
   }
 
