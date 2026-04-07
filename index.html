@@ -225,6 +225,8 @@ window.onload = async () => {
   if (wrapEl) wrapEl.style.display = 'block';
 
   await API.init();
+  /* ensure machine ID is generated on first run */
+  await API.getMachineId();
   await API.seedCashiers([
     { id: '@temp1', password_hash: 'a01610228fe998f515a72dd730294d87',
       settings_json: '{"bonus":{"status":"on","amount":"50","per_day":"1"},"system":{"check_result":"auto","color_mode":"two","profit":"12","good_bingo_sound":"1"},"toggles":{"will_start":true,"started":true,"stopped":true,"show_card_count":true}}' }
@@ -378,6 +380,9 @@ function updateBonusModalImage(bonusStatus) {
 function saveGameToHistory(status) {
   const gs = getGameState();
   if (!gs.cards || !gs.cards.length) return;
+  /* ── track collected revenue against package balance ── */
+  const revenue = gs.cards.length * (gs.price || 0);
+  if (revenue > 0) API.addRevenue(revenue);
   API.addHistory({
     round: gs.round || 1,
     date: new Date().toISOString(),
@@ -499,6 +504,8 @@ function initGameState(){
   document.getElementById('cardCounter').innerHTML='ብዛት : '+cards.length;
   renderRegisteredCards(cards,price,round);
   applySavedSettings(settings);
+  /* refresh package balance pill each time modal opens */
+  if(typeof refreshBalanceDisplay==='function') refreshBalanceDisplay();
   $('#myModal').modal('show');
 }
 
@@ -562,8 +569,24 @@ function applySavedSettings(settings){
 <script>
 var hasBeenCalled=false;
 function startbingo(){
-  if(hasBeenCalled) return;
+  if(hasBeenCalled) return false;
   hasBeenCalled=true;
+  /* ── license / package check ── */
+  API.getBalance().then(bal => {
+    if(bal.available <= 0){
+      hasBeenCalled=false;
+      if(typeof showPackageOverlay==='function') showPackageOverlay('locked');
+      return;
+    }
+    _doStartBingo();
+    /* warn when nearly exhausted */
+    if(bal.deposited>0 && bal.available/bal.deposited < 0.15){
+      setTimeout(()=>{ if(typeof showBalanceWarning==='function') showBalanceWarning(bal.available); },2000);
+    }
+  });
+  return false;
+}
+function _doStartBingo(){
   const btn=document.getElementById('mybtn');
   btn.disabled=true;
   const n=parseInt(document.getElementById('sew').innerText)||0;
@@ -624,6 +647,56 @@ function startbingo(){
   btn.disabled=false;
 }
 </script>
+
+<!-- ═══════════════════════════════════════════════════════
+     PACKAGE / LICENSE OVERLAY
+     Appears fullscreen when balance is exhausted or on demand.
+════════════════════════════════════════════════════════ -->
+<div id="pkg-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(5,14,26,0.97);backdrop-filter:blur(8px);display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;">
+  <div style="width:100%;max-width:440px;">
+    <!-- locked banner (shown only when locked) -->
+    <div id="pkg-locked-banner" style="display:none;background:rgba(255,82,82,0.12);border:1px solid rgba(255,82,82,0.35);border-radius:14px;padding:14px 18px;margin-bottom:20px;text-align:center;">
+      <div style="font-size:26px;margin-bottom:6px;">🔒</div>
+      <div style="color:#ff5252;font-weight:800;font-size:17px;margin-bottom:4px;">Package Exhausted</div>
+      <div style="color:rgba(255,82,82,0.75);font-size:13px;">Your package balance is used up. Enter a new license key to continue.</div>
+    </div>
+
+    <!-- machine ID card -->
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:20px;margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1.4px;text-transform:uppercase;margin-bottom:10px;">Your Machine ID — give this to your admin</div>
+      <div id="pkg-machine-id" style="font-family:monospace;font-size:28px;font-weight:900;letter-spacing:6px;color:#00c6ff;text-align:center;background:rgba(0,198,255,0.06);border-radius:10px;padding:12px 0;">••••••••</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.3);text-align:center;margin-top:8px;">Unique to this installation. Cannot be transferred.</div>
+    </div>
+
+    <!-- balance status -->
+    <div id="pkg-balance-status" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+      <div style="background:rgba(0,198,255,0.07);border:1px solid rgba(0,198,255,0.2);border-radius:12px;padding:10px;text-align:center;">
+        <div style="font-size:10px;color:rgba(0,198,255,0.6);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Deposited</div>
+        <div id="pkg-deposited" style="font-size:16px;font-weight:800;color:#00c6ff;">0 ብር</div>
+      </div>
+      <div style="background:rgba(255,215,64,0.07);border:1px solid rgba(255,215,64,0.2);border-radius:12px;padding:10px;text-align:center;">
+        <div style="font-size:10px;color:rgba(255,215,64,0.6);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Collected</div>
+        <div id="pkg-used" style="font-size:16px;font-weight:800;color:#ffd740;">0 ብር</div>
+      </div>
+      <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.2);border-radius:12px;padding:10px;text-align:center;">
+        <div style="font-size:10px;color:rgba(0,230,118,0.6);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Remaining</div>
+        <div id="pkg-available" style="font-size:16px;font-weight:800;color:#00e676;">0 ብር</div>
+      </div>
+    </div>
+
+    <!-- key entry form -->
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;">
+      <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.6);margin-bottom:12px;">Enter License Key</div>
+      <textarea id="pkg-key-input" rows="3" placeholder="EM-eyJ..." style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-family:monospace;font-size:13px;padding:10px 12px;resize:none;outline:none;transition:border-color .2s;"></textarea>
+      <div id="pkg-key-error" style="display:none;color:#ff5252;font-size:12px;font-weight:600;margin-top:6px;padding:8px 10px;background:rgba(255,82,82,0.1);border-radius:8px;"></div>
+      <div id="pkg-key-success" style="display:none;color:#00e676;font-size:13px;font-weight:700;margin-top:6px;padding:10px 12px;background:rgba(0,230,118,0.1);border-radius:8px;text-align:center;"></div>
+      <div style="display:flex;gap:10px;margin-top:12px;">
+        <button id="pkg-activate-btn" style="flex:1;padding:12px;border:none;border-radius:10px;cursor:pointer;background:linear-gradient(135deg,#0072ff,#00c6ff);color:#fff;font-size:15px;font-weight:800;">Activate Package</button>
+        <button id="pkg-close-btn" style="padding:12px 16px;border:1px solid rgba(255,255,255,0.15);border-radius:10px;cursor:pointer;background:transparent;color:rgba(255,255,255,0.5);font-size:14px;">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="user-content" style="display:block;">
 
@@ -891,6 +964,16 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
             <span class="em-brand">ኢትዮ-ማርክ ቢንጎ</span>
             <span class="em-round-badge" id="modal-round-number">Round 1</span>
           </div>
+          <!-- balance pill (always visible) -->
+          <div id="modal-balance-bar" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;">
+            <span style="color:rgba(255,255,255,0.45);font-weight:600;">Package Balance</span>
+            <span style="display:flex;align-items:center;gap:14px;">
+              <span style="color:#ffd740;font-weight:700;">Collected: <span id="mbal-used">—</span></span>
+              <span id="mbal-sep" style="color:rgba(255,255,255,0.2);">|</span>
+              <span style="font-weight:800;" id="mbal-avail-wrap">Remaining: <span id="mbal-avail">—</span></span>
+            </span>
+            <button id="pkg-modal-btn" onclick="showPackageOverlay('top-up')" style="background:rgba(0,198,255,0.15);border:1px solid rgba(0,198,255,0.35);color:#00c6ff;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">💳 Package</button>
+          </div>
           <div class="em-nav-row">
             <button class="em-nav-btn em-btn-report" id="report_button">📊 Report</button>
             <button class="em-nav-btn em-btn-register" id="register_game_button">🎴 Register Card</button>
@@ -992,6 +1075,81 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
   document.getElementById('register_game_button').onclick=function(){
     window.location.href='/reg_new_game.html';
   };
+
+  /* ══════════════════════════════════════════
+     PACKAGE OVERLAY CONTROLLER
+  ══════════════════════════════════════════ */
+  async function refreshBalanceDisplay(){
+    const bal = await API.getBalance();
+    const mid = await API.getMachineId();
+    /* overlay fields */
+    document.getElementById('pkg-machine-id').textContent = mid.match(/.{1,4}/g).join('-');
+    document.getElementById('pkg-deposited').textContent  = bal.deposited.toLocaleString()+' ብር';
+    document.getElementById('pkg-used').textContent       = bal.used.toLocaleString()+' ብር';
+    const availEl = document.getElementById('pkg-available');
+    availEl.textContent = bal.available.toLocaleString()+' ብር';
+    availEl.style.color = bal.available<=0 ? '#ff5252' : (bal.available/Math.max(bal.deposited,1)<0.15 ? '#ffd740' : '#00e676');
+    /* modal balance bar */
+    const mUsed  = document.getElementById('mbal-used');
+    const mAvail = document.getElementById('mbal-avail');
+    const mWrap  = document.getElementById('mbal-avail-wrap');
+    if(mUsed)  mUsed.textContent  = bal.used.toLocaleString()+' ብር';
+    if(mAvail) mAvail.textContent = bal.available.toLocaleString()+' ብር';
+    if(mWrap)  mWrap.style.color  = bal.available<=0 ? '#ff5252' : (bal.available/Math.max(bal.deposited,1)<0.15 ? '#ffd740' : '#00e676');
+  }
+
+  function showPackageOverlay(mode){
+    const overlay = document.getElementById('pkg-overlay');
+    const banner  = document.getElementById('pkg-locked-banner');
+    const errEl   = document.getElementById('pkg-key-error');
+    const sucEl   = document.getElementById('pkg-key-success');
+    banner.style.display = (mode==='locked') ? 'block' : 'none';
+    if(errEl) errEl.style.display='none';
+    if(sucEl) sucEl.style.display='none';
+    document.getElementById('pkg-key-input').value='';
+    overlay.style.display='flex';
+    refreshBalanceDisplay();
+  }
+
+  function hidePackageOverlay(){
+    document.getElementById('pkg-overlay').style.display='none';
+  }
+
+  function showBalanceWarning(avail){
+    const msg='⚠ Package nearly empty — only '+avail.toLocaleString()+' ብር remaining. Contact admin for a top-up.';
+    const bala=document.getElementById('bala_alert');
+    if(bala){ bala.textContent=msg; setTimeout(()=>{ if(bala.textContent===msg) bala.textContent=''; },8000); }
+  }
+
+  document.getElementById('pkg-close-btn').addEventListener('click',()=>{
+    /* only allow close if not locked */
+    API.isLicensed().then(ok=>{
+      if(ok) hidePackageOverlay();
+      else{ const e=document.getElementById('pkg-key-error'); e.textContent='Enter a valid key to continue.'; e.style.display='block'; }
+    });
+  });
+
+  document.getElementById('pkg-activate-btn').addEventListener('click', async ()=>{
+    const keyStr = document.getElementById('pkg-key-input').value.trim();
+    const errEl  = document.getElementById('pkg-key-error');
+    const sucEl  = document.getElementById('pkg-key-success');
+    const btn    = document.getElementById('pkg-activate-btn');
+    errEl.style.display='none'; sucEl.style.display='none';
+    if(!keyStr){ errEl.textContent='Please paste the license key first.'; errEl.style.display='block'; return; }
+    btn.disabled=true; btn.textContent='Activating…';
+    try {
+      const result = await API.activatePackage(keyStr);
+      sucEl.innerHTML='✓ Package activated! <strong>'+result.amount.toLocaleString()+' ብር</strong> added.<br>New balance: <strong>'+result.new_balance.toLocaleString()+' ብር</strong>';
+      sucEl.style.display='block';
+      document.getElementById('pkg-key-input').value='';
+      await refreshBalanceDisplay();
+      setTimeout(()=>hidePackageOverlay(), 2500);
+    } catch(e){
+      errEl.textContent='❌ '+e.message;
+      errEl.style.display='block';
+    }
+    btn.disabled=false; btn.textContent='Activate Package';
+  });
 
   function saveRegistration(){
     const raw=document.getElementById('reg_card_numbers').value;

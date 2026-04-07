@@ -6,7 +6,7 @@ A fully client-side Bingo management and gaming system for the Ethiopian market,
 
 - **Frontend**: Single `index.html` with embedded CSS + JavaScript (no framework)
 - **API layer**: `api.js` — the only interface the frontend talks to. Wraps all data operations behind `window.API`. Swap to a REST backend (PHP/Node.js) by replacing only this file; zero HTML changes required.
-- **Storage driver**: `db.js` — IndexedDB implementation backing `api.js`. Stores: cards, game_state, app_settings, game_history, cashiers (DB_VERSION=4).
+- **Storage driver**: `db.js` — IndexedDB implementation backing `api.js`. Stores: cards, game_state, app_settings, game_history, cashiers, license (DB_VERSION=5).
 - **Card data**: `cards_data.js` — 4,470 bingo cards (cards 1–628 across categories) in compact format
 - **Audio**: Fetched from `/assets/sound/` voice directories and cached in IndexedDB
 - **PWA**: `service-worker.js` caches static assets for offline play; `manifest.json` for install
@@ -22,10 +22,19 @@ A fully client-side Bingo management and gaming system for the Ethiopian market,
 | History | `getHistory()`, `addHistory(entry)` |
 | Auth | `seedCashiers(list)`, `getCashier(id)`, `verifyCredentials(id, hash)` |
 | Session | `getSession()`, `setSession(id)`, `clearSession()` |
+| License | `getMachineId()`, `getBalance()`, `isLicensed()`, `activatePackage(key)`, `addRevenue(amt)`, `generateLicenseKey(mid, sn, amt)` |
+
+## License / Package System
+
+- Machine ID: 8-char uppercase hex derived from `crypto.randomUUID()` via SHA-256. Generated once and stored permanently in IndexedDB `license` store. Binds keys to a specific machine.
+- Key format: `EM-{base64(JSON)}` where JSON = `{mid, sn, amt, iat, sig}`. `sig` = HMAC-SHA256(`mid|sn|amt|iat`, secret key).
+- Balance: `available = total_deposited − total_used`. App blocks game start when `available ≤ 0` and shows the package overlay.
+- `keygen.html` — Admin-only key generator tool. Password-gated (admin password: `EthioAdmin@2025`). Generates and logs signed single-use keys. Kept confidential and NOT shipped to cashiers.
+- Warning banner shows when balance is below 15% of deposited amount.
 
 ## Key Files
 
-- `index.html` — Main game app (board, bingo grid, win checker, settings, bonus image)
+- `index.html` — Main game app (board, bingo grid, win checker, settings, bonus image, package overlay)
 - `reg_new_game.html` — Visual card registration: clickable numbered ball grid (1–628), search, range-select, pattern/price/voice/speed configuration
 - `report.html` — Dashboard: sidebar nav, summary stats, date-range game history table, CSV export
 - `cards_data.js` — 386KB bundled card data (`BINGO_CARDS` variable): `[cardNumber, [b1..5], [i1..5], [n1..5], [g1..5], [o1..5]]`
@@ -62,9 +71,11 @@ A fully client-side Bingo management and gaming system for the Ethiopian market,
 - Cashier seed accounts stored in IndexedDB `cashiers` store: `{ id, password_hash, settings_json }`.
 - Default account (from SQL dump): `@temp1` / hash `a01610228fe998f515a72dd730294d87`.
 
-## IndexedDB Schema (DB_VERSION = 4)
+## IndexedDB Schema (DB_VERSION = 5)
 
-Stores: `cards`, `game_state`, `app_settings`, `game_history`, `cashiers`
+Stores: `cards`, `game_state`, `app_settings`, `game_history`, `cashiers`, `license`
+
+`license` store keys: `machine_id` (8-char hex), `serial_*` (per-key used status), `balance_deposited`, `balance_used`
 
 ## Startup Modal (index.html)
 
