@@ -8,154 +8,278 @@
 <script src="/db.js"></script>
 <script src="/api.js"></script>
 <style>
+:root{
+  --bg:#07101f;
+  --surface:#0c1a30;
+  --surface2:#0f2040;
+  --border:#162a45;
+  --accent:#00c6ff;
+  --accent2:#0072ff;
+  --green:#00e676;
+  --yellow:#ffd740;
+  --red:#ff5252;
+  --purple:#b39ddb;
+  --text:#e3eaf6;
+  --muted:#4a6880;
+  --muted2:#2d4a68;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:#080f1e;color:#e8eaf6;font-family:'Segoe UI',Arial,sans-serif;min-height:100vh;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,Arial,sans-serif;min-height:100vh;font-size:14px;}
 
-/* ── top nav ── */
-.topnav{background:#0d1b35;border-bottom:1px solid #1a2d50;display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;position:sticky;top:0;z-index:100;}
-.topnav-brand{font-size:17px;font-weight:900;color:#00c6ff;letter-spacing:.3px;}
-.topnav-user{font-size:13px;color:#7986cb;font-weight:600;}
-.topnav-links{display:flex;align-items:center;gap:8px;}
-.topnav-links a,.topnav-links button{text-decoration:none;font-size:13px;font-weight:700;padding:7px 14px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all .18s;}
-.btn-back{background:rgba(255,255,255,0.05);color:#90caf9;border-color:rgba(255,255,255,0.1);}
-.btn-back:hover{background:rgba(255,255,255,0.1);}
-.btn-logout{background:rgba(229,57,53,0.12);color:#ef9a9a;border-color:rgba(229,57,53,0.25);}
-.btn-logout:hover{background:rgba(229,57,53,0.2);}
+/* ─── TOP NAV ─── */
+.nav{
+  position:sticky;top:0;z-index:200;
+  background:rgba(7,16,31,0.95);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 28px;height:58px;gap:16px;
+}
+.nav-brand{font-size:18px;font-weight:900;background:linear-gradient(90deg,#00c6ff,#0072ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:.2px;white-space:nowrap;}
+.nav-user{
+  margin-left:auto;
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:50px;padding:5px 14px 5px 8px;
+}
+.nav-user-dot{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0072ff,#00c6ff);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;}
+.nav-user-name{font-size:13px;font-weight:700;color:var(--accent);}
+.nav-btn{
+  text-decoration:none;border:1px solid var(--border);background:var(--surface2);
+  color:var(--text);font-size:13px;font-weight:700;padding:8px 16px;
+  border-radius:10px;cursor:pointer;transition:all .18s;white-space:nowrap;
+}
+.nav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.nav-btn-logout{border-color:rgba(255,82,82,.3);color:#ef9a9a;background:rgba(255,82,82,.06);}
+.nav-btn-logout:hover{background:rgba(255,82,82,.15);}
 
-/* ── content ── */
-.page{max-width:960px;margin:0 auto;padding:28px 20px 60px;}
+/* ─── PAGE ─── */
+.page{padding:28px 28px 80px;max-width:1200px;margin:0 auto;}
 
-/* ── section title ── */
-.section-title{font-size:12px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#4a6fa5;margin-bottom:14px;padding-left:2px;}
+/* ─── SECTION LABEL ─── */
+.sec-label{
+  font-size:10.5px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px;
+}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border);}
 
-/* ── wallet card ── */
-.wallet-card{background:linear-gradient(135deg,#0d2240,#0a1a35);border:1px solid #1e3a5f;border-radius:18px;padding:24px 28px;margin-bottom:32px;position:relative;overflow:hidden;}
-.wallet-card::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(0,198,255,0.08),transparent 70%);pointer-events:none;}
-.wallet-row{display:flex;align-items:center;gap:24px;flex-wrap:wrap;}
-.wallet-item{flex:1;min-width:130px;}
-.wallet-item .wi-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#4a6fa5;margin-bottom:6px;}
-.wallet-item .wi-value{font-size:26px;font-weight:900;letter-spacing:-.3px;}
-.wallet-item .wi-sub{font-size:11px;color:#546e7a;margin-top:2px;}
-.wallet-divider{width:1px;height:50px;background:rgba(255,255,255,0.07);flex-shrink:0;}
-.wi-deposited{color:#90caf9;}
-.wi-used{color:#ef9a9a;}
-.wi-avail{color:#69f0ae;}
-.wi-avail-low{color:#ffd740;}
-.wi-avail-empty{color:#ff5252;}
-.wallet-machine{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:#4a6fa5;}
-.wallet-machine span{color:#546e7a;font-family:monospace;font-size:13px;letter-spacing:1px;}
+/* ─── WALLET CARD ─── */
+.wallet-card{
+  background:linear-gradient(135deg,#0d2448 0%,#091a36 100%);
+  border:1px solid #1a3560;border-radius:20px;padding:0;margin-bottom:32px;
+  overflow:hidden;position:relative;
+}
+.wallet-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,#0072ff,#00c6ff,#00e676);
+}
+.wallet-inner{padding:28px 32px;}
+.wallet-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;}
+.wallet-col{padding:0 28px 0 0;}
+.wallet-col+.wallet-col{padding-left:28px;border-left:1px solid rgba(255,255,255,0.06);}
+.w-label{font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.w-amount{font-size:36px;font-weight:900;letter-spacing:-1px;line-height:1;}
+.w-unit{font-size:12px;color:var(--muted);margin-top:5px;font-weight:600;}
+.w-deposited{color:#64b5f6;}
+.w-used{color:#ef9a9a;}
+.w-avail{color:var(--green);}
+.w-avail-low{color:var(--yellow);}
+.w-avail-empty{color:var(--red);}
 
-/* ── date filter ── */
-.filter-card{background:#0d1b35;border:1px solid #1a2d50;border-radius:14px;padding:16px 20px;margin-bottom:28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-.filter-card label{font-size:12px;font-weight:700;color:#4a6fa5;letter-spacing:.5px;white-space:nowrap;}
-.filter-card input[type=date]{padding:8px 12px;border-radius:8px;border:1px solid #1a3a5c;background:#080f1e;color:#e8eaf6;font-size:14px;outline:none;transition:border-color .2s;}
-.filter-card input[type=date]:focus{border-color:#1976d2;}
-.filter-card .fc-spacer{flex:1;}
-.btn-today{padding:8px 16px;border-radius:8px;border:none;background:rgba(56,142,60,0.2);color:#a5d6a7;font-size:13px;font-weight:700;cursor:pointer;border:1px solid rgba(56,142,60,0.3);transition:all .18s;}
-.btn-today:hover{background:rgba(56,142,60,0.35);}
-.btn-search{padding:8px 20px;border-radius:8px;border:none;background:#1565c0;color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s;}
-.btn-search:hover{background:#0d47a1;}
-.btn-export{padding:8px 16px;border-radius:8px;border:none;background:rgba(245,124,0,0.15);color:#ffb74d;font-size:13px;font-weight:700;cursor:pointer;border:1px solid rgba(245,124,0,0.25);transition:all .18s;}
-.btn-export:hover{background:rgba(245,124,0,0.3);}
+.wallet-bar-wrap{margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.05);}
+.wallet-bar-label{display:flex;justify-content:space-between;margin-bottom:8px;}
+.wallet-bar-label span{font-size:11px;color:var(--muted);font-weight:600;}
+.wallet-bar{height:6px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden;}
+.wallet-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#0072ff,#00c6ff);transition:width .5s ease;}
+.wallet-meta{margin-top:12px;font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.3px;}
+.wallet-meta span{color:var(--muted2);font-family:monospace;font-size:12px;letter-spacing:1.5px;}
 
-/* ── summary cards ── */
-.summary-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:28px;}
-.sc{background:#0d1b35;border:1px solid #1a2d50;border-radius:14px;padding:16px 18px;}
-.sc .sc-l{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#4a6fa5;margin-bottom:8px;}
-.sc .sc-v{font-size:24px;font-weight:900;}
-.sc .sc-u{font-size:11px;color:#546e7a;margin-top:3px;}
+/* ─── FILTER ROW ─── */
+.filter-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:16px 20px;margin-bottom:20px;
+}
+.filter-label{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.filter-date{
+  padding:9px 13px;border-radius:10px;border:1px solid var(--border);
+  background:#07101f;color:var(--text);font-size:13px;outline:none;
+  transition:border-color .2s;font-family:inherit;
+  color-scheme:dark;
+}
+.filter-date:focus{border-color:var(--accent);}
+.filter-spacer{flex:1;}
+.fbtn{padding:9px 18px;border-radius:10px;border:1px solid transparent;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap;}
+.fbtn-today{background:rgba(0,230,118,.1);color:var(--green);border-color:rgba(0,230,118,.25);}
+.fbtn-today:hover{background:rgba(0,230,118,.2);}
+.fbtn-search{background:linear-gradient(135deg,#0072ff,#00c6ff);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,114,255,.3);}
+.fbtn-search:hover{box-shadow:0 4px 20px rgba(0,114,255,.5);transform:translateY(-1px);}
+.fbtn-csv{background:rgba(255,183,77,.08);color:#ffb74d;border-color:rgba(255,183,77,.2);}
+.fbtn-csv:hover{background:rgba(255,183,77,.18);}
 
-/* ── game history ── */
-.history-wrap{background:#0d1b35;border:1px solid #1a2d50;border-radius:16px;overflow:hidden;}
-.history-head{padding:16px 20px;border-bottom:1px solid #1a2d50;display:flex;align-items:center;justify-content:space-between;}
-.history-head h3{font-size:15px;font-weight:800;color:#90caf9;}
-.history-head .hh-count{font-size:12px;color:#4a6fa5;font-weight:600;}
-.table-scroll{overflow-x:auto;}
+/* ─── STATS ROW ─── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:20px 22px;position:relative;overflow:hidden;
+}
+.stat-card::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+}
+.stat-card:nth-child(1)::after{background:linear-gradient(90deg,#0072ff,#00c6ff);}
+.stat-card:nth-child(2)::after{background:linear-gradient(90deg,#00bfa5,#69f0ae);}
+.stat-card:nth-child(3)::after{background:linear-gradient(90deg,#ff6f00,#ffd740);}
+.stat-card:nth-child(4)::after{background:linear-gradient(90deg,#6a1b9a,#b39ddb);}
+.stat-icon{font-size:22px;margin-bottom:12px;opacity:.8;}
+.stat-label{font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.stat-value{font-size:30px;font-weight:900;letter-spacing:-1px;line-height:1;}
+.stat-unit{font-size:11px;color:var(--muted);margin-top:5px;font-weight:600;}
+.stat-card:nth-child(1) .stat-value{color:#64b5f6;}
+.stat-card:nth-child(2) .stat-value{color:var(--green);}
+.stat-card:nth-child(3) .stat-value{color:var(--yellow);}
+.stat-card:nth-child(4) .stat-value{color:var(--purple);}
+
+/* ─── HISTORY TABLE ─── */
+.table-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;overflow:hidden;
+}
+.table-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 24px;border-bottom:1px solid var(--border);
+}
+.table-title{font-size:15px;font-weight:900;color:var(--text);}
+.table-count{
+  font-size:11px;font-weight:700;color:var(--muted);
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:50px;padding:4px 12px;
+}
+.tscroll{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;}
-th{background:#080f1e;color:#4a6fa5;padding:11px 14px;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;text-align:left;border-bottom:1px solid #1a2d50;}
-td{padding:13px 14px;font-size:14px;border-bottom:1px solid rgba(26,45,80,0.6);vertical-align:middle;}
-tr:last-child td{border-bottom:none;}
-tr:hover td{background:rgba(21,101,192,0.08);}
-.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.3px;}
-.badge-win{background:rgba(27,94,32,0.4);color:#69f0ae;border:1px solid rgba(105,240,174,0.2);}
-.badge-stopped{background:rgba(74,20,140,0.4);color:#ce93d8;border:1px solid rgba(206,147,216,0.2);}
-.badge-played{background:rgba(13,71,161,0.4);color:#90caf9;border:1px solid rgba(144,202,249,0.2);}
-.patt-tag{display:inline-block;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:2px 8px;font-size:11px;color:#90caf9;}
-.empty{text-align:center;padding:60px 20px;color:#37474f;}
-.empty svg{display:block;margin:0 auto 12px;opacity:.3;}
-.empty p{font-size:16px;margin-bottom:6px;}
-.empty small{font-size:13px;}
+thead tr{background:#07101f;}
+th{
+  padding:13px 18px;font-size:10.5px;font-weight:800;
+  letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);
+  text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+td{padding:15px 18px;border-bottom:1px solid rgba(22,42,69,.7);vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr{transition:background .15s;}
+tbody tr:hover td{background:rgba(0,114,255,.05);}
+.td-num{font-size:12px;color:var(--muted2);font-weight:700;}
+.td-round{font-size:14px;font-weight:900;color:var(--accent);}
+.td-time{font-size:13px;color:var(--muted);font-weight:600;}
+.td-cards{font-size:15px;font-weight:800;}
+.td-price{font-size:13px;color:var(--muted);}
+.td-revenue{font-size:15px;font-weight:900;color:var(--green);}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:50px;font-size:11px;font-weight:800;letter-spacing:.3px;white-space:nowrap;}
+.badge-win{background:rgba(0,230,118,.12);color:#69f0ae;border:1px solid rgba(0,230,118,.2);}
+.badge-stopped{background:rgba(179,157,219,.1);color:#b39ddb;border:1px solid rgba(179,157,219,.2);}
+.badge-played{background:rgba(0,198,255,.1);color:#80deea;border:1px solid rgba(0,198,255,.2);}
+.patt{
+  display:inline-block;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);border-radius:8px;
+  padding:4px 10px;font-size:11.5px;color:#90caf9;font-weight:600;
+}
+.empty-row td{text-align:center;padding:60px 20px;}
+.empty-inner{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted2);}
+.empty-inner svg{opacity:.3;}
+.empty-inner p{font-size:16px;font-weight:700;color:var(--muted);}
+.empty-inner small{font-size:13px;}
 
-@media(max-width:640px){
-  .topnav-links a span,.topnav-links button span{display:none;}
-  .wallet-divider{display:none;}
-  th:nth-child(4),td:nth-child(4),th:nth-child(5),td:nth-child(5){display:none;}
+/* ─── RESPONSIVE ─── */
+@media(max-width:900px){
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .wallet-grid{grid-template-columns:1fr;}
+  .wallet-col{padding:0 0 20px 0;border-left:none!important;border-bottom:1px solid rgba(255,255,255,0.05);}
+  .wallet-col:last-child{border-bottom:none;padding-bottom:0;}
+}
+@media(max-width:600px){
+  .page{padding:16px 14px 60px;}
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .filter-bar{gap:8px;}
+  th:nth-child(5),td:nth-child(5){display:none;}
+  .nav{padding:0 14px;}
 }
 </style>
 </head>
 <body>
 <script>if(!API.getSession()){location.replace('/login.html');}</script>
 
-<!-- top nav -->
-<nav class="topnav">
-  <div class="topnav-brand">ኢትዮ-ማርክ ቢንጎ</div>
-  <div class="topnav-links">
-    <a href="/" class="btn-back">← ወደ ጨዋታ</a>
-    <button class="btn-logout" onclick="if(confirm('Logout?')){API.clearSession();location.href='/login.html';}">Logout</button>
+<!-- ── NAV ── -->
+<nav class="nav">
+  <div class="nav-brand">ኢትዮ-ማርክ ቢንጎ</div>
+  <a href="/" class="nav-btn">← ጨዋታ</a>
+  <div class="nav-user">
+    <div class="nav-user-dot" id="navInitial">C</div>
+    <div class="nav-user-name" id="sideUsername">@cashier</div>
   </div>
-  <div class="topnav-user" id="sideUsername">@cashier</div>
+  <button class="nav-btn nav-btn-logout" onclick="if(confirm('Logout?')){API.clearSession();location.href='/login.html';}">Logout</button>
 </nav>
 
 <div class="page">
 
-  <!-- ── Wallet status ── -->
-  <div class="section-title">Wallet Status</div>
+  <!-- ── WALLET STATUS ── -->
+  <div class="sec-label">Wallet Status</div>
   <div class="wallet-card">
-    <div class="wallet-row">
-      <div class="wallet-item">
-        <div class="wi-label">Total Deposited</div>
-        <div class="wi-value wi-deposited" id="w-deposited">—</div>
-        <div class="wi-sub">ብር</div>
+    <div class="wallet-inner">
+      <div class="wallet-grid">
+        <div class="wallet-col">
+          <div class="w-label">Total Deposited</div>
+          <div class="w-amount w-deposited" id="w-deposited">—</div>
+          <div class="w-unit">Ethiopian Birr (ብር)</div>
+        </div>
+        <div class="wallet-col">
+          <div class="w-label">Amount Used</div>
+          <div class="w-amount w-used" id="w-used">—</div>
+          <div class="w-unit">Ethiopian Birr (ብር)</div>
+        </div>
+        <div class="wallet-col">
+          <div class="w-label">Remaining Balance</div>
+          <div class="w-amount" id="w-avail">—</div>
+          <div class="w-unit">Ethiopian Birr (ብር)</div>
+        </div>
       </div>
-      <div class="wallet-divider"></div>
-      <div class="wallet-item">
-        <div class="wi-label">Amount Used</div>
-        <div class="wi-value wi-used" id="w-used">—</div>
-        <div class="wi-sub">ብር</div>
-      </div>
-      <div class="wallet-divider"></div>
-      <div class="wallet-item">
-        <div class="wi-label">Remaining Balance</div>
-        <div class="wi-value" id="w-avail">—</div>
-        <div class="wi-sub">ብር</div>
+      <div class="wallet-bar-wrap">
+        <div class="wallet-bar-label">
+          <span>Usage</span>
+          <span id="w-pct">0%</span>
+        </div>
+        <div class="wallet-bar"><div class="wallet-bar-fill" id="w-bar" style="width:0%"></div></div>
+        <div class="wallet-meta">Machine ID: <span id="w-mid">—</span></div>
       </div>
     </div>
-    <div class="wallet-machine">Machine ID: <span id="w-mid">—</span></div>
   </div>
 
-  <!-- ── Date filter ── -->
-  <div class="section-title">Game History</div>
-  <div class="filter-card">
-    <label>DATE</label>
-    <input type="date" id="dateFrom">
-    <label>TO</label>
-    <input type="date" id="dateTo">
-    <button class="btn-today" onclick="setToday()">Today</button>
-    <button class="btn-search" onclick="loadReport()">Search</button>
-    <div class="fc-spacer"></div>
-    <button class="btn-export" onclick="exportCSV()">⬇ CSV</button>
+  <!-- ── GAME HISTORY ── -->
+  <div class="sec-label">Game History</div>
+
+  <!-- filter -->
+  <div class="filter-bar">
+    <div class="filter-label">From</div>
+    <input type="date" class="filter-date" id="dateFrom">
+    <div class="filter-label">To</div>
+    <input type="date" class="filter-date" id="dateTo">
+    <button class="fbtn fbtn-today" onclick="setToday()">Today</button>
+    <button class="fbtn fbtn-search" onclick="loadReport()">Search</button>
+    <div class="filter-spacer"></div>
+    <button class="fbtn fbtn-csv" onclick="exportCSV()">⬇ Export CSV</button>
   </div>
 
-  <!-- ── Summary cards ── -->
-  <div class="summary-row" id="summaryRow"></div>
+  <!-- stats -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card"><div class="stat-icon">🎮</div><div class="stat-label">Rounds Played</div><div class="stat-value" id="s-rounds">0</div></div>
+    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Total Revenue</div><div class="stat-value" id="s-rev">0</div><div class="stat-unit">ብር</div></div>
+    <div class="stat-card"><div class="stat-icon">🎴</div><div class="stat-label">Total Cards</div><div class="stat-value" id="s-cards">0</div></div>
+    <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-label">Avg Cards / Round</div><div class="stat-value" id="s-avg">0</div></div>
+  </div>
 
-  <!-- ── History table ── -->
-  <div class="history-wrap">
-    <div class="history-head">
-      <h3>Rounds</h3>
-      <div class="hh-count" id="hh-count">—</div>
+  <!-- table -->
+  <div class="table-card">
+    <div class="table-header">
+      <div class="table-title">Round Details</div>
+      <div class="table-count" id="tbl-count">—</div>
     </div>
-    <div class="table-scroll">
+    <div class="tscroll">
       <table>
         <thead>
           <tr>
@@ -163,120 +287,123 @@ tr:hover td{background:rgba(21,101,192,0.08);}
             <th>Round</th>
             <th>Time</th>
             <th>Cards</th>
-            <th>Price/Card</th>
+            <th>Price / Card</th>
             <th>Revenue</th>
             <th>Pattern</th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody id="reportBody">
-          <tr><td colspan="8" class="empty" style="text-align:center;padding:40px;color:#4a6fa5;">Loading…</td></tr>
+          <tr class="empty-row"><td colspan="8">
+            <div class="empty-inner"><p>Loading data…</p></div>
+          </td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-</div>
+</div><!-- /page -->
 
 <script>
-const PATTERN_NAMES={1:'Any 1 Line',2:'Any 2 Lines',3:'Horizontal',4:'Vertical',5:'X Pattern',6:'Four Corners',7:'Center Corners',8:'Meskel',9:'T Shape',10:'Reverse T',11:'L Shape',12:'Full Card'};
+const PATT={1:'Any 1 Line',2:'Any 2 Lines',3:'Horizontal',4:'Vertical',5:'X Pattern',6:'Four Corners',7:'Center Corners',8:'Meskel',9:'T Shape',10:'Reverse T',11:'L Shape',12:'Full Card'};
 
-window._historyCache=[];
-window._settingsCache={};
+window._hist=[];
 
 async function init(){
-  const sess = API.getSession();
-  document.getElementById('sideUsername').textContent = sess||'@cashier';
+  const sess=API.getSession()||'@cashier';
+  document.getElementById('sideUsername').textContent=sess;
+  document.getElementById('navInitial').textContent=sess.replace('@','').charAt(0).toUpperCase();
 
-  /* load data in parallel */
-  const [bal,mid,hist,settings] = await Promise.all([
-    API.getBalance(), API.getMachineId(),
-    API.getHistory(), API.getSettings()
-  ]);
-  window._historyCache  = hist;
-  window._settingsCache = settings;
+  const [bal,mid,hist]=await Promise.all([API.getBalance(),API.getMachineId(),API.getHistory()]);
+  window._hist=hist;
 
-  /* wallet display */
-  document.getElementById('w-deposited').textContent = bal.deposited.toLocaleString();
-  document.getElementById('w-used').textContent      = bal.used.toLocaleString();
-  const availEl = document.getElementById('w-avail');
-  availEl.textContent = bal.available.toLocaleString();
-  availEl.className = 'wi-value ' + (bal.available<=0?'wi-avail-empty':bal.available<1000?'wi-avail-low':'wi-avail');
-  document.getElementById('w-mid').textContent = mid.match(/.{1,4}/g).join('-');
+  /* wallet */
+  document.getElementById('w-deposited').textContent=bal.deposited.toLocaleString();
+  document.getElementById('w-used').textContent=bal.used.toLocaleString();
+  const availEl=document.getElementById('w-avail');
+  availEl.textContent=bal.available.toLocaleString();
+  const cls=bal.available<=0?'w-avail-empty':bal.available<1000?'w-avail-low':'w-avail';
+  availEl.className='w-amount '+cls;
+  const pct=bal.deposited>0?Math.min(100,Math.round(bal.used/bal.deposited*100)):0;
+  document.getElementById('w-pct').textContent=pct+'% used';
+  document.getElementById('w-bar').style.width=pct+'%';
+  document.getElementById('w-bar').style.background=pct>85?'linear-gradient(90deg,#ff5252,#ff8a65)':pct>60?'linear-gradient(90deg,#ff6f00,#ffd740)':'linear-gradient(90deg,#0072ff,#00c6ff)';
+  document.getElementById('w-mid').textContent=mid.match(/.{1,4}/g).join('-');
 
   setToday();
 }
 
 function setToday(){
-  const t = new Date().toISOString().split('T')[0];
-  document.getElementById('dateFrom').value = t;
-  document.getElementById('dateTo').value   = t;
+  const t=new Date().toISOString().split('T')[0];
+  document.getElementById('dateFrom').value=t;
+  document.getElementById('dateTo').value=t;
   loadReport();
 }
 
 function loadReport(){
-  const from = new Date(document.getElementById('dateFrom').value+'T00:00:00');
-  const to   = new Date(document.getElementById('dateTo').value+'T23:59:59');
-  const filtered = window._historyCache.filter(g=>{
-    const d=new Date(g.date); return d>=from && d<=to;
-  });
-  renderSummary(filtered);
+  const from=new Date(document.getElementById('dateFrom').value+'T00:00:00');
+  const to=new Date(document.getElementById('dateTo').value+'T23:59:59');
+  const filtered=window._hist.filter(g=>{const d=new Date(g.date);return d>=from&&d<=to;});
+  renderStats(filtered);
   renderTable(filtered);
 }
 
-function renderSummary(games){
-  const totalGames  = games.length;
-  const totalCards  = games.reduce((s,g)=>s+g.cards.length,0);
-  const totalRev    = games.reduce((s,g)=>s+(g.cards.length*g.price),0);
-  const avgCards    = totalGames ? Math.round(totalCards/totalGames) : 0;
-  document.getElementById('summaryRow').innerHTML = `
-    <div class="sc"><div class="sc-l">Rounds</div><div class="sc-v" style="color:#90caf9;">${totalGames}</div></div>
-    <div class="sc"><div class="sc-l">Total Cards</div><div class="sc-v" style="color:#80cbc4;">${totalCards}</div></div>
-    <div class="sc"><div class="sc-l">Total Revenue</div><div class="sc-v" style="color:#69f0ae;">${totalRev.toLocaleString()}</div><div class="sc-u">ብር</div></div>
-    <div class="sc"><div class="sc-l">Avg Cards/Round</div><div class="sc-v" style="color:#ffcc80;">${avgCards}</div></div>
-  `;
+function renderStats(games){
+  const totalRev=games.reduce((s,g)=>s+(g.cards.length*g.price),0);
+  const totalCards=games.reduce((s,g)=>s+g.cards.length,0);
+  const avg=games.length?Math.round(totalCards/games.length):0;
+  document.getElementById('s-rounds').textContent=games.length;
+  document.getElementById('s-rev').textContent=totalRev.toLocaleString();
+  document.getElementById('s-cards').textContent=totalCards;
+  document.getElementById('s-avg').textContent=avg;
 }
 
 function renderTable(games){
   const tbody=document.getElementById('reportBody');
-  document.getElementById('hh-count').textContent = games.length ? games.length+' rounds' : 'No rounds';
+  document.getElementById('tbl-count').textContent=games.length?games.length+' rounds':'No rounds';
   if(!games.length){
-    tbody.innerHTML=`<tr><td colspan="8" class="empty" style="text-align:center;padding:50px;">
-      <svg width="40" height="40" fill="none" viewBox="0 0 24 24"><path stroke="#546e7a" stroke-width="1.5" d="M9 17H7A5 5 0 0 1 7 7h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/></svg>
-      <p>No rounds found</p><small>Try a different date range</small></td></tr>`;
+    tbody.innerHTML=`<tr class="empty-row"><td colspan="8">
+      <div class="empty-inner">
+        <svg width="48" height="48" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#4a6880" stroke-width="1.5"/><path d="M8 2v4M16 2v4M3 10h18" stroke="#4a6880" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <p>No rounds found</p>
+        <small>Try changing the date range</small>
+      </div>
+    </td></tr>`;
     return;
   }
-  tbody.innerHTML=[...games].reverse().map((g,idx)=>{
+  const rev=[...games].reverse();
+  tbody.innerHTML=rev.map((g,i)=>{
     const revenue=g.cards.length*g.price;
-    const timeStr=new Date(g.date).toLocaleTimeString('en-ET',{hour:'2-digit',minute:'2-digit',hour12:true});
-    const badge=g.status==='win'?'<span class="badge badge-win">✓ Win</span>'
-      :g.status==='stopped'?'<span class="badge badge-stopped">Stopped</span>'
-      :'<span class="badge badge-played">Played</span>';
-    const pattName=PATTERN_NAMES[g.pattern]||('Pattern '+g.pattern);
+    const t=new Date(g.date);
+    const timeStr=t.toLocaleTimeString('en-ET',{hour:'2-digit',minute:'2-digit',hour12:true});
+    const badge=g.status==='win'
+      ?'<span class="badge badge-win">✓ Win</span>'
+      :g.status==='stopped'
+      ?'<span class="badge badge-stopped">◼ Stopped</span>'
+      :'<span class="badge badge-played">● Played</span>';
     return `<tr>
-      <td style="color:#4a6fa5;font-size:12px;">${games.length-idx}</td>
-      <td style="font-weight:800;color:#90caf9;">Round ${g.round}</td>
-      <td style="font-size:13px;color:#7986cb;">${timeStr}</td>
-      <td style="font-weight:700;">${g.cards.length}</td>
-      <td style="color:#7986cb;">${g.price.toLocaleString()} ብር</td>
-      <td style="font-weight:900;color:#69f0ae;">${revenue.toLocaleString()} ብር</td>
-      <td><span class="patt-tag">${pattName}</span></td>
+      <td class="td-num">${rev.length-i}</td>
+      <td class="td-round">Round ${g.round}</td>
+      <td class="td-time">${timeStr}</td>
+      <td class="td-cards">${g.cards.length}</td>
+      <td class="td-price">${g.price.toLocaleString()} ብር</td>
+      <td class="td-revenue">${revenue.toLocaleString()} ብር</td>
+      <td><span class="patt">${PATT[g.pattern]||'Pattern '+g.pattern}</span></td>
       <td>${badge}</td>
     </tr>`;
   }).join('');
 }
 
 function exportCSV(){
-  const hist=window._historyCache;
-  if(!hist.length){alert('No history to export.');return;}
+  if(!window._hist.length){alert('No data to export.');return;}
   let csv='Round,Date,Cards,Price,Revenue,Pattern,Status\n';
-  hist.forEach(g=>{
-    const revenue=g.cards.length*g.price;
-    csv+=`${g.round},"${new Date(g.date).toLocaleString()}",${g.cards.length},${g.price},${revenue},${PATTERN_NAMES[g.pattern]||g.pattern},${g.status||'played'}\n`;
+  window._hist.forEach(g=>{
+    const rev=g.cards.length*g.price;
+    csv+=`${g.round},"${new Date(g.date).toLocaleString()}",${g.cards.length},${g.price},${rev},${PATT[g.pattern]||g.pattern},${g.status||'played'}\n`;
   });
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download='ethiomark_report.csv';
+  a.download='ethiomark_report_'+new Date().toISOString().split('T')[0]+'.csv';
   a.click();
 }
 
