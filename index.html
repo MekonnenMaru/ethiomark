@@ -694,7 +694,7 @@ function _doStartBingo(){
     <!-- step 3 – key entry -->
     <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:20px;">
       <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px;">🔓 Step 3 — Paste the key below and activate</div>
-      <textarea id="pkg-key-input" rows="3" placeholder="Paste your license key here (EM-eyJ…)" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-family:monospace;font-size:13px;padding:10px 12px;resize:none;outline:none;transition:border-color .2s,box-shadow .2s;line-height:1.5;"></textarea>
+      <textarea id="pkg-key-input" rows="2" placeholder="e.g.  EM-76058E59-5000-1-A3F92B1C" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-family:monospace;font-size:13px;padding:10px 12px;resize:none;outline:none;transition:border-color .2s,box-shadow .2s;line-height:1.5;"></textarea>
       <div id="pkg-key-error" style="display:none;color:#ff5252;font-size:12px;font-weight:600;margin-top:8px;padding:8px 10px;background:rgba(255,82,82,0.1);border:1px solid rgba(255,82,82,0.25);border-radius:8px;"></div>
       <div id="pkg-key-success" style="display:none;color:#00e676;font-size:13px;font-weight:700;margin-top:8px;padding:10px 12px;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.25);border-radius:8px;text-align:center;"></div>
       <div style="display:flex;gap:10px;margin-top:12px;">
@@ -972,19 +972,10 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
             <span class="em-brand">ኢትዮ-ማርክ ቢንጎ</span>
             <span class="em-round-badge" id="modal-round-number">Round 1</span>
           </div>
-          <!-- balance pill (always visible) -->
-          <div id="modal-balance-bar" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;">
-            <span style="color:rgba(255,255,255,0.45);font-weight:600;">Package Balance</span>
-            <span style="display:flex;align-items:center;gap:14px;">
-              <span style="color:#ffd740;font-weight:700;">Collected: <span id="mbal-used">—</span></span>
-              <span id="mbal-sep" style="color:rgba(255,255,255,0.2);">|</span>
-              <span style="font-weight:800;" id="mbal-avail-wrap">Remaining: <span id="mbal-avail">—</span></span>
-            </span>
-            <button id="pkg-modal-btn" onclick="showPackageOverlay('top-up')" style="background:rgba(0,198,255,0.15);border:1px solid rgba(0,198,255,0.35);color:#00c6ff;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">💳 Package</button>
-          </div>
           <div class="em-nav-row">
             <button class="em-nav-btn em-btn-report" id="report_button">📊 Report</button>
             <button class="em-nav-btn em-btn-register" id="register_game_button">🎴 Register Card</button>
+            <button id="pkg-modal-btn" onclick="showPackageOverlay('top-up')" class="em-nav-btn" style="background:rgba(0,198,255,0.1);border-color:rgba(0,198,255,0.35);color:#00c6ff;">💳 Package</button>
             <button class="em-nav-btn em-btn-logout" id="logoutbtn">↩ Logout</button>
           </div>
         </div>
@@ -1096,14 +1087,7 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
     document.getElementById('pkg-used').textContent       = bal.used.toLocaleString()+' ብር';
     const availEl = document.getElementById('pkg-available');
     availEl.textContent = bal.available.toLocaleString()+' ብር';
-    availEl.style.color = bal.available<=0 ? '#ff5252' : (bal.available/Math.max(bal.deposited,1)<0.15 ? '#ffd740' : '#00e676');
-    /* modal balance bar */
-    const mUsed  = document.getElementById('mbal-used');
-    const mAvail = document.getElementById('mbal-avail');
-    const mWrap  = document.getElementById('mbal-avail-wrap');
-    if(mUsed)  mUsed.textContent  = bal.used.toLocaleString()+' ብር';
-    if(mAvail) mAvail.textContent = bal.available.toLocaleString()+' ብር';
-    if(mWrap)  mWrap.style.color  = bal.available<=0 ? '#ff5252' : (bal.available/Math.max(bal.deposited,1)<0.15 ? '#ffd740' : '#00e676');
+    availEl.style.color = bal.available<=0 ? '#ff5252' : (bal.available<1000 ? '#ffd740' : '#00e676');
   }
 
   /* track whether the game modal was open when overlay appeared */
@@ -1143,9 +1127,10 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
   }
 
   function showBalanceWarning(avail){
-    const msg='⚠ Package nearly empty — only '+avail.toLocaleString()+' ብር remaining. Contact admin for a top-up.';
+    if(avail>=1000) return;
+    const msg='⚠ Your wallet is going to finish — remaining package: '+avail.toLocaleString()+' ብር';
     const bala=document.getElementById('bala_alert');
-    if(bala){ bala.textContent=msg; setTimeout(()=>{ if(bala.textContent===msg) bala.textContent=''; },8000); }
+    if(bala){ bala.textContent=msg; setTimeout(()=>{ if(bala.textContent===msg) bala.textContent=''; },10000); }
   }
 
   /* track the current overlay mode so Close knows if it can dismiss */

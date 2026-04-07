@@ -206,31 +206,37 @@ window.API = (() => {
 
   /**
    * Validate and activate a license key.
+   * New compact format: EM-{MID8}-{AMT}-{SN}-{SIG8}  (all uppercase)
    * Returns { amount, new_balance } on success, throws on failure.
    */
   async function activatePackage(keyStr) {
-    keyStr = (keyStr || '').trim();
-    if (!keyStr.startsWith('EM-')) throw new Error('Invalid key format (must start with EM-)');
-    let payload;
-    try { payload = JSON.parse(atob(keyStr.slice(3))); } catch(e) { throw new Error('Key is corrupted or invalid'); }
-    const { mid, sn, amt, iat, sig } = payload;
-    if (!mid || !sn || !amt || !iat || !sig) throw new Error('Key is incomplete');
+    keyStr = (keyStr || '').replace(/\s/g,'').toUpperCase();
+    if (!keyStr.startsWith('EM-')) throw new Error('Invalid key — must start with EM-');
+    const parts = keyStr.split('-');
+    /* expected 5 parts: ['EM', MID8, AMT, SN, SIG8] */
+    if (parts.length !== 5) throw new Error('Invalid key format — expected EM-MACHINEID-AMOUNT-SERIAL-CODE');
+    const [, mid, amtStr, sn, sigIn] = parts;
+    if (mid.length !== 8) throw new Error('Machine ID in key must be 8 characters');
+    const amt = Number(amtStr);
+    if (!amt || isNaN(amt) || amt <= 0) throw new Error('Invalid amount in key');
     /* machine check */
     const myMid = await getMachineId();
-    if (mid.toUpperCase() !== myMid.toUpperCase())
-      throw new Error('This key belongs to machine ' + mid + ' but yours is ' + myMid);
-    /* signature check */
-    const expected = await _hmac([mid, sn, amt, iat].join('|'));
-    if (sig !== expected) throw new Error('Key signature is invalid — key may be forged');
+    if (mid !== myMid) {
+      const fmt = s => s.slice(0,4)+'-'+s.slice(4);
+      throw new Error('Key is for machine ' + fmt(mid) + ' — yours is ' + fmt(myMid));
+    }
+    /* signature check — HMAC of "MID|SN|AMT", first 8 chars uppercase */
+    const expectedSig = (await _hmac([mid, sn, amt].join('|'))).substring(0,8).toUpperCase();
+    if (sigIn !== expectedSig) throw new Error('Key signature is invalid — key may be forged or typed incorrectly');
     /* duplicate check */
     const lic = await getLicenseInfo();
     if ((lic.packages || []).some(p => p.sn === sn))
       throw new Error('Serial ' + sn + ' has already been activated on this machine');
     /* activate */
     const packages       = [...(lic.packages || []), { sn, amount: amt, activated_at: new Date().toISOString() }];
-    const total_deposited = (lic.total_deposited || 0) + Number(amt);
+    const total_deposited = (lic.total_deposited || 0) + amt;
     await EthiomarkDB.dbSaveLicense({ ...lic, packages, total_deposited });
-    return { amount: Number(amt), new_balance: total_deposited - (lic.total_revenue || 0) };
+    return { amount: amt, new_balance: total_deposited - (lic.total_revenue || 0) };
   }
 
   /**
@@ -243,17 +249,16 @@ window.API = (() => {
   }
 
   /**
-   * Admin-only: generate a license key for a given machine.
+   * Admin-only: generate a short compact license key for a given machine.
+   * Format: EM-{MID8}-{AMT}-{SN}-{SIG8}  (all uppercase, ~28 chars)
    * Used in keygen.html — never call this from the cashier UI.
    */
   async function generateLicenseKey(machineId, serial, amount) {
-    machineId = machineId.trim().toUpperCase();
-    serial    = serial.trim();
+    machineId = machineId.replace(/-/g,'').trim().toUpperCase();
+    serial    = String(serial).trim();
     amount    = Number(amount);
-    const iat = new Date().toISOString().split('T')[0];
-    const sig = await _hmac([machineId, serial, amount, iat].join('|'));
-    const payload = { mid: machineId, sn: serial, amt: amount, iat, sig };
-    return 'EM-' + btoa(JSON.stringify(payload));
+    const sig = (await _hmac([machineId, serial, amount].join('|'))).substring(0,8).toUpperCase();
+    return 'EM-' + machineId + '-' + amount + '-' + serial + '-' + sig;
   }
 
   /* ── public interface ── */
