@@ -652,49 +652,61 @@ function _doStartBingo(){
      PACKAGE / LICENSE OVERLAY
      Appears fullscreen when balance is exhausted or on demand.
 ════════════════════════════════════════════════════════ -->
-<div id="pkg-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(5,14,26,0.97);backdrop-filter:blur(8px);display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;">
-  <div style="width:100%;max-width:440px;">
-    <!-- locked banner (shown only when locked) -->
-    <div id="pkg-locked-banner" style="display:none;background:rgba(255,82,82,0.12);border:1px solid rgba(255,82,82,0.35);border-radius:14px;padding:14px 18px;margin-bottom:20px;text-align:center;">
-      <div style="font-size:26px;margin-bottom:6px;">🔒</div>
-      <div style="color:#ff5252;font-weight:800;font-size:17px;margin-bottom:4px;">Package Exhausted</div>
-      <div style="color:rgba(255,82,82,0.75);font-size:13px;">Your package balance is used up. Enter a new license key to continue.</div>
+<style>
+#pkg-key-input::placeholder { color: rgba(255,255,255,0.25); }
+#pkg-key-input:focus { border-color: rgba(0,198,255,0.5) !important; box-shadow: 0 0 0 3px rgba(0,198,255,0.1); }
+</style>
+<div id="pkg-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(5,14,26,0.97);backdrop-filter:blur(8px);flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow-y:auto;">
+  <div style="width:100%;max-width:460px;">
+
+    <!-- locked banner -->
+    <div id="pkg-locked-banner" style="display:none;background:rgba(255,82,82,0.12);border:1px solid rgba(255,82,82,0.4);border-radius:14px;padding:14px 18px;margin-bottom:16px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:6px;">🔒</div>
+      <div style="color:#ff5252;font-weight:900;font-size:18px;margin-bottom:4px;">Package Balance Used Up</div>
+      <div style="color:rgba(255,130,130,0.85);font-size:13px;line-height:1.6;">You cannot start a game until a new license key is added.<br>Follow the steps below to top up.</div>
     </div>
 
     <!-- machine ID card -->
-    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:20px;margin-bottom:16px;">
-      <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1.4px;text-transform:uppercase;margin-bottom:10px;">Your Machine ID — give this to your admin</div>
-      <div id="pkg-machine-id" style="font-family:monospace;font-size:28px;font-weight:900;letter-spacing:6px;color:#00c6ff;text-align:center;background:rgba(0,198,255,0.06);border-radius:10px;padding:12px 0;">••••••••</div>
-      <div style="font-size:12px;color:rgba(255,255,255,0.3);text-align:center;margin-top:8px;">Unique to this installation. Cannot be transferred.</div>
+    <div style="background:rgba(0,198,255,0.06);border:1px solid rgba(0,198,255,0.2);border-radius:16px;padding:18px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:rgba(0,198,255,0.6);letter-spacing:1.4px;text-transform:uppercase;margin-bottom:10px;">📋 Step 1 — Copy your Machine ID &amp; send it to the admin</div>
+      <div id="pkg-machine-id" style="font-family:monospace;font-size:30px;font-weight:900;letter-spacing:8px;color:#00c6ff;text-align:center;background:rgba(0,198,255,0.08);border-radius:10px;padding:14px 0;cursor:pointer;user-select:all;" title="Click to select all">••••••••</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.3);text-align:center;margin-top:8px;">Click the ID above to select it, then copy (Ctrl+C)</div>
+    </div>
+
+    <!-- step 2 -->
+    <div style="background:rgba(249,115,22,0.05);border:1px solid rgba(249,115,22,0.2);border-radius:14px;padding:14px 16px;margin-bottom:12px;font-size:13px;color:rgba(249,115,22,0.85);line-height:1.7;">
+      <strong style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;display:block;margin-bottom:6px;">🔑 Step 2 — Admin generates &amp; sends you a key</strong>
+      The admin opens <strong style="color:#f97316;">/keygen.html</strong> in a browser, enters your Machine ID and the package amount, clicks <em>Generate</em>, and sends you the key (starts with <code style="background:rgba(0,0,0,0.3);padding:1px 5px;border-radius:4px;">EM-eyJ…</code>).
     </div>
 
     <!-- balance status -->
-    <div id="pkg-balance-status" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
       <div style="background:rgba(0,198,255,0.07);border:1px solid rgba(0,198,255,0.2);border-radius:12px;padding:10px;text-align:center;">
         <div style="font-size:10px;color:rgba(0,198,255,0.6);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Deposited</div>
-        <div id="pkg-deposited" style="font-size:16px;font-weight:800;color:#00c6ff;">0 ብር</div>
+        <div id="pkg-deposited" style="font-size:16px;font-weight:800;color:#00c6ff;">—</div>
       </div>
       <div style="background:rgba(255,215,64,0.07);border:1px solid rgba(255,215,64,0.2);border-radius:12px;padding:10px;text-align:center;">
         <div style="font-size:10px;color:rgba(255,215,64,0.6);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Collected</div>
-        <div id="pkg-used" style="font-size:16px;font-weight:800;color:#ffd740;">0 ብር</div>
+        <div id="pkg-used" style="font-size:16px;font-weight:800;color:#ffd740;">—</div>
       </div>
       <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.2);border-radius:12px;padding:10px;text-align:center;">
         <div style="font-size:10px;color:rgba(0,230,118,0.6);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Remaining</div>
-        <div id="pkg-available" style="font-size:16px;font-weight:800;color:#00e676;">0 ብር</div>
+        <div id="pkg-available" style="font-size:16px;font-weight:800;color:#00e676;">—</div>
       </div>
     </div>
 
-    <!-- key entry form -->
-    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;">
-      <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.6);margin-bottom:12px;">Enter License Key</div>
-      <textarea id="pkg-key-input" rows="3" placeholder="EM-eyJ..." style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-family:monospace;font-size:13px;padding:10px 12px;resize:none;outline:none;transition:border-color .2s;"></textarea>
-      <div id="pkg-key-error" style="display:none;color:#ff5252;font-size:12px;font-weight:600;margin-top:6px;padding:8px 10px;background:rgba(255,82,82,0.1);border-radius:8px;"></div>
-      <div id="pkg-key-success" style="display:none;color:#00e676;font-size:13px;font-weight:700;margin-top:6px;padding:10px 12px;background:rgba(0,230,118,0.1);border-radius:8px;text-align:center;"></div>
+    <!-- step 3 – key entry -->
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:20px;">
+      <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px;">🔓 Step 3 — Paste the key below and activate</div>
+      <textarea id="pkg-key-input" rows="3" placeholder="Paste your license key here (EM-eyJ…)" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-family:monospace;font-size:13px;padding:10px 12px;resize:none;outline:none;transition:border-color .2s,box-shadow .2s;line-height:1.5;"></textarea>
+      <div id="pkg-key-error" style="display:none;color:#ff5252;font-size:12px;font-weight:600;margin-top:8px;padding:8px 10px;background:rgba(255,82,82,0.1);border:1px solid rgba(255,82,82,0.25);border-radius:8px;"></div>
+      <div id="pkg-key-success" style="display:none;color:#00e676;font-size:13px;font-weight:700;margin-top:8px;padding:10px 12px;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.25);border-radius:8px;text-align:center;"></div>
       <div style="display:flex;gap:10px;margin-top:12px;">
-        <button id="pkg-activate-btn" style="flex:1;padding:12px;border:none;border-radius:10px;cursor:pointer;background:linear-gradient(135deg,#0072ff,#00c6ff);color:#fff;font-size:15px;font-weight:800;">Activate Package</button>
-        <button id="pkg-close-btn" style="padding:12px 16px;border:1px solid rgba(255,255,255,0.15);border-radius:10px;cursor:pointer;background:transparent;color:rgba(255,255,255,0.5);font-size:14px;">Close</button>
+        <button id="pkg-activate-btn" style="flex:1;padding:13px;border:none;border-radius:10px;cursor:pointer;background:linear-gradient(135deg,#0072ff,#00c6ff);color:#fff;font-size:15px;font-weight:900;letter-spacing:.3px;box-shadow:0 4px 16px rgba(0,114,255,.35);">✓ Activate Package</button>
+        <button id="pkg-close-btn" style="padding:13px 18px;border:1px solid rgba(255,255,255,0.15);border-radius:10px;cursor:pointer;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);font-size:14px;">Close</button>
       </div>
     </div>
+
   </div>
 </div>
 
