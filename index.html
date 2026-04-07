@@ -1106,6 +1106,9 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
     if(mWrap)  mWrap.style.color  = bal.available<=0 ? '#ff5252' : (bal.available/Math.max(bal.deposited,1)<0.15 ? '#ffd740' : '#00e676');
   }
 
+  /* track whether the game modal was open when overlay appeared */
+  let _pkgModalWasOpen = false;
+
   function showPackageOverlay(mode){
     const overlay = document.getElementById('pkg-overlay');
     const banner  = document.getElementById('pkg-locked-banner');
@@ -1115,24 +1118,28 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
     if(errEl) errEl.style.display='none';
     if(sucEl) sucEl.style.display='none';
     document.getElementById('pkg-key-input').value='';
-    /* move the overlay to document.body so it is NEVER inside
-       Bootstrap's focus-trap and can always receive clicks/typing */
-    if(overlay.parentNode !== document.body) document.body.appendChild(overlay);
-    overlay.style.display='flex';
-    /* remove aria-hidden that Bootstrap may have set on non-modal elements */
-    overlay.removeAttribute('aria-hidden');
-    overlay.removeAttribute('inert');
-    overlay.setAttribute('tabindex','-1');
-    /* focus the textarea so the user can paste immediately */
+    /* close Bootstrap modal first — its backdrop & aria-hidden block all input */
+    _pkgModalWasOpen = ($('#myModal').data('bs.modal') || {})._isShown
+                    || $('#myModal').hasClass('show')
+                    || ($('#myModal').css('display') !== 'none');
+    if(_pkgModalWasOpen) $('#myModal').modal('hide');
+    /* show overlay after modal has finished closing (~300 ms transition) */
     setTimeout(()=>{
-      const inp = document.getElementById('pkg-key-input');
-      if(inp){ inp.removeAttribute('disabled'); inp.removeAttribute('inert'); inp.focus(); }
-    }, 80);
-    refreshBalanceDisplay();
+      overlay.style.display='flex';
+      refreshBalanceDisplay();
+      setTimeout(()=>{
+        const inp = document.getElementById('pkg-key-input');
+        if(inp) inp.focus();
+      }, 50);
+    }, _pkgModalWasOpen ? 320 : 0);
   }
 
   function hidePackageOverlay(){
     document.getElementById('pkg-overlay').style.display='none';
+    /* reopen the game modal if it was open before */
+    if(_pkgModalWasOpen){
+      setTimeout(()=>{ if(typeof initGameState==='function') initGameState(); }, 150);
+    }
   }
 
   function showBalanceWarning(avail){
@@ -1141,12 +1148,23 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
     if(bala){ bala.textContent=msg; setTimeout(()=>{ if(bala.textContent===msg) bala.textContent=''; },8000); }
   }
 
+  /* track the current overlay mode so Close knows if it can dismiss */
+  let _pkgOverlayMode = 'top-up';
+  const _origShow = showPackageOverlay;
+  showPackageOverlay = function(mode){
+    _pkgOverlayMode = mode || 'top-up';
+    _origShow(mode);
+  };
+
   document.getElementById('pkg-close-btn').addEventListener('click',()=>{
-    /* only allow close if not locked */
-    API.isLicensed().then(ok=>{
-      if(ok) hidePackageOverlay();
-      else{ const e=document.getElementById('pkg-key-error'); e.textContent='Enter a valid key to continue.'; e.style.display='block'; }
-    });
+    if(_pkgOverlayMode === 'locked'){
+      /* balance is zero — must activate before closing */
+      const e=document.getElementById('pkg-key-error');
+      e.textContent='You must activate a package before you can continue.';
+      e.style.display='block';
+      return;
+    }
+    hidePackageOverlay();
   });
 
   document.getElementById('pkg-activate-btn').addEventListener('click', async ()=>{
