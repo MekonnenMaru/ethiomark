@@ -380,6 +380,8 @@ function renderTable(games){
       ?'<span class="badge badge-win">✓ Win</span>'
       :g.status==='stopped'
       ?'<span class="badge badge-stopped">◼ Stopped</span>'
+      :g.status==='completed'
+      ?'<span class="badge badge-played" style="background:rgba(38,166,154,.12);color:#80cbc4;border-color:rgba(128,203,196,.2);">✔ Completed</span>'
       :'<span class="badge badge-played">● Played</span>';
     return `<tr>
       <td class="td-num">${rev.length-i}</td>

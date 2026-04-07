@@ -261,6 +261,55 @@ window.API = (() => {
     return 'EM-' + machineId + '-' + amount + '-' + serial + '-' + sig;
   }
 
+  /* ────────────────────────────────────────────────────────────
+     DAILY ROUND RESET
+     Rounds start at 1 every calendar day.
+     Call once on page load — history is NEVER cleared here;
+     only the active round counter is reset.
+  ──────────────────────────────────────────────────────────── */
+
+  /**
+   * If the stored last_active_date is before today, reset round → 1
+   * and clear any in-progress game state (cards, randomstring).
+   * History rows are permanent and are never deleted.
+   * Returns true if a reset happened.
+   */
+  async function checkAndResetDailyRound() {
+    const today = new Date().toISOString().split('T')[0];   /* "YYYY-MM-DD" */
+    const gs    = await getGameState();
+    const last  = gs ? gs.last_active_date : null;
+
+    if (last && last !== today) {
+      /* New day — reset round to 1, wipe current game */
+      await saveGameState({
+        round           : 1,
+        cards           : [],
+        pattern         : 1,
+        price           : 0,
+        sound           : gs.sound        || 1,
+        speed_range     : gs.speed_range  || 3,
+        randomstring    : '',
+        last_active_date: today,
+      });
+      return true;
+    }
+
+    if (!last) {
+      /* First boot ever — just stamp today, leave everything else */
+      await saveGameState({ ...(gs || {}), last_active_date: today });
+    }
+    return false;
+  }
+
+  /** Convenience: write today's date into game_state after any save. */
+  async function stampActiveDate() {
+    const today = new Date().toISOString().split('T')[0];
+    const gs    = await getGameState();
+    if (gs && gs.last_active_date !== today) {
+      await saveGameState({ ...gs, last_active_date: today });
+    }
+  }
+
   /* ── public interface ── */
   return {
     init,
@@ -275,6 +324,8 @@ window.API = (() => {
     getMachineId, getLicenseInfo, getBalance,
     isLicensed, activatePackage, addRevenue,
     generateLicenseKey,
+    /* daily reset */
+    checkAndResetDailyRound, stampActiveDate,
   };
 
 })();

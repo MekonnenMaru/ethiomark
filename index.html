@@ -227,6 +227,8 @@ window.onload = async () => {
   await API.init();
   /* ensure machine ID is generated on first run */
   await API.getMachineId();
+  /* reset round to 1 if a new calendar day has started */
+  await API.checkAndResetDailyRound();
   await API.seedCashiers([
     { id: '@temp1', password_hash: 'a01610228fe998f515a72dd730294d87',
       settings_json: '{"bonus":{"status":"on","amount":"50","per_day":"1"},"system":{"check_result":"auto","color_mode":"two","profit":"12","good_bingo_sound":"1"},"toggles":{"will_start":true,"started":true,"stopped":true,"show_card_count":true}}' }
@@ -393,6 +395,8 @@ function saveGameToHistory(status) {
     randomstring: gs.randomstring || '',
     status: status || 'played'
   });
+  /* stamp today so daily-reset knows the last active date */
+  API.stampActiveDate();
 }
 </script>
 </head>
@@ -1632,22 +1636,13 @@ document.getElementById("shuffle").addEventListener("click",function(){
 
 document.getElementById("finsh_game").addEventListener("click",function(){
   if(!confirm('ጨዋታውን ጨርሰዋል? (Finish this game?)')) return;
-  saveGameToHistory('played');
+  saveGameToHistory('completed');
   const gs=getGameState();
   const newRound=(gs.round||1)+1;
-  saveGameState({round:newRound,cards:gs.cards||[],pattern:gs.pattern||1,price:gs.price||0,sound:gs.sound||1,speed_range:gs.speed_range||3,randomstring:''});
-  randomstring=""; uniqueRandoms=[]; max=75;
-  for(let i=1;i<=75;i++) uniqueRandoms.push(i);
-  shuffleArray(uniqueRandoms);
-  document.getElementById('round').innerText=newRound;
-  document.getElementById('modal-round-number').innerHTML='Round '+newRound;
-  document.getElementById('round_number_bellow_5').innerHTML='Round '+newRound;
-  document.getElementById('drawn_number_counter').innerText='0';
-  document.querySelectorAll('.numbox').forEach(el=>el.className='numbox');
-  document.querySelectorAll('.bingo-call').forEach(c=>{c.textContent='';c.setAttribute('t','');});
-  document.getElementById('rand').innerText='';
-  showAlert('Round '+newRound+' ተጀምሯል!','success');
-  $('#myModal').modal('show');
+  const today=new Date().toISOString().split('T')[0];
+  saveGameState({round:newRound,cards:[],pattern:1,price:0,sound:gs.sound||1,speed_range:gs.speed_range||3,randomstring:'',last_active_date:today});
+  showAlert('Round ተጠናቋል! → ወደ ምዝገባ...','success');
+  setTimeout(()=>{ window.location.href='/reg_new_game.html'; },800);
 });
 </script>
 
@@ -1878,6 +1873,10 @@ $("#mycheck").on('click',function(event){
 $(document).ready(function(){
   $("#goodbingo").on('click',function(){
     saveGameToHistory('win');
+    const gs=getGameState();
+    const newRound=(gs.round||1)+1;
+    const today=new Date().toISOString().split('T')[0];
+    saveGameState({round:newRound,cards:[],pattern:1,price:0,sound:gs.sound||1,speed_range:gs.speed_range||3,randomstring:'',last_active_date:today});
     const el=document.getElementById('canvas');
     el.style.display='block'; el.style.pointerEvents='none';
     el.style.zIndex='9999'; el.style.position='absolute';
@@ -1887,6 +1886,8 @@ $(document).ready(function(){
     voices(af); celebrate();
     setTimeout(()=>celebrate(),300); setTimeout(()=>celebrate(),600);
     setTimeout(()=>{el.style.display='none';},3000);
+    /* after win animation — go to registration for next round */
+    setTimeout(()=>{ window.location.href='/reg_new_game.html'; },3200);
   });
   $("#notbingo").on('click',function(){voices("notgood.wav");$('#myModalcard').modal('hide');});
   $("#addbingo").on('click',function(){$('#myModalcard').modal('hide');});
