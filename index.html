@@ -68,6 +68,7 @@ const dbPromise = (function() {
 <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="/cards_data.js"></script>
 <script src="/db.js"></script>
+<script src="/api.js"></script>
 
 <style>
 .bonus-notification {
@@ -213,43 +214,42 @@ let activeAudios = [];
 
 window.onload = async () => {
   /* ── Session guard ── */
-  if (!localStorage.getItem('em_cashier_id')) {
+  if (!API.getSession()) {
     location.replace('/login.html'); return;
   }
 
-  /* ── Step 1: seed IndexedDB from BINGO_CARDS if not yet done ── */
+  /* ── Step 1: open DB and seed bingo cards ── */
   const barEl  = document.getElementById('audioPreloadBar');
   const pctEl  = document.getElementById('audioPreloadPercent');
   const wrapEl = document.getElementById('audioPreloadProgress');
   if (wrapEl) wrapEl.style.display = 'block';
 
-  /* seed cashier accounts */
-  await EthiomarkDB.seedCashiers([
+  await API.init();
+  await API.seedCashiers([
     { id: '@temp1', password_hash: 'a01610228fe998f515a72dd730294d87',
       settings_json: '{"bonus":{"status":"on","amount":"50","per_day":"1"},"system":{"check_result":"auto","color_mode":"two","profit":"12","good_bingo_sound":"1"},"toggles":{"will_start":true,"started":true,"stopped":true,"show_card_count":true}}' }
   ]);
-
-  await EthiomarkDB.seedCards(pct => {
+  await API.seedCards(pct => {
     if (barEl) barEl.style.width = pct + '%';
     if (pctEl) pctEl.textContent  = pct + '%';
   });
 
-  /* ── Step 2: one-time migration from localStorage → IndexedDB ── */
+  /* ── Step 2: one-time migration from localStorage → IDB ── */
   const lsState    = localStorage.getItem('game_state');
   const lsSettings = localStorage.getItem('app_settings');
   const lsHistory  = localStorage.getItem('game_history');
-  if (lsState)    { try { await EthiomarkDB.dbSaveGameState(JSON.parse(lsState));      localStorage.removeItem('game_state'); }    catch(e){} }
-  if (lsSettings) { try { await EthiomarkDB.dbSaveAppSettings(JSON.parse(lsSettings)); localStorage.removeItem('app_settings'); } catch(e){} }
-  if (lsHistory)  { try { const h=JSON.parse(lsHistory); for(const e of h) await EthiomarkDB.dbAddHistory(e); localStorage.removeItem('game_history'); } catch(e){} }
+  if (lsState)    { try { await API.saveGameState(JSON.parse(lsState));  localStorage.removeItem('game_state'); }    catch(e){} }
+  if (lsSettings) { try { await API.saveSettings(JSON.parse(lsSettings)); localStorage.removeItem('app_settings'); } catch(e){} }
+  if (lsHistory)  { try { const h=JSON.parse(lsHistory); for(const e of h) await API.addHistory(e); localStorage.removeItem('game_history'); } catch(e){} }
 
   /* ── Step 3: populate memory caches ── */
-  window._gameStateCache   = await EthiomarkDB.dbGetGameState();
-  window._appSettingsCache = await EthiomarkDB.dbGetAppSettings();
+  window._gameStateCache   = await API.getGameState();
+  window._appSettingsCache = await API.getSettings();
 
   /* ── Step 4: preload selected cards into fast-lookup map ── */
   const _gs = window._gameStateCache;
   if (_gs.cards && _gs.cards.length) {
-    window._loadedCards = await EthiomarkDB.getCardsBatch(_gs.cards);
+    window._loadedCards = await API.getCardsBatch(_gs.cards);
   }
 
   /* ── Step 5: normal game startup ── */
@@ -378,7 +378,7 @@ function updateBonusModalImage(bonusStatus) {
 function saveGameToHistory(status) {
   const gs = getGameState();
   if (!gs.cards || !gs.cards.length) return;
-  EthiomarkDB.dbAddHistory({
+  API.addHistory({
     round: gs.round || 1,
     date: new Date().toISOString(),
     cards: gs.cards,
@@ -454,7 +454,7 @@ function getGameState()   { return window._gameStateCache; }
 function getAppSettings() { return window._appSettingsCache; }
 function saveGameState(s) {
   window._gameStateCache = s;
-  EthiomarkDB.dbSaveGameState(s);
+  API.saveGameState(s);
 }
 
 function initGameState(){
@@ -823,7 +823,7 @@ $("#submit_settings_form").on('click',function(e){
     toggles:{will_start:$("#will_start_sound_toggle").is(":checked"),started:$("#started_sound_toggle").is(":checked"),stopped:$("#stopped_sound_toggle").is(":checked"),show_card_count:$("#counte_registerd_card").is(":checked")}
   };
   window._appSettingsCache = settings;
-  EthiomarkDB.dbSaveAppSettings(settings);
+  API.saveSettings(settings);
   document.getElementById("new_bonus_status").innerText=settings.bonus.status;
   document.getElementById("new_bonus_amount").innerText=settings.bonus.amount;
   document.getElementById("max_new_bonus_per_day").innerText=settings.bonus.per_day;
@@ -985,7 +985,7 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
   document.getElementById('report_button').onclick=function(){window.location.href='/report.html';};
   document.getElementById('logoutbtn').onclick=function(){
     if(confirm('Logout? Game state will be preserved.')){
-      localStorage.removeItem('em_cashier_id');
+      API.clearSession();
       location.replace('/login.html');
     }
   };

@@ -6,6 +6,7 @@
 <title>Report - Ethiomark Bingo</title>
 <script src="/bootstrap/js/jquery.js"></script>
 <script src="/db.js"></script>
+<script src="/api.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#0a1628;color:#fff;font-family:Arial,sans-serif;display:flex;min-height:100vh;}
@@ -75,7 +76,7 @@ table.report-table .badge{display:inline-block;padding:2px 10px;border-radius:12
 </style>
 </head>
 <body>
-<script>if(!localStorage.getItem('em_cashier_id')){location.replace('/login.html');}</script>
+<script>if(!API.getSession()){location.replace('/login.html');}</script>
 
 <!-- ── Sidebar ── -->
 <div class="sidebar">
@@ -106,7 +107,7 @@ table.report-table .badge{display:inline-block;padding:2px 10px;border-radius:12
       <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
       <span>Contact</span>
     </a>
-    <a href="#" onclick="if(confirm('Logout?')){EthiomarkDB.dbClearGameState().then(()=>{window.location.href='/';});}">
+    <a href="#" onclick="if(confirm('Logout?')){API.clearSession();window.location.href='/login.html';}">
       <svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
       <span>Logout</span>
     </a>
@@ -205,22 +206,22 @@ function calcProfit(revenue, settings){
 }
 
 async function init(){
-  /* load all data from IndexedDB */
-  window._gameStateCache   = await EthiomarkDB.dbGetGameState();
-  window._appSettingsCache = await EthiomarkDB.dbGetAppSettings();
-  window._historyCache     = await EthiomarkDB.dbGetHistory();
+  /* load all data */
+  window._gameStateCache   = await API.getGameState();
+  window._appSettingsCache = await API.getSettings();
+  window._historyCache     = await API.getHistory();
 
   /* migrate from localStorage if first run */
   const lsHistory = localStorage.getItem('game_history');
-  if (lsHistory) { try { const h=JSON.parse(lsHistory); for(const e of h) await EthiomarkDB.dbAddHistory(e); window._historyCache=await EthiomarkDB.dbGetHistory(); localStorage.removeItem('game_history'); } catch(e){} }
+  if (lsHistory) { try { const h=JSON.parse(lsHistory); for(const e of h) await API.addHistory(e); window._historyCache=await API.getHistory(); localStorage.removeItem('game_history'); } catch(e){} }
   const lsState = localStorage.getItem('game_state');
-  if (lsState) { try { window._gameStateCache=JSON.parse(lsState); await EthiomarkDB.dbSaveGameState(window._gameStateCache); localStorage.removeItem('game_state'); } catch(e){} }
+  if (lsState) { try { window._gameStateCache=JSON.parse(lsState); await API.saveGameState(window._gameStateCache); localStorage.removeItem('game_state'); } catch(e){} }
 
   const gs = getGameState();
   const history = getHistory();
 
   // Sidebar username
-  document.getElementById('sideUsername').textContent = localStorage.getItem('em_cashier_id') || '@cashier';
+  document.getElementById('sideUsername').textContent = API.getSession() || '@cashier';
 
   // Top stats
   const allRounds = history.length;

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ኢትዮ-ማርክ ቢንጎ — Login</title>
 <script src="/db.js"></script>
+<script src="/api.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;}
@@ -194,12 +195,8 @@ function md5(s){
   return hex;
 }
 
-/* ── session helpers ── */
-function getSession(){ return localStorage.getItem('em_cashier_id'); }
-function setSession(id){ localStorage.setItem('em_cashier_id', id); }
-
 /* ── already logged in? skip login ── */
-if(getSession()) location.replace('/');
+if(API.getSession()) location.replace('/');
 
 /* ── DB cashier seed data (from SQL dump) ── */
 const SEED_CASHIERS = [
@@ -208,8 +205,8 @@ const SEED_CASHIERS = [
 ];
 
 async function ensureCashiers(){
-  await EthiomarkDB.openDB();
-  await EthiomarkDB.seedCashiers(SEED_CASHIERS);
+  await API.init();
+  await API.seedCashiers(SEED_CASHIERS);
 }
 
 /* ── UI ── */
@@ -246,14 +243,13 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
   }
 
   try {
-    const cashier = await EthiomarkDB.getCashier(id);
-    if (!cashier) { showError('Cashier ID not found.'); loginBtn.disabled=false; loginBtn.innerHTML='Sign In'; return; }
     const hash = md5(pwd);
-    if (hash !== cashier.password_hash) {
-      showError('Incorrect password. Please try again.');
+    const cashier = await API.verifyCredentials(id, hash);
+    if (!cashier) {
+      showError('Invalid Cashier ID or password.');
       loginBtn.disabled=false; loginBtn.innerHTML='Sign In'; return;
     }
-    setSession(id);
+    API.setSession(id);
     location.replace('/');
   } catch(err) {
     showError('Login error. Please refresh and try again.');

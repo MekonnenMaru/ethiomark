@@ -7,6 +7,7 @@
 <script src="/bootstrap/js/jquery.js"></script>
 <script src="/cards_data.js"></script>
 <script src="/db.js"></script>
+<script src="/api.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -337,7 +338,7 @@ html, body {
 </style>
 </head>
 <body>
-<script>if(!localStorage.getItem('em_cashier_id')){location.replace('/login.html');}</script>
+<script>if(!API.getSession()){location.replace('/login.html');}</script>
 
 <!-- ── HEADER ─────────────────────────────── -->
 <div class="header">
@@ -464,19 +465,19 @@ function getGameState()   { return window._gameStateCache; }
 function getAppSettings() { return window._appSettingsCache; }
 function saveGameState(s) {
   window._gameStateCache = s;
-  EthiomarkDB.dbSaveGameState(s);
+  API.saveGameState(s);
 }
 
 async function init() {
   /* migrate localStorage → IDB on first run */
   const lsState    = localStorage.getItem('game_state');
   const lsSettings = localStorage.getItem('app_settings');
-  if (lsState)    { try { await EthiomarkDB.dbSaveGameState(JSON.parse(lsState));      localStorage.removeItem('game_state'); }    catch(e){} }
-  if (lsSettings) { try { await EthiomarkDB.dbSaveAppSettings(JSON.parse(lsSettings)); localStorage.removeItem('app_settings'); } catch(e){} }
+  if (lsState)    { try { await API.saveGameState(JSON.parse(lsState));  localStorage.removeItem('game_state'); }    catch(e){} }
+  if (lsSettings) { try { await API.saveSettings(JSON.parse(lsSettings)); localStorage.removeItem('app_settings'); } catch(e){} }
 
   /* load caches */
-  window._gameStateCache   = await EthiomarkDB.dbGetGameState();
-  window._appSettingsCache = await EthiomarkDB.dbGetAppSettings();
+  window._gameStateCache   = await API.getGameState();
+  window._appSettingsCache = await API.getSettings();
 
   const gs = getGameState();
   document.getElementById('roundDisplay').textContent = gs.round || 1;
@@ -487,9 +488,9 @@ async function init() {
   if (gs.sound)       document.getElementById('bp_voice').value   = gs.sound;
   if (gs.speed_range) document.getElementById('bp_speed').value   = gs.speed_range;
 
-  /* load all card IDs from IndexedDB */
+  /* load all card IDs */
   try {
-    allCardNumbers = await EthiomarkDB.getAllCardIds();
+    allCardNumbers = await API.getAllCardIds();
   } catch(e) {
     /* fallback to BINGO_CARDS array if IDB not yet seeded */
     const src = (typeof BINGO_CARDS !== 'undefined') ? BINGO_CARDS : [];

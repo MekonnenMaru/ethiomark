@@ -5,10 +5,23 @@ A fully client-side Bingo management and gaming system for the Ethiopian market,
 ## Architecture
 
 - **Frontend**: Single `index.html` with embedded CSS + JavaScript (no framework)
-- **Storage**: IndexedDB (via browser native API) for settings, game state, and audio cache
+- **API layer**: `api.js` — the only interface the frontend talks to. Wraps all data operations behind `window.API`. Swap to a REST backend (PHP/Node.js) by replacing only this file; zero HTML changes required.
+- **Storage driver**: `db.js` — IndexedDB implementation backing `api.js`. Stores: cards, game_state, app_settings, game_history, cashiers (DB_VERSION=4).
 - **Card data**: `cards_data.js` — 4,470 bingo cards (cards 1–628 across categories) in compact format
 - **Audio**: Fetched from `/assets/sound/` voice directories and cached in IndexedDB
 - **PWA**: `service-worker.js` caches static assets for offline play; `manifest.json` for install
+
+### API layer (`api.js`) surface
+
+| Group | Methods |
+|---|---|
+| Init | `init()`, `seedCards(onProgress)` |
+| Cards | `getCard(n)`, `getCardsBatch(ns)`, `getAllCardIds()` |
+| Game State | `getGameState()`, `saveGameState(s)`, `clearGameState()` |
+| Settings | `getSettings()`, `saveSettings(s)` |
+| History | `getHistory()`, `addHistory(entry)` |
+| Auth | `seedCashiers(list)`, `getCashier(id)`, `verifyCredentials(id, hash)` |
+| Session | `getSession()`, `setSession(id)`, `clearSession()` |
 
 ## Key Files
 
