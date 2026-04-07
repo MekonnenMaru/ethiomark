@@ -175,6 +175,85 @@ const dbPromise = (function() {
 .info-derash-col .total-card {
   font-size: 14px !important;
 }
+
+/* ─── MOBILE RESPONSIVE ─────────────────────────────── */
+@media screen and (max-width:768px) {
+  /* Info bar — stack columns vertically on small screens */
+  .info-bar {
+    flex-direction: column;
+    height: auto;
+    padding: 6px 8px;
+    gap: 6px;
+  }
+  .info-ball-col {
+    width: 100%;
+    height: 90px;
+  }
+  .info-ball-col .ball2 {
+    width: 5rem !important;
+    height: 5rem !important;
+  }
+  .info-results-col {
+    width: 100%;
+    height: auto;
+  }
+  .info-results-col .bingo-call {
+    font-size: 18px !important;
+    height: 1.6rem !important;
+  }
+  .info-derash-col {
+    flex: none;
+    width: 100%;
+    height: auto;
+  }
+  .info-derash-col .amount { font-size: 22px !important; }
+  .info-derash-col .total-calls { font-size: 16px !important; }
+
+  /* BINGO number grid — make balls smaller */
+  .bingo-button { width: 36px; font-size: 14px; padding: 4px; margin: 2px; }
+  .numbox { font-size: 11px !important; min-width: 0 !important; width: 28px; height: 28px; line-height: 28px; padding: 0 !important; }
+  .numrow { display: inline-block; }
+
+  /* Control buttons row — wrap on mobile */
+  .setting_box {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin: 8px auto !important;
+    justify-content: center !important;
+  }
+  .btnbingo, .btnshuffle {
+    max-width: 80px !important;
+    font-size: 13px !important;
+    padding: 8px 4px !important;
+    min-width: 70px;
+  }
+  .voiceselect { width: 100px; font-size: 12px; }
+  .card-input { width: 100px; font-size: 13px; }
+  .check_card { flex: none; }
+
+  /* Speed slider */
+  .slidecontainer { padding: 0 8px; }
+  #myRange { height: 40px !important; }
+
+  /* Game status bar */
+  #game-status-bar { flex-wrap: wrap; gap: 4px; font-size: 12px; }
+
+  /* Bonus container — keep on screen */
+  #bonusContainer { right: 8px !important; left: 8px !important; width: auto !important; }
+
+  /* Bonus notification */
+  .bonus-notification { right: 8px !important; left: 8px !important; width: auto !important; top: 10% !important; }
+}
+
+@media screen and (max-width:480px) {
+  .bingo-button { width: 28px; font-size: 11px; padding: 2px; margin: 1px; }
+  .numbox { width: 22px; height: 22px; line-height: 22px; font-size: 9px !important; }
+  .btnbingo, .btnshuffle { max-width: 68px !important; font-size: 11px !important; }
+  .voiceselect { width: 82px; font-size: 11px; }
+  .card-input { width: 80px; font-size: 11px; }
+  #rand { font-size: 36px !important; }
+}
 </style>
 
 <!-- ─────────────── Voice directories ─────────────── -->
@@ -1374,7 +1453,7 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
             <div class="modal-content">
               <div class="modal-header">
                 <h1 class="modal-title"><span style="font-size:20px;">Round <span id="modal-card-round">1</span></span></h1>
-                <center><div id="claim-bonus-popup" class="claim-bonus-popup">Claim Bonus</div></center>
+                <center><div id="claim-bonus-popup" class="claim-bonus-popup" onclick="showBonusNotif()" style="cursor:pointer;">Claim Bonus</div></center>
                 <button class="modal-button" style="padding:10px 15px;" id="addbingo">Close</button>
               </div>
               <div class="modal-body">
@@ -1449,21 +1528,47 @@ let wc_priorityNumbers=(c_round_number===wc_round)?wc_parts.slice(1).map(n=>pars
 if(wc_priorityNumbers.length<1&&fd_val) wc_priorityNumbers=fd_val.split(',').map(n=>parseInt(n,10));
 wc_priorityNumbers=wc_priorityNumbers.filter(n=>!special_bonus_numbers.includes(n));
 
-// Bonus logic
+// Bonus logic  — new_bonus_status_val already read from settings above
 var n_val=parseInt(document.getElementById('sew').innerText)||0;
 var s_val=parseInt(document.getElementById('birr').innerText)||0;
-new_bonus_status_val="off";
 if(n_val*s_val<=49){
   new_bonus_status_val="off";
-  if(special_bonus_numbers.length>0) special_bonus_numbers.splice(Math.floor(Math.random()*special_bonus_numbers.length),0);
+  special_bonus_numbers=[];
 } else if(todays_nb_count>=max_nb_per_day){
   new_bonus_status_val="off";
-  if(special_bonus_numbers.length>0) special_bonus_numbers.splice(Math.floor(Math.random()*special_bonus_numbers.length),0);
+  special_bonus_numbers=[];
+} else if(new_bonus_status_val==="on"){
+  // Generate random bonus balls if none supplied from special_bonus_data
+  if(special_bonus_numbers.length===0){
+    const _all75=Array.from({length:75},(_,i)=>i+1);
+    shuffleArray(_all75);
+    const _chance=nb_chance||3;
+    special_bonus_numbers=_all75.slice(0,_chance);
+    document.getElementById('special_bonus_data').innerText=special_bonus_numbers.join(',');
+  } else {
+    let bcs=parseInt(bcsl,10);
+    let ri=Math.floor(Math.random()*special_bonus_numbers.length);
+    if(!isNaN(bcs)) ri=bcs;
+    special_bonus_numbers.splice(ri,nb_chance);
+  }
+  // Show bonus balls on the bonus panel buttons
+  const _bBtns=document.getElementById('special_bonus_buttons');
+  if(_bBtns) _bBtns.innerHTML=special_bonus_numbers.map(n=>`<button class="bingo-word" onclick="showBonusNotif()">${n}</button>`).join('');
 } else {
-  let bcs=parseInt(bcsl,10);
-  let ri=Math.floor(Math.random()*special_bonus_numbers.length);
-  if(!isNaN(bcs)) ri=bcs;
-  special_bonus_numbers.splice(ri,nb_chance);
+  new_bonus_status_val="off";
+  special_bonus_numbers=[];
+}
+
+function showBonusNotif(){
+  const _amt=parseInt(document.getElementById('new_bonus_amount').innerText)||20;
+  const _notif=document.getElementById('bonusNotification');
+  document.getElementById('gift-bonus').textContent='🎁 ቦነስ '+_amt+' ብር!';
+  _notif.style.display='block';
+  const _today=new Date().toISOString().split('T')[0];
+  const _bMeta=JSON.parse(localStorage.getItem('bonus_meta')||'{}');
+  const _cnt=(_bMeta.date===_today)?(_bMeta.count||0)+1:1;
+  localStorage.setItem('bonus_meta',JSON.stringify({date:_today,count:_cnt}));
+  todays_nb_count=_cnt;
 }
 
 function shuffleArray(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}}
@@ -1555,6 +1660,8 @@ function randomnuber(){
   if(rn===undefined) return;
   voices(rn);
   updateTable(rn);
+  // Fire bonus notification if this ball is a bonus ball
+  if(new_bonus_status_val==="on" && special_bonus_numbers.includes(rn)) showBonusNotif();
   randomstring=randomstring+rn+",";
   document.getElementById('ran_voice').innerText=rn;
   if(rn<=15){document.getElementById('rand').innerText='B-'+rn;const el=document.querySelector('[numb="'+rn+'"]');if(el) el.className+=' callnum';}
@@ -1631,7 +1738,32 @@ function updateTable(a){
 }
 
 document.getElementById("shuffle").addEventListener("click",function(){
-  voices("shuffle.wav"); shuffleArray(uniqueRandoms); showAlert("Shuffled!","success");
+  if(this._shuffling) return;
+  this._shuffling=true;
+  const btn=this;
+  voices("shuffle.wav");
+  btn.textContent="Shuffling…"; btn.style.opacity="0.6";
+  const randEl=document.getElementById('rand');
+  const origText=randEl.innerText||"—";
+  // Step-by-step animation: cycle random numbers rapidly for ~2.5s then settle
+  const steps=32, stepMs=78;
+  let step=0;
+  const anim=setInterval(()=>{
+    const rn=Math.floor(Math.random()*75)+1;
+    setBallColor(rn);
+    randEl.innerText=getBingoLetter(rn)+rn;
+    step++;
+    if(step>=steps){
+      clearInterval(anim);
+      // Final settled state — restore last drawn
+      setBallColor(parseInt(origText.replace(/\D/g,''))||1);
+      randEl.innerText=origText;
+      shuffleArray(uniqueRandoms);
+      btn.textContent="Shuffle"; btn.style.opacity="1";
+      btn._shuffling=false;
+      showAlert("Shuffled!","success");
+    }
+  },stepMs);
 });
 
 document.getElementById("finsh_game").addEventListener("click",function(){

@@ -335,6 +335,83 @@ html, body {
 ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 3px; }
 ::-webkit-scrollbar-thumb { background: rgba(0,198,255,0.28); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(0,198,255,0.5); }
+
+/* ─── MOBILE RESPONSIVE ─────────────────────────────── */
+@media screen and (max-width:768px) {
+  html, body { overflow: hidden auto; }
+
+  /* Header */
+  .header { padding: 0 10px; gap: 8px; }
+  .header-logo { font-size: 16px; }
+  .hbtn { padding: 5px 10px; font-size: 12px; }
+
+  /* Workspace — stack sidebar above grid */
+  .workspace {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+
+  /* Sidebar becomes a compact top bar */
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 8px 10px;
+    gap: 8px;
+    border-right: none;
+    border-bottom: 2px solid var(--border);
+    overflow-y: visible;
+  }
+  .sidebar-title { display: none; }
+  .field {
+    flex: 1 1 130px;
+    min-width: 110px;
+    margin-bottom: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+  }
+  .field label { font-size: 11px; white-space: nowrap; width: 60px; flex-shrink: 0; }
+  .field select, .field input[type=number], .field input[type=text] {
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+  .stats-box { display: none; }
+  .panel-btn { padding: 7px 0; font-size: 12px; }
+
+  /* Grid area */
+  .grid-area {
+    overflow: visible;
+    padding: 10px 8px;
+  }
+  .card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+    gap: 5px;
+  }
+  .card-ball { font-size: 13px; }
+
+  /* Footer */
+  .footer {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    gap: 8px;
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+  }
+  .cards-display { height: 40px; font-size: 11px; min-width: 0; }
+  .count-pill { font-size: 13px; padding: 5px 10px; }
+  .btn-go { padding: 0 18px; height: 44px; font-size: 16px; }
+  .btn-clear { padding: 8px 12px; font-size: 13px; }
+}
+
+@media screen and (max-width:480px) {
+  .card-grid { grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 4px; }
+  .card-ball { font-size: 11px; }
+  .field { flex: 1 1 100px; min-width: 95px; }
+}
 </style>
 </head>
 <body>
@@ -482,7 +559,9 @@ async function init() {
   const gs = getGameState();
   document.getElementById('roundDisplay').textContent = gs.round || 1;
 
-  if (gs.cards && gs.cards.length) gs.cards.forEach(n => selectedCards.add(n));
+  // Only restore cards if a game is actively in progress (has drawn numbers)
+  // Prevents leftover cards from previous finished games from showing as pre-selected
+  if (gs.cards && gs.cards.length && gs.randomstring) gs.cards.forEach(n => selectedCards.add(n));
   if (gs.pattern)     document.getElementById('bp_pattern').value = gs.pattern;
   if (gs.price)       document.getElementById('bp_price').value   = gs.price;
   if (gs.sound)       document.getElementById('bp_voice').value   = gs.sound;
