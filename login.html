@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ኢትዮ-ማርክ ቢንጎ — Login</title>
-<script src="/db.js"></script>
-<script src="/api.js"></script>
+<script src="db.js"></script>
+<script src="api.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;}
@@ -196,7 +196,7 @@ function md5(s){
 }
 
 /* ── already logged in? skip login ── */
-if(API.getSession()) location.replace('/');
+if(API.getSession()) location.replace('index.html');
 
 /* ── DB cashier seed data (from SQL dump) ── */
 const SEED_CASHIERS = [
@@ -250,7 +250,7 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
       loginBtn.disabled=false; loginBtn.innerHTML='Sign In'; return;
     }
     API.setSession(id);
-    location.replace('/');
+    location.replace('index.html');
   } catch(err) {
     showError('Login error. Please refresh and try again.');
     loginBtn.disabled=false; loginBtn.innerHTML='Sign In';

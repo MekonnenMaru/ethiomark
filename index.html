@@ -4,17 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ethiomark Bingo</title>
-<link rel="stylesheet" id="lightStyleSheet"  href="/bootstrap/css/style.css">
-<link rel="stylesheet" id="modalStyleSheet"  href="/bootstrap/css/modal.css">
-<link rel="stylesheet" id="giftStyleSheet"   href="/bootstrap/css/gift-unboxing.css">
-<link rel="stylesheet" id="ballStyleSheet"   href="/bootstrap/css/ball.css">
-<link rel="stylesheet" id="bingoStyleSheet"  href="/bootstrap/css/bingon.css">
-<link rel="stylesheet" href="/bootstrap/css/congura.css">
-<link rel="stylesheet" href="/cashier/right-menu.css">
-<link rel="stylesheet" href="/bootstrap/css/reg_card.css">
-<link rel="stylesheet" href="/cashier/side-nav.css">
-<link rel="stylesheet" href="/cashier/container.css">
-<link rel="stylesheet" href="/bootstrap/css/modern.css">
+<link rel="stylesheet" id="lightStyleSheet"  href="bootstrap/css/style.css">
+<link rel="stylesheet" id="modalStyleSheet"  href="bootstrap/css/modal.css">
+<link rel="stylesheet" id="giftStyleSheet"   href="bootstrap/css/gift-unboxing.css">
+<link rel="stylesheet" id="ballStyleSheet"   href="bootstrap/css/ball.css">
+<link rel="stylesheet" id="bingoStyleSheet"  href="bootstrap/css/bingon.css">
+<link rel="stylesheet" href="bootstrap/css/congura.css">
+<link rel="stylesheet" href="cashier/right-menu.css">
+<link rel="stylesheet" href="bootstrap/css/reg_card.css">
+<link rel="stylesheet" href="cashier/side-nav.css">
+<link rel="stylesheet" href="cashier/container.css">
+<link rel="stylesheet" href="bootstrap/css/modern.css">
 
 <script>
 /* ── Thin IDB wrapper matching the idb library API used throughout ── */
@@ -64,11 +64,11 @@ const dbPromise = (function() {
 })();
 </script>
 
-<script src="/bootstrap/js/jquery.js"></script>
-<script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="/cards_data.js"></script>
-<script src="/db.js"></script>
-<script src="/api.js"></script>
+<script src="bootstrap/js/jquery.js"></script>
+<script src="bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="cards_data.js"></script>
+<script src="db.js"></script>
+<script src="api.js"></script>
 
 <style>
 .bonus-notification {
@@ -294,7 +294,7 @@ let activeAudios = [];
 window.onload = async () => {
   /* ── Session guard ── */
   if (!API.getSession()) {
-    location.replace('/login.html'); return;
+    location.replace('login.html'); return;
   }
 
   /* ── Step 1: open DB and seed bingo cards ── */
@@ -1014,18 +1014,18 @@ document.getElementById('toggleBTN').addEventListener('click',function(){
   const next=(cur==='dark')?'light':'dark';
   localStorage.setItem('toggleState',next);
   if(next==='light'){
-    document.getElementById('lightStyleSheet').href='/bootstrap/css/light/style.css';
-    document.getElementById('modalStyleSheet').href='/bootstrap/css/light/modal.css';
-    document.getElementById('giftStyleSheet').href='/bootstrap/css/light/gift-unboxing.css';
-    document.getElementById('ballStyleSheet').href='/bootstrap/css/light/ball.css';
-    document.getElementById('bingoStyleSheet').href='/bootstrap/css/light/bingon.css';
+    document.getElementById('lightStyleSheet').href='bootstrap/css/light/style.css';
+    document.getElementById('modalStyleSheet').href='bootstrap/css/light/modal.css';
+    document.getElementById('giftStyleSheet').href='bootstrap/css/light/gift-unboxing.css';
+    document.getElementById('ballStyleSheet').href='bootstrap/css/light/ball.css';
+    document.getElementById('bingoStyleSheet').href='bootstrap/css/light/bingon.css';
     document.getElementById('toggleCircle').style.left='13px';
   } else {
-    document.getElementById('lightStyleSheet').href='/bootstrap/css/style.css';
-    document.getElementById('modalStyleSheet').href='/bootstrap/css/modal.css';
-    document.getElementById('giftStyleSheet').href='/bootstrap/css/gift-unboxing.css';
-    document.getElementById('ballStyleSheet').href='/bootstrap/css/ball.css';
-    document.getElementById('bingoStyleSheet').href='/bootstrap/css/bingon.css';
+    document.getElementById('lightStyleSheet').href='bootstrap/css/style.css';
+    document.getElementById('modalStyleSheet').href='bootstrap/css/modal.css';
+    document.getElementById('giftStyleSheet').href='bootstrap/css/gift-unboxing.css';
+    document.getElementById('ballStyleSheet').href='bootstrap/css/ball.css';
+    document.getElementById('bingoStyleSheet').href='bootstrap/css/bingon.css';
     document.getElementById('toggleCircle').style.left='3px';
   }
 });
@@ -1089,8 +1089,8 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
 
           <!-- Media area (bonus image / default logo) -->
           <div class="em-media-area" id="modal-media-area" style="width:100%;display:flex;justify-content:center;max-height:160px;overflow:hidden;border-radius:12px;margin:4px 0;">
-            <img id="selected-numbers-container-img" src="/assets/images/card1.png" style="max-width:60%;max-height:160px;object-fit:contain;" onerror="this.style.display='none'">
-            <img id="bonus-modal-img" src="/assets/images/bonus-removebg.png" style="display:none;max-width:60%;max-height:160px;object-fit:contain;" onerror="this.style.display='none'">
+            <img id="selected-numbers-container-img" src="assets/images/card1.png" style="max-width:60%;max-height:160px;object-fit:contain;" onerror="this.style.display='none'">
+            <img id="bonus-modal-img" src="assets/images/bonus-removebg.png" style="display:none;max-width:60%;max-height:160px;object-fit:contain;" onerror="this.style.display='none'">
           </div>
 
           <p id="bala_alert" style="color:#ff5252;font-size:15px;min-height:18px;text-align:center;animation:blink 2s infinite;margin-top:8px;"></p>
@@ -1147,15 +1147,15 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
   </div>
 
   <script>
-  document.getElementById('report_button').onclick=function(){window.location.href='/report.html';};
+  document.getElementById('report_button').onclick=function(){window.location.href='report.html';};
   document.getElementById('logoutbtn').onclick=function(){
     if(confirm('Logout? Game state will be preserved.')){
       API.clearSession();
-      location.replace('/login.html');
+      location.replace('login.html');
     }
   };
   document.getElementById('register_game_button').onclick=function(){
-    window.location.href='/reg_new_game.html';
+    window.location.href='reg_new_game.html';
   };
 
   /* ══════════════════════════════════════════
@@ -1444,7 +1444,7 @@ document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').mo
         </div>
 
         <canvas id="canvas" style="display:none;"></canvas>
-        <script src="/bootstrap/js/confetti.browser.min.js"></script>
+        <script src="bootstrap/js/confetti.browser.min.js"></script>
         <canvas id="canvas2" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2999;display:none;"></canvas>
 
         <!-- Check-card result modal -->
@@ -1774,7 +1774,7 @@ document.getElementById("finsh_game").addEventListener("click",function(){
   const today=new Date().toISOString().split('T')[0];
   saveGameState({round:newRound,cards:[],pattern:1,price:0,sound:gs.sound||1,speed_range:gs.speed_range||3,randomstring:'',last_active_date:today});
   showAlert('Round ተጠናቋል! → ወደ ምዝገባ...','success');
-  setTimeout(()=>{ window.location.href='/reg_new_game.html'; },800);
+  setTimeout(()=>{ window.location.href='reg_new_game.html'; },800);
 });
 </script>
 
@@ -2019,7 +2019,7 @@ $(document).ready(function(){
     setTimeout(()=>celebrate(),300); setTimeout(()=>celebrate(),600);
     setTimeout(()=>{el.style.display='none';},3000);
     /* after win animation — go to registration for next round */
-    setTimeout(()=>{ window.location.href='/reg_new_game.html'; },3200);
+    setTimeout(()=>{ window.location.href='reg_new_game.html'; },3200);
   });
   $("#notbingo").on('click',function(){voices("notgood.wav");$('#myModalcard').modal('hide');});
   $("#addbingo").on('click',function(){$('#myModalcard').modal('hide');});

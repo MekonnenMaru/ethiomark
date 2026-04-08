@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Register Cards — Ethiomark Bingo</title>
-<script src="/bootstrap/js/jquery.js"></script>
-<script src="/cards_data.js"></script>
-<script src="/db.js"></script>
-<script src="/api.js"></script>
+<script src="bootstrap/js/jquery.js"></script>
+<script src="cards_data.js"></script>
+<script src="db.js"></script>
+<script src="api.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -415,14 +415,14 @@ html, body {
 </style>
 </head>
 <body>
-<script>if(!API.getSession()){location.replace('/login.html');}</script>
+<script>if(!API.getSession()){location.replace('login.html');}</script>
 
 <!-- ── HEADER ─────────────────────────────── -->
 <div class="header">
   <div class="header-logo">ኢትዮ-ማርክ ቢንጎ</div>
   <div class="header-round">Round <span id="roundDisplay">1</span></div>
-  <button class="hbtn hbtn-report" onclick="window.location.href='/report.html'">📊 Report</button>
-  <button class="hbtn hbtn-back"   onclick="window.location.href='/'">← Back</button>
+  <button class="hbtn hbtn-report" onclick="window.location.href='report.html'">📊 Report</button>
+  <button class="hbtn hbtn-back"   onclick="window.location.href='index.html'">← Back</button>
 </div>
 
 <!-- ── WORKSPACE ──────────────────────────── -->
@@ -676,7 +676,7 @@ function saveAndGo() {
     randomstring: gs.randomstring  || '',
     locked_cards: gs.locked_cards  || []
   });
-  window.location.href = '/';
+  window.location.href = 'index.html';
 }
 
 document.getElementById('searchInput').addEventListener('input', function () {
