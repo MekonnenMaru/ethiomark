@@ -2,19 +2,7 @@ uploads = []
 generated = []
 
 [[outputs]]
-id = "TullRvxsy88I00MJXnj3b"
+id = "Ca728t6okM6SNsj9PXKnj"
 uri = "file://ethiomark-bingo.tar.gz"
 type = "unspecified"
-title = "Ethiomark Bingo — Full App Download"
-
-[[outputs]]
-id = "Harj4u28QIjBYLEAaAetr"
-uri = "file://ethiomark-bingo-full.tar.gz"
-type = "unspecified"
-title = "Ethiomark Bingo — Complete Project with IndexedDB (2.6 MB)"
-
-[[outputs]]
-id = "xbUgdvt_HHcho_DWWdjw8"
-uri = "file://ethiomark-bingo.zip"
-type = "unspecified"
-title = "Ethiomark Bingo — Clean Package"
+title = "Ethiomark Bingo — Clean Download (452 KB)"
