@@ -1,0 +1,2049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ethiomark Bingo</title>
+
+<link rel="stylesheet" id="lightStyleSheet"  href="bootstrap/css/style.css">
+<link rel="stylesheet" id="modalStyleSheet"  href="bootstrap/css/modal.css">
+<link rel="stylesheet" id="giftStyleSheet"   href="bootstrap/css/gift-unboxing.css">
+<link rel="stylesheet" id="ballStyleSheet"   href="bootstrap/css/ball.css">
+<link rel="stylesheet" id="bingoStyleSheet"  href="bootstrap/css/bingon.css">
+<link rel="stylesheet" href="bootstrap/css/congura.css">
+<link rel="stylesheet" href="cashier/right-menu.css">
+<link rel="stylesheet" href="bootstrap/css/reg_card.css">
+<link rel="stylesheet" href="cashier/side-nav.css">
+<link rel="stylesheet" href="cashier/container.css">
+<link rel="stylesheet" href="bootstrap/css/modern.css">
+
+<script>
+/* ── Thin IDB wrapper matching the idb library API used throughout ── */
+const dbPromise = (function() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('bingo-audio-cache', 1);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('audios')) db.createObjectStore('audios');
+    };
+    req.onsuccess = e => {
+      const idb = e.target.result;
+      resolve({
+        get: (store, key) => new Promise((res, rej) => {
+          const r = idb.transaction(store,'readonly').objectStore(store).get(key);
+          r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+        }),
+        transaction: (store, mode) => {
+          const tx = idb.transaction(store, mode);
+          const st = tx.objectStore(store);
+          return {
+            objectStore: () => st,
+            store: { put: (blob,key) => st.put(blob,key) },
+            done: new Promise((res, rej) => {
+              tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+            })
+          };
+        }
+      });
+    };
+    req.onerror = () => reject(req.error);
+  });
+})();
+</script>
+
+<script>
+/* ── Light / dark mode init (before render) ── */
+(function(){
+  var s = localStorage.getItem('toggleState');
+  if (s === 'light') {
+    document.getElementById('lightStyleSheet').href  = 'bootstrap/css/light/style.css';
+    document.getElementById('modalStyleSheet').href  = 'bootstrap/css/light/modal.css';
+    document.getElementById('giftStyleSheet').href   = 'bootstrap/css/light/gift-unboxing.css';
+    document.getElementById('ballStyleSheet').href   = 'bootstrap/css/light/ball.css';
+    document.getElementById('bingoStyleSheet').href  = 'bootstrap/css/light/bingon.css';
+  }
+})();
+</script>
+
+<script src="bootstrap/js/jquery.js"></script>
+<script src="bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="cards_data.js"></script>
+<script src="db.js"></script>
+<script src="api.js"></script>
+
+<style>
+.bonus-notification {
+  position:fixed;top:18%;right:50px;margin-right:10px;width:250px;padding:15px;
+  background-color:#fff;border-radius:20px;border:3px solid green;
+  box-shadow:0 8px 16px rgba(0,0,0,.2);z-index:9999;text-align:center;
+  animation:slideIn 1s ease-out forwards,shake .5s infinite;
+}
+.close-btn { position:absolute;top:-10px;right:-10px;font-size:24px;font-weight:bold;
+  color:white;background-color:#ff8c00;border-radius:50%;padding:5px 10px;cursor:pointer;
+  box-shadow:0 4px 8px rgba(0,0,0,.3);transition:background-color .3s,transform .2s;z-index:10000; }
+.close-btn:hover { background-color:#ff4500;transform:scale(1.2); }
+.bonus-text { font-weight:bold;letter-spacing:2px;font-size:30px;color:green;
+  background:linear-gradient(to right,#ffcc33,#ff8c00);-webkit-background-clip:text;
+  border:3px solid #ffb400;padding:10px;border-radius:10px;
+  box-shadow:0 0 10px #ffb400,0 0 15px #ff8c00,0 0 20px #ff8c00;position:relative; }
+.confetti { position:absolute;top:-50px;left:0;right:0;height:100px;pointer-events:none;overflow:hidden; }
+@keyframes slideIn { 0%{transform:translateX(100%);opacity:0;} 100%{transform:translateX(0);opacity:1;} }
+@keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-5px);} 50%{transform:translateX(5px);} 75%{transform:translateX(-5px);} }
+.blink { animation:blinker 1s linear infinite; }
+@keyframes blinker { 50%{opacity:0;} }
+.bingo-button { display:inline-block;width:85px;margin:5px;font-size:40px;background-color:#007bff;
+  color:white;border:none;padding:15px;border-radius:5px;opacity:1;visibility:visible;
+  text-align:center;vertical-align:middle;box-sizing:border-box;font-weight:700; }
+@media screen and (max-width:768px) { .bingo-button{width:50px;font-size:24px;padding:8px;} }
+@keyframes wave { 0%{transform:translateY(-10px);} 50%{transform:translateY(10px);} 100%{transform:translateY(-10px);} }
+.bingo-button.wave-animation { animation:wave 1s; }
+#selected-numbers { display:flex;flex-wrap:wrap;justify-content:flex-start;gap:10px;padding:10px; }
+@keyframes blink { 0%{opacity:1;} 50%{opacity:0;} 100%{opacity:1;} }
+
+/* ── Info bar (top game section) ── */
+.info-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  height: 150px;
+  box-sizing: border-box;
+  padding: 6px 58px 6px 4px;
+  gap: 10px;
+  overflow: hidden;
+}
+.info-ball-col {
+  flex: 0 0 auto;
+  width: 160px;
+  height: 138px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.info-ball-col .ball2 {
+  width: 9rem !important;
+  height: 9rem !important;
+}
+.info-results-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 138px;
+  overflow: hidden;
+}
+.info-results-col .lastcall {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+}
+.info-results-col .tgable-container {
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+.info-results-col #bingo-table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+}
+.info-results-col .bingo-call {
+  font-size: 30px !important;
+  height: 2.2rem !important;
+  margin-left: 0 !important;
+  padding: 0 2px;
+  width: auto;
+}
+.info-derash-col {
+  flex: 0 0 200px;
+  height: 138px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.info-derash-col .derash-box {
+  width: 100% !important;
+  height: 100% !important;
+}
+.info-derash-col .amount {
+  font-size: 34px !important;
+}
+.info-derash-col .total-calls {
+  font-size: 24px !important;
+}
+.info-derash-col .total-card {
+  font-size: 14px !important;
+}
+
+/* ─── MOBILE RESPONSIVE ─────────────────────────────── */
+@media screen and (max-width:768px) {
+  /* Info bar — stack columns vertically on small screens */
+  .info-bar {
+    flex-direction: column;
+    height: auto;
+    padding: 6px 8px;
+    gap: 6px;
+  }
+  .info-ball-col {
+    width: 100%;
+    height: 90px;
+  }
+  .info-ball-col .ball2 {
+    width: 5rem !important;
+    height: 5rem !important;
+  }
+  .info-results-col {
+    width: 100%;
+    height: auto;
+  }
+  .info-results-col .bingo-call {
+    font-size: 18px !important;
+    height: 1.6rem !important;
+  }
+  .info-derash-col {
+    flex: none;
+    width: 100%;
+    height: auto;
+  }
+  .info-derash-col .amount { font-size: 22px !important; }
+  .info-derash-col .total-calls { font-size: 16px !important; }
+
+  /* BINGO number grid — make balls smaller */
+  .bingo-button { width: 36px; font-size: 14px; padding: 4px; margin: 2px; }
+  .numbox { font-size: 11px !important; min-width: 0 !important; width: 28px; height: 28px; line-height: 28px; padding: 0 !important; }
+  .numrow { display: inline-block; }
+
+  /* Control buttons row — wrap on mobile */
+  .setting_box {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin: 8px auto !important;
+    justify-content: center !important;
+  }
+  .btnbingo, .btnshuffle {
+    max-width: 80px !important;
+    font-size: 13px !important;
+    padding: 8px 4px !important;
+    min-width: 70px;
+  }
+  .voiceselect { width: 100px; font-size: 12px; }
+  .card-input { width: 100px; font-size: 13px; }
+  .check_card { flex: none; }
+
+  /* Speed slider */
+  .slidecontainer { padding: 0 8px; }
+  #myRange { height: 40px !important; }
+
+  /* Game status bar */
+  #game-status-bar { flex-wrap: wrap; gap: 4px; font-size: 12px; }
+
+  /* Bonus container — keep on screen */
+  #bonusContainer { right: 8px !important; left: 8px !important; width: auto !important; }
+
+  /* Bonus notification */
+  .bonus-notification { right: 8px !important; left: 8px !important; width: auto !important; top: 10% !important; }
+}
+
+@media screen and (max-width:480px) {
+  .bingo-button { width: 28px; font-size: 11px; padding: 2px; margin: 1px; }
+  .numbox { width: 22px; height: 22px; line-height: 22px; font-size: 9px !important; }
+  .btnbingo, .btnshuffle { max-width: 68px !important; font-size: 11px !important; }
+  .voiceselect { width: 82px; font-size: 11px; }
+  .card-input { width: 80px; font-size: 11px; }
+  #rand { font-size: 36px !important; }
+}
+</style>
+
+<!-- ─────────────── Voice directories ─────────────── -->
+<script>
+const directories = [
+  'assets/afall/sound/new-voice/',
+  'assets/afall/sound/addis/',
+  'assets/afall/sound/voice/',
+  'assets/afall/sound/nigus/',
+  'assets/afall/sound/modern-arada/',
+  'assets/afall/sound/modern-formal/',
+  'assets/afall/sound/yordi/',
+  'assets/afall/sound/beti/',
+  'assets/afall/sound/foromifa/',
+  'assets/afall/sound/gual/',
+  'assets/afall/sound/wedi/'
+];
+const dynamicVoiceFiles = Array.from({length:75},(_,i)=>`${i+1}.wav`);
+const specialFiles = {
+  'goodbingo.mp3':'assets/afall/sound/',
+  'good.wav':'assets/afall/sound/',
+  'lijemr_new.mp3':'assets/afall/sound/',
+  'locked_card.mp3':'assets/afall/sound/',
+  'notgood.wav':'assets/afall/sound/',
+  'notreg.wav':'assets/afall/sound/',
+  'shuffle.wav':'assets/afall/sound/',
+  'start.mp3':'assets/afall/sound/',
+  'StartupSound.opus':'assets/afall/sound/',
+  'stop.mp3':'assets/afall/sound/',
+  'clapping.mp3':'assets/afall/sound/'
+};
+const voiceFiles = [
+  ...directories.map(dir => dynamicVoiceFiles.map(file=>({file,directory:dir}))).flat(),
+  ...Object.entries(specialFiles).map(([file,directory])=>({file,directory}))
+];
+let activeAudios = [];
+
+window.onload = async () => {
+  /* ── Session guard ── */
+  if (!API.getSession()) {
+    location.replace('login.html'); return;
+  }
+
+  /* ── Step 1: open DB and seed bingo cards ── */
+  const barEl  = document.getElementById('audioPreloadBar');
+  const pctEl  = document.getElementById('audioPreloadPercent');
+  const wrapEl = document.getElementById('audioPreloadProgress');
+  if (wrapEl) wrapEl.style.display = 'block';
+
+  await API.init();
+  /* ensure machine ID is generated on first run */
+  await API.getMachineId();
+  /* reset round to 1 if a new calendar day has started */
+  await API.checkAndResetDailyRound();
+  await API.seedCashiers([
+    { id: '@temp1', password_hash: 'a01610228fe998f515a72dd730294d87',
+      settings_json: '{"bonus":{"status":"on","amount":"50","per_day":"1"},"system":{"check_result":"auto","color_mode":"two","profit":"12","good_bingo_sound":"1"},"toggles":{"will_start":true,"started":true,"stopped":true,"show_card_count":true}}' }
+  ]);
+  await API.seedCards(pct => {
+    if (barEl) barEl.style.width = pct + '%';
+    if (pctEl) pctEl.textContent  = pct + '%';
+  });
+
+  /* ── Step 2: one-time migration from localStorage → IDB ── */
+  const lsState    = localStorage.getItem('game_state');
+  const lsSettings = localStorage.getItem('app_settings');
+  const lsHistory  = localStorage.getItem('game_history');
+  if (lsState)    { try { await API.saveGameState(JSON.parse(lsState));  localStorage.removeItem('game_state'); }    catch(e){} }
+  if (lsSettings) { try { await API.saveSettings(JSON.parse(lsSettings)); localStorage.removeItem('app_settings'); } catch(e){} }
+  if (lsHistory)  { try { const h=JSON.parse(lsHistory); for(const e of h) await API.addHistory(e); localStorage.removeItem('game_history'); } catch(e){} }
+
+  /* ── Step 3: populate memory caches ── */
+  window._gameStateCache   = await API.getGameState();
+  window._appSettingsCache = await API.getSettings();
+
+  /* ── Step 4: preload selected cards into fast-lookup map ── */
+  const _gs = window._gameStateCache;
+  if (_gs.cards && _gs.cards.length) {
+    window._loadedCards = await API.getCardsBatch(_gs.cards);
+  }
+
+  /* ── Step 5: normal game startup ── */
+  initGameState();
+  preloadAudios().catch(err=>console.error('Audio preload error:',err));
+};
+
+async function preloadAudios() {
+  const audioBlobs = [];
+  const selected_voice = document.getElementById("voiceselect").value;
+  const priority_path = directories[selected_voice - 1];
+  const priorityDirectories = [priority_path];
+  const priorityFiles = Object.keys(specialFiles).map(file=>({file,directory:specialFiles[file]}));
+  const progress = document.getElementById('audioPreloadProgress');
+  progress.style.display = 'block';
+  let loadedFiles = 0;
+  const totalFiles = Object.keys(specialFiles).length + voiceFiles.length + 2;
+  function updateProgress() {
+    loadedFiles++;
+    const percent = Math.min(Math.round((loadedFiles/totalFiles)*100),100);
+    document.getElementById('progressBar').style.width = percent+'%';
+    document.getElementById('progressPercent').textContent = percent+'%';
+    if(percent===100) document.getElementById('progressBar').style.background='#2E7D32';
+  }
+  for (const {file,directory} of priorityFiles) {
+    await preloadAudioFile(`${directory}${file}`,audioBlobs); updateProgress();
+  }
+  for (const {file,directory} of voiceFiles) {
+    if (priorityDirectories.includes(directory)) {
+      await preloadAudioFile(`${directory}${file}`,audioBlobs); updateProgress();
+    }
+  }
+  if (audioBlobs.length > 0) { await storeAudiosInBulk(audioBlobs); updateProgress(); }
+  const remainingAudioBlobs = [];
+  for (const {file,directory} of voiceFiles) {
+    if (!priorityDirectories.includes(directory)) {
+      await preloadAudioFile(`${directory}${file}`,remainingAudioBlobs); updateProgress();
+    }
+  }
+  if (remainingAudioBlobs.length > 0) { await storeAudiosInBulk(remainingAudioBlobs); updateProgress(); }
+  document.getElementById('statusText').textContent = 'Audio Loaded!';
+  setTimeout(()=>{ progress.style.display='none'; },2000);
+}
+
+async function preloadAudioFile(audioUrl, audioBlobs) {
+  const isCached = await checkIfFileCached(btoa(audioUrl));
+  if (isCached) return;
+  try {
+    const response = await fetch(audioUrl);
+    if (!response.ok) { console.warn('Skipped missing audio.'); return; }
+    const blob = await response.blob();
+    audioBlobs.push({url:btoa(audioUrl),blob});
+  } catch(e) { console.error('Failed to fetch audio.'); }
+}
+
+async function checkIfFileCached(url) {
+  const db = await dbPromise;
+  const tx = db.transaction('audios','readonly');
+  const cachedBlob = await tx.objectStore().get(url);
+  return cachedBlob !== undefined;
+}
+
+async function storeAudiosInBulk(audioBlobs) {
+  if (!audioBlobs.length) return;
+  const db = await dbPromise;
+  const tx = db.transaction('audios','readwrite');
+  for (const {url,blob} of audioBlobs) tx.store.put(blob,url);
+  await tx.done;
+}
+
+async function getAudio(url) {
+  const db = await dbPromise;
+  try { return await db.get('audios',url); } catch(e) { return null; }
+}
+
+async function playAudio(voicePath) {
+  const blob = await getAudio(btoa(voicePath));
+  if (blob) {
+    const audio = new Audio(URL.createObjectURL(blob));
+    audio.preload='auto'; activeAudios.push(audio);
+    audio.play().catch(e=>console.error('Play error:',e));
+  } else {
+    try {
+      const resp = await fetch(voicePath);
+      if (!resp.ok) return;
+      const fetchedBlob = await resp.blob();
+      const audio = new Audio(URL.createObjectURL(fetchedBlob));
+      audio.preload='auto'; activeAudios.push(audio);
+      audio.play().catch(e=>console.error('Play error:',e));
+    } catch(e) {}
+  }
+}
+
+function voices(rb) {
+  const rbStr = String(rb);
+  const selectvoice = document.getElementById("voiceselect").value;
+  if (rbStr.includes('.')) {
+    playAudio(`assets/afall/sound/${rbStr}`);
+  } else {
+    const path = directories[selectvoice - 1];
+    const vf = voiceFiles[rb - 1] && voiceFiles[rb - 1].file;
+    if (path && vf) playAudio(`${path}${vf}`);
+  }
+}
+
+function showAlert(message, type) {
+  var d = document.getElementById('customAlert');
+  d.innerHTML = message; d.style.display = 'block';
+  d.className = 'custom-alert alert-' + type;
+  setTimeout(()=>{ d.style.display='none'; }, 3000);
+}
+
+function updateBonusModalImage(bonusStatus) {
+  const imgBonus = document.getElementById('bonus-modal-img');
+  const imgCard  = document.getElementById('selected-numbers-container-img');
+  if (!imgBonus || !imgCard) return;
+  if (bonusStatus === 'on') {
+    imgBonus.style.display = '';
+    imgCard.style.display  = 'none';
+  } else {
+    imgBonus.style.display = 'none';
+    imgCard.style.display  = '';
+  }
+}
+
+function saveGameToHistory(status) {
+  const gs = getGameState();
+  if (!gs.cards || !gs.cards.length) return;
+  /* ── track collected revenue against package balance ── */
+  const revenue = gs.cards.length * (gs.price || 0);
+  if (revenue > 0) API.addRevenue(revenue);
+  API.addHistory({
+    round: gs.round || 1,
+    date: new Date().toISOString(),
+    cards: gs.cards,
+    price: gs.price || 0,
+    pattern: gs.pattern || 1,
+    sound: gs.sound || 1,
+    randomstring: gs.randomstring || '',
+    status: status || 'played'
+  });
+  /* stamp today so daily-reset knows the last active date */
+  API.stampActiveDate();
+}
+</script>
+</head>
+<body>
+
+<!-- ─── Audio preload progress ─── -->
+<div id="audioPreloadProgress" style="display:none;position:fixed;bottom:20px;left:20px;z-index:2000;width:260px;font-family:Arial,sans-serif;">
+  <div style="text-align:center;margin-bottom:1px;">
+    <div style="display:inline-block;padding:2px 15px;background:#2c3e50;border-radius:20px;">
+      <span id="statusText" style="color:#ecf0f1;font-weight:500;font-size:15px;letter-spacing:.5px;">Downloading Audio</span>
+    </div>
+  </div>
+  <div style="width:100%;height:26px;background:#e0e5e9;border-radius:13px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.2);position:relative;">
+    <div id="progressBar" style="height:100%;width:0%;background:linear-gradient(to right,#3498db,#2980b9);transition:width .4s;">
+      <div id="progressPercent" style="position:absolute;width:100%;text-align:center;line-height:26px;color:white;font-weight:700;font-size:18px;"></div>
+    </div>
+  </div>
+</div>
+
+<div id="customAlert" class="custom-alert" style="display:none;position:fixed;top:20px;right:20px;z-index:2000;"></div>
+<div id="overlay" class="hidden"></div>
+
+<div style="display:none;" class="bonus-notification" id="bonusNotification">
+  <span class="close-btn" onclick="closeNotification()">×</span>
+  <h1 id="gift-bonus" class="bonus-text"></h1>
+  <div class="confetti"></div>
+</div>
+<script>function closeNotification(){document.getElementById("bonusNotification").style.display="none";}</script>
+
+<!-- ─── Hidden data elements (populated by initGameState) ─── -->
+<p id="ran_voice" hidden>1</p>
+<p id="patt" hidden>1</p>
+<p id="start_get_mony_from" hidden>0</p>
+<p id="bonus_eligiblity_starts_from" hidden>0</p>
+<p id="lock_round_up_last_digit" hidden>0</p>
+<p id="round" hidden>1</p>
+<p id="sew" hidden>0</p>
+<p id="birr" hidden>0</p>
+<p id="bala" hidden>9999</p>
+<p id="profit" hidden>0</p>
+<p id="new_bonus_status" hidden style="font-size:50px;">off</p>
+<p id="new_bonus_amount" hidden style="font-size:50px;">20</p>
+<p id="max_new_bonus_per_day" hidden style="font-size:50px;">1</p>
+<p id="new_bonus_chance" hidden style="font-size:50px;">3</p>
+<p id="bonusCutSize_tobe_locked" hidden style="font-size:50px;"></p>
+<p id="todays_new_bonus_count" hidden style="font-size:50px;">0</p>
+<p id="auto_check_result" hidden style="font-size:50px;">manual</p>
+<p id="color" hidden style="font-size:50px;">two</p>
+<p id="good_bingo_sound" hidden style="font-size:50px;">0</p>
+<p id="profit_json" hidden style="font-size:50px;"></p>
+<p id="partner_id" hidden style="font-size:50px;">0</p>
+<p id="partner_settings_json_status" hidden style="font-size:50px;">off</p>
+<p id="fd" hidden></p>
+<p id="wc" hidden></p>
+
+<!-- ─── LocalStorage helpers ─── -->
+<script>
+/* ── IDB-backed state with sync memory cache ── */
+window._gameStateCache    = {};
+window._appSettingsCache  = {};
+window._loadedCards       = {};   /* card id → card array, preloaded at game start */
+
+function getGameState()   { return window._gameStateCache; }
+function getAppSettings() { return window._appSettingsCache; }
+function saveGameState(s) {
+  window._gameStateCache = s;
+  API.saveGameState(s);
+}
+
+function initGameState(){
+  const gs=getGameState(), settings=getAppSettings();
+  const round=gs.round||1;
+  document.getElementById('round').innerText=round;
+
+  const cards=gs.cards||[], price=gs.price||0;
+  document.getElementById('sew').innerText=cards.length;
+  document.getElementById('birr').innerText=price;
+  document.getElementById('patt').innerText=gs.pattern||1;
+
+  const sound=gs.sound||1;
+  document.getElementById('ran_voice').innerText=sound;
+  const vs=document.getElementById('voiceselect');
+  if(vs) vs.value=sound;
+
+  const speed=gs.speed_range||3;
+  const myRange=document.getElementById('myRange');
+  if(myRange){myRange.value=speed;document.getElementById('demo').textContent=speed;}
+
+  const bonusStatus=settings.bonus?.status||'off';
+  document.getElementById('new_bonus_status').innerText=bonusStatus;
+  document.getElementById('new_bonus_amount').innerText=settings.bonus?.amount||20;
+  document.getElementById('max_new_bonus_per_day').innerText=settings.bonus?.per_day||1;
+  document.getElementById('auto_check_result').innerText=settings.system?.check_result||'manual';
+  document.getElementById('good_bingo_sound').innerText=settings.system?.good_bingo_sound||'0';
+  document.getElementById('profit').innerText=settings.system?.profit||'0';
+
+  const bonusBtn=document.getElementById('bonus');
+  const bonusCont=document.getElementById('bonusContainer');
+  if(bonusStatus==='on'){if(bonusBtn)bonusBtn.style.display='';if(bonusCont)bonusCont.style.display='block';}
+  else{if(bonusBtn)bonusBtn.style.display='none';}
+  updateBonusModalImage(bonusStatus);
+
+  const today=new Date().toDateString();
+  const bonusMeta=JSON.parse(localStorage.getItem('bonus_meta')||'{}');
+  const todaysCount=(bonusMeta.date===today)?(bonusMeta.count||0):0;
+  document.getElementById('todays_new_bonus_count').innerText=todaysCount;
+
+  document.getElementById('modal-round-number').innerHTML='Round '+round;
+  document.getElementById('cardCounter').innerHTML='ብዛት : '+cards.length;
+  renderRegisteredCards(cards,price,round);
+  applySavedSettings(settings);
+  /* refresh package balance pill each time modal opens */
+  if(typeof refreshBalanceDisplay==='function') refreshBalanceDisplay();
+  $('#myModal').modal('show');
+}
+
+function renderRegisteredCards(cards,price,round){
+  document.getElementById('modal-round-number').innerHTML='Round '+round;
+  const patternNames={1:'Any 1 Line',2:'Any 2 Lines',3:'Any Horizontal',4:'Any Vertical',5:'X Pattern',6:'Four Corners',7:'Center Corners',8:'Meskel',9:'T Shape',10:'Reverse T',11:'L Shape',12:'Full Card'};
+  const gi=document.getElementById('modal-game-info');
+  const mediaArea=document.getElementById('modal-media-area');
+  const imgCard=document.getElementById('selected-numbers-container-img');
+  if(cards.length>0){
+    if(gi){ gi.style.display='block'; }
+    if(mediaArea) mediaArea.style.display='none';
+    const gs=getGameState();
+    const pn=patternNames[gs.pattern||1]||('Pattern '+(gs.pattern||1));
+    const revenue=(cards.length*(price||0));
+    const miPat=document.getElementById('mi-pattern');
+    const miCards=document.getElementById('mi-cards');
+    const miPrice=document.getElementById('mi-price');
+    const miRev=document.getElementById('mi-revenue');
+    if(miPat)   miPat.textContent=pn;
+    if(miCards) miCards.textContent=cards.length;
+    if(miPrice) miPrice.textContent=(price||0)+' ብር';
+    if(miRev)   miRev.textContent=revenue.toLocaleString()+' ብር';
+  } else {
+    if(gi) gi.style.display='none';
+    if(mediaArea) mediaArea.style.display='flex';
+    if(imgCard) imgCard.style.display='';
+  }
+}
+
+function applySavedSettings(settings){
+  if(!settings) return;
+  const setBonusEl=document.getElementById("settings_set_bonus");
+  const bonusAmountEl=document.getElementById("settings_bonus_amount");
+  const bonusOptionsEl=document.getElementById("sittings_bonus_options");
+  const bonusSubMenu=document.querySelector(".bonus-submenu");
+  if(setBonusEl) setBonusEl.value=settings.bonus?.status||"off";
+  if(bonusAmountEl) bonusAmountEl.value=settings.bonus?.amount||"20";
+  if(bonusOptionsEl) bonusOptionsEl.value=settings.bonus?.per_day||"1";
+  if(bonusSubMenu) bonusSubMenu.style.display=settings.bonus?.status==="on"?"block":"none";
+  const cr=document.getElementById("settings_check_result");
+  const cm=document.getElementById("settings_color_mode");
+  const pr=document.getElementById("settings_cashier_profit");
+  const gs_=document.getElementById("settings_good_bingo_sound");
+  if(cr) cr.value=settings.system?.check_result||"manual";
+  if(cm) cm.value=settings.system?.color_mode||"two";
+  if(pr) pr.value=settings.system?.profit||"0";
+  if(gs_) gs_.value=settings.system?.good_bingo_sound||"0";
+  if(settings.toggles){
+    $("#will_start_sound_toggle").prop("checked",settings.toggles.will_start??true);
+    $("#started_sound_toggle").prop("checked",settings.toggles.started??true);
+    $("#stopped_sound_toggle").prop("checked",settings.toggles.stopped??true);
+    $("#counte_registerd_card").prop("checked",settings.toggles.show_card_count??true);
+    const cc=document.getElementById("cardCounter");
+    if(cc) cc.style.display=settings.toggles.show_card_count?"inline":"none";
+  }
+}
+</script>
+
+<!-- ─── Start game (no AJAX) ─── -->
+<script>
+var hasBeenCalled=false;
+function startbingo(){
+  if(hasBeenCalled) return false;
+  hasBeenCalled=true;
+  /* ── license / package check ── */
+  API.getBalance().then(bal => {
+    if(bal.available <= 0){
+      hasBeenCalled=false;
+      if(typeof showPackageOverlay==='function') showPackageOverlay('locked');
+      return;
+    }
+    _doStartBingo();
+    /* warn when nearly exhausted */
+    if(bal.deposited>0 && bal.available/bal.deposited < 0.15){
+      setTimeout(()=>{ if(typeof showBalanceWarning==='function') showBalanceWarning(bal.available); },2000);
+    }
+  });
+  return false;
+}
+function _doStartBingo(){
+  const btn=document.getElementById('mybtn');
+  btn.disabled=true;
+  const n=parseInt(document.getElementById('sew').innerText)||0;
+  const s=parseInt(document.getElementById('birr').innerText)||0;
+  const b=parseInt(document.getElementById('bala').innerText)||9999;
+  const profit=parseInt(document.getElementById('profit').innerText)||0;
+  const round_number=document.getElementById("round").innerText;
+  const lock_d=parseInt(document.getElementById("lock_round_up_last_digit").innerText)||0;
+  const sgmf=parseInt(document.getElementById("start_get_mony_from").innerText)||0;
+  const bels=parseInt(document.getElementById("bonus_eligiblity_starts_from").innerText)||0;
+  document.getElementById("round_number_bellow_5").innerHTML="Round "+round_number;
+  const nbs=document.getElementById('settings_set_bonus').value;
+  if(nbs==="on"){
+    const bb=document.getElementById('bonus');
+    const bc=document.getElementById('bonusContainer');
+    if(bb) bb.disabled=false;
+    if(bc) bc.style.display='block';
+  } else {
+    const bb=document.getElementById('bonus');
+    if(bb) bb.style.display='none';
+  }
+  const dr=n*s;
+  let total=0;
+  if(profit==0){
+    if(dr>120&&dr<320) total=dr*0.2;
+    else if(dr>=320&&dr<800) total=dr*0.22;
+    else if(dr>=800&&dr<1000) total=dr*0.25;
+    else if(dr>=1000) total=dr*0.3;
+    else total=dr*0.2;
+  } else { total=dr*profit/100; }
+  let roundedTotal=0;
+  if(lock_d==0){const ld=total%10;roundedTotal=total-ld+(ld>5?10:0);}
+  else{roundedTotal=total;}
+  if(roundedTotal<10&&total<=10) roundedTotal=10;
+  const income=dr;
+  if(n!=0&&s!=0&&b>0){
+    if(income<sgmf){
+      document.getElementById('amount').innerText=income+" ብር ወሳጅ";
+      document.getElementById('amount1').innerText=income;
+    } else {
+      document.getElementById('amount').innerText=(income-roundedTotal)+" ብር ወሳጅ";
+      document.getElementById('amount1').innerText=(income-roundedTotal);
+    }
+  }
+  // Show game status bar
+  const patNamesGSB={1:'Any 1 Line',2:'Any 2 Lines',3:'Any Horizontal',4:'Any Vertical',5:'X Pattern',6:'Four Corners',7:'Center Corners',8:'Meskel',9:'T Shape',10:'Reverse T',11:'L Shape',12:'Full Card'};
+  const gsBar=document.getElementById('game-status-bar');
+  if(gsBar){
+    gsBar.style.display='flex';
+    const gsGs=getGameState();
+    document.getElementById('gsb-round').textContent='Round '+round_number;
+    document.getElementById('gsb-pattern').textContent=patNamesGSB[gsGs.pattern||1]||'Pattern '+(gsGs.pattern||1);
+    document.getElementById('gsb-cards').textContent=n;
+    document.getElementById('gsb-price').textContent=s;
+  }
+  $('#myModal').modal('hide');
+  hasBeenCalled=false;
+  btn.disabled=false;
+}
+</script>
+
+<style>
+#pkg-key-input::placeholder { color: rgba(255,255,255,0.25); }
+#pkg-key-input:focus { border-color: rgba(0,198,255,0.5) !important; box-shadow: 0 0 0 3px rgba(0,198,255,0.1); }
+</style>
+<div id="pkg-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(5,14,26,0.97);backdrop-filter:blur(8px);flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow-y:auto;">
+  <div style="width:100%;max-width:460px;">
+
+    <!-- locked banner -->
+    <div id="pkg-locked-banner" style="display:none;background:rgba(255,82,82,0.12);border:1px solid rgba(255,82,82,0.4);border-radius:14px;padding:14px 18px;margin-bottom:16px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:6px;">🔒</div>
+      <div style="color:#ff5252;font-weight:900;font-size:18px;margin-bottom:4px;">Package Balance Used Up</div>
+      <div style="color:rgba(255,130,130,0.85);font-size:13px;line-height:1.6;">You cannot start a game until a new license key is added.<br>Follow the steps below to top up.</div>
+    </div>
+
+    <!-- machine ID card -->
+    <div style="background:rgba(0,198,255,0.06);border:1px solid rgba(0,198,255,0.2);border-radius:16px;padding:18px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:rgba(0,198,255,0.6);letter-spacing:1.4px;text-transform:uppercase;margin-bottom:10px;">📋 Step 1 — Copy your Machine ID &amp; send it to the admin</div>
+      <div id="pkg-machine-id" style="font-family:monospace;font-size:30px;font-weight:900;letter-spacing:8px;color:#00c6ff;text-align:center;background:rgba(0,198,255,0.08);border-radius:10px;padding:14px 0;cursor:pointer;user-select:all;" title="Click to select all">••••••••</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.3);text-align:center;margin-top:8px;">Click the ID above to select it, then copy (Ctrl+C)</div>
+    </div>
+
+    <!-- step 2 -->
+    <div style="background:rgba(249,115,22,0.05);border:1px solid rgba(249,115,22,0.2);border-radius:14px;padding:14px 16px;margin-bottom:12px;font-size:13px;color:rgba(249,115,22,0.85);line-height:1.7;">
+      <strong style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;display:block;margin-bottom:6px;">🔑 Step 2 — Admin generates &amp; sends you a key</strong>
+      The admin opens <strong style="color:#f97316;">/keygen.html</strong> in a browser, enters your Machine ID and the package amount, clicks <em>Generate</em>, and sends you the key (starts with <code style="background:rgba(0,0,0,0.3);padding:1px 5px;border-radius:4px;">EM-eyJ…</code>).
+    </div>
+
+    <!-- balance status -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="background:rgba(0,198,255,0.07);border:1px solid rgba(0,198,255,0.2);border-radius:12px;padding:10px;text-align:center;">
+        <div style="font-size:10px;color:rgba(0,198,255,0.6);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Deposited</div>
+        <div id="pkg-deposited" style="font-size:16px;font-weight:800;color:#00c6ff;">—</div>
+      </div>
+      <div style="background:rgba(255,215,64,0.07);border:1px solid rgba(255,215,64,0.2);border-radius:12px;padding:10px;text-align:center;">
+        <div style="font-size:10px;color:rgba(255,215,64,0.6);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Collected</div>
+        <div id="pkg-used" style="font-size:16px;font-weight:800;color:#ffd740;">—</div>
+      </div>
+      <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.2);border-radius:12px;padding:10px;text-align:center;">
+        <div style="font-size:10px;color:rgba(0,230,118,0.6);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Remaining</div>
+        <div id="pkg-available" style="font-size:16px;font-weight:800;color:#00e676;">—</div>
+      </div>
+    </div>
+
+    <!-- step 3 – key entry -->
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:20px;">
+      <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px;">🔓 Step 3 — Paste the key below and activate</div>
+      <textarea id="pkg-key-input" rows="2" placeholder="e.g.  EM-76058E59-5000-1-A3F92B1C" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-family:monospace;font-size:13px;padding:10px 12px;resize:none;outline:none;transition:border-color .2s,box-shadow .2s;line-height:1.5;"></textarea>
+      <div id="pkg-key-error" style="display:none;color:#ff5252;font-size:12px;font-weight:600;margin-top:8px;padding:8px 10px;background:rgba(255,82,82,0.1);border:1px solid rgba(255,82,82,0.25);border-radius:8px;"></div>
+      <div id="pkg-key-success" style="display:none;color:#00e676;font-size:13px;font-weight:700;margin-top:8px;padding:10px 12px;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.25);border-radius:8px;text-align:center;"></div>
+      <div style="display:flex;gap:10px;margin-top:12px;">
+        <button id="pkg-activate-btn" style="flex:1;padding:13px;border:none;border-radius:10px;cursor:pointer;background:linear-gradient(135deg,#0072ff,#00c6ff);color:#fff;font-size:15px;font-weight:900;letter-spacing:.3px;box-shadow:0 4px 16px rgba(0,114,255,.35);">✓ Activate Package</button>
+        <button id="pkg-close-btn" style="padding:13px 18px;border:1px solid rgba(255,255,255,0.15);border-radius:10px;cursor:pointer;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);font-size:14px;">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="user-content" style="display:block;">
+
+<!-- ─── Top-right button column ─── -->
+<div id="buttonContainer" style="position:absolute;top:0px;right:2px;z-index:9999;display:flex;flex-direction:column;gap:5px;align-items:flex-end;width:50px;">
+  <button id="toggleBTN" style="display:flex;align-items:center;justify-content:center;padding:15px 0;background-color:transparent;color:white;border:2px solid #28a745;border-radius:5px;cursor:pointer;width:100%;text-align:center;">
+    <div id="toggleIcon" style="display:flex;align-items:center;justify-content:center;width:30px;height:20px;background-color:white;border-radius:10px;margin-right:10px;position:relative;">
+      <div id="toggleCircle" style="width:14px;height:14px;background-color:#28a745;border-radius:50%;position:absolute;top:3px;left:3px;transition:left .3s;"></div>
+    </div>
+  </button>
+  <button id="fullscreenBtn" style="display:flex;align-items:center;justify-content:center;padding:0px 0;background-color:transparent;color:white;border:2px solid #28a745;border-radius:5px;cursor:pointer;width:100%;text-align:center;">
+    <svg width="14" height="14" fill="#ffffff" class="bi bi-fullscreen" viewBox="0 0 16 16"><path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/></svg>
+  </button>
+  <button id="settings" style="display:flex;align-items:center;justify-content:center;padding:0px 0;background-color:transparent;color:white;border:3px solid rgb(243,49,0);border-radius:5px;cursor:pointer;width:100%;text-align:center;">
+    <svg width="14" height="8" fill="currentColor" class="bi bi-gear" viewBox="0 0 16 16"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52z"/></svg>
+  </button>
+  <button id="helps" style="display:flex;align-items:center;justify-content:center;padding:0px 0;background-color:transparent;color:white;border:2px solid #28a745;border-radius:5px;cursor:pointer;width:100%;text-align:center;">
+    <svg width="16" height="1" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/></svg>
+  </button>
+  <button id="bonus" style="display:none;">
+    <span>ቦነስ</span>
+    <div id="bonusTooltip" class="tooltip">ቦነስ ከፈለጉ እባክዎት በቀይ<br>Bonus status ያብሩት!</div>
+  </button>
+  <div id="bonusContainer" style="display:none;">
+    <button id="close-bonus">&times;</button>
+    <div id="bonusContent">
+      <h1>🎉 ቺርስ 🎉</h1>
+      <p hidden id="special_bonus_data"></p>
+      <p class="special-bonus" id="special_bonus_buttons"><button class="bingo-word">No Bonus</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Settings Menu ─── -->
+<div class="settings-menu" id="settings-menu">
+  <div class="settings-header">
+    <h2>Settings - ማስተካከያ</h2>
+    <button class="close-btn" id="close-menu">&times;</button>
+  </div>
+  <div class="settings-option">
+    <label>Bonus status - ቦነስ:</label>
+    <select id="settings_set_bonus" class="bonus-toggle">
+      <option value="off">ጠፍቷል</option><option value="on">በርቷል</option>
+    </select>
+  </div>
+  <div class="bonus-submenu" style="display:none;">
+    <div class="settings-option">
+      <label for="settings_bonus_amount">Amount of money (20-300):</label>
+      <input type="number" id="settings_bonus_amount" min="20" max="300" step="10" value="50" class="bonus-input">
+    </div>
+    <div class="settings-option">
+      <label for="sittings_bonus_options">Number of bonus options (1-4):</label>
+      <select id="sittings_bonus_options" class="bonus-input">
+        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+      </select>
+    </div>
+  </div>
+  <div class="settings-option">
+    <label>Check Result - አሸናፊዉን መለየት:</label>
+    <select id="settings_check_result">
+      <option value="auto">Auto</option><option value="manual">Manual</option>
+    </select>
+  </div>
+  <div class="settings-option">
+    <label>Set result color mode:</label>
+    <select id="settings_color_mode">
+      <option value="two">Two [red and green]</option>
+      <option value="three">Three [red, green and Yellow]</option>
+    </select>
+  </div>
+  <div class="settings-option">
+    <label>good bingo sound:</label>
+    <select id="settings_good_bingo_sound">
+      <option value="0">ይህ ካርቴላ አሸንፏል</option>
+      <option value="1">ጭብጨባ</option>
+      <option value="2">ጉድ ቢንጎ - Good Bingo</option>
+    </select>
+  </div>
+  <div class="settings-option">
+    <label>Set Profit:</label>
+    <select id="settings_cashier_profit">
+      <option value="0">Default</option><option value="10">10%</option><option value="12">12%</option>
+      <option value="15">15%</option><option value="17">17%</option><option value="20">20%</option>
+      <option value="23">23%</option><option value="25">25%</option><option value="27">27%</option>
+      <option value="30">30%</option><option value="33">33%</option><option value="35">35%</option>
+      <option value="37">37%</option><option value="40">40%</option>
+    </select>
+  </div>
+  <div class="sound-settings-toggles">
+    <div class="sound-settings-toggle-row">
+      <div class="sound-settings-toggle-group">
+        <label class="sound-settings-toggle-label">ሊጀምር ነው ድምጽ</label>
+        <label class="sound-settings-switch">
+          <input type="checkbox" id="will_start_sound_toggle">
+          <span class="sound-settings-slider"></span><span class="sound-settings-state">OFF</span>
+        </label>
+      </div>
+      <div class="sound-settings-toggle-group">
+        <label class="sound-settings-toggle-label">ጨዋታው ጀምሯል ድምጽ</label>
+        <label class="sound-settings-switch">
+          <input type="checkbox" id="started_sound_toggle" checked>
+          <span class="sound-settings-slider"></span><span class="sound-settings-state">ON</span>
+        </label>
+      </div>
+      <div class="sound-settings-toggle-group">
+        <label class="sound-settings-toggle-label">ጨዋታው ቁሟል ድምጽ</label>
+        <label class="sound-settings-switch">
+          <input type="checkbox" id="stopped_sound_toggle">
+          <span class="sound-settings-slider"></span><span class="sound-settings-state">OFF</span>
+        </label>
+      </div>
+    </div>
+    <div class="sound-settings-toggle-row">
+      <div class="sound-settings-toggle-group">
+        <label class="sound-settings-toggle-label">የተመዘገበ ቁጥር ብዛት</label>
+        <label class="sound-settings-switch">
+          <input type="checkbox" id="counte_registerd_card">
+          <span class="sound-settings-slider"></span><span class="sound-settings-state">OFF</span>
+        </label>
+      </div>
+    </div>
+  </div>
+  <center><button id="submit_settings_form" class="settings-option" style="color:green;font-size:30px;">Save Changes</button></center>
+  <center><i style="color:green;font-size:30px;" id="settings_update_response"></i></center>
+</div>
+
+<script>
+/* ─── Settings & UI events ─── */
+const bonusContainer=document.getElementById('bonusContainer');
+let isDragging=false,offsetX,offsetY;
+
+document.addEventListener("DOMContentLoaded",function(){
+  const bb=document.getElementById('bonus');
+  if(bb) bb.disabled=true;
+  let sp=JSON.parse(localStorage.getItem('bonusContainerPosition')||'null');
+  if(sp){
+    bonusContainer.style.top=`${Math.min(sp.top,window.innerHeight)}px`;
+    bonusContainer.style.left=`${Math.min(sp.left,window.innerWidth)}px`;
+  } else {
+    bonusContainer.style.right='20px';
+    bonusContainer.style.top='80%';
+  }
+});
+
+bonusContainer.addEventListener('mousedown',e=>{
+  isDragging=true;
+  offsetX=e.clientX-bonusContainer.getBoundingClientRect().left;
+  offsetY=e.clientY-bonusContainer.getBoundingClientRect().top;
+});
+document.addEventListener('mousemove',e=>{
+  if(isDragging){
+    const x=e.clientX-offsetX,y=e.clientY-offsetY;
+    const maxX=window.innerWidth-bonusContainer.offsetWidth;
+    const maxY=window.innerHeight-bonusContainer.offsetHeight;
+    bonusContainer.style.left=`${Math.min(Math.max(x,0),maxX)}px`;
+    bonusContainer.style.top=`${Math.min(Math.max(y,0),maxY)}px`;
+  }
+});
+document.addEventListener('mouseup',()=>{
+  if(isDragging){
+    isDragging=false;
+    localStorage.setItem('bonusContainerPosition',JSON.stringify({
+      left:parseInt(bonusContainer.style.left),top:parseInt(bonusContainer.style.top)
+    }));
+  }
+});
+document.getElementById('bonus').addEventListener('click',function(){
+  bonusContainer.style.display=(bonusContainer.style.display==='none')?'block':'none';
+});
+document.getElementById("close-bonus").addEventListener("click",()=>{ bonusContainer.style.display="none"; });
+
+document.getElementById("settings").addEventListener("click",function(e){
+  e.stopPropagation();
+  document.getElementById("settings-menu").classList.add("active");
+  applySavedSettings(getAppSettings());
+});
+document.addEventListener("click",function(e){
+  const sm=document.getElementById("settings-menu");
+  const sb=document.getElementById("settings");
+  if(!sm.contains(e.target)&&!sb.contains(e.target)) sm.classList.remove("active");
+});
+document.getElementById("close-menu").addEventListener("click",function(e){
+  e.stopPropagation();
+  document.getElementById("settings-menu").classList.remove("active");
+});
+document.getElementById("settings_set_bonus").addEventListener("change",function(){
+  document.querySelector(".bonus-submenu").style.display=(this.value==="on")?"block":"none";
+});
+
+$("#submit_settings_form").on('click',function(e){
+  e.preventDefault();
+  const btn=document.getElementById('submit_settings_form');
+  btn.disabled=true;btn.innerText='Saving...';btn.style.opacity='0.6';btn.style.cursor='not-allowed';
+  const settings={
+    bonus:{status:$("#settings_set_bonus").val(),amount:$("#settings_bonus_amount").val(),per_day:$("#sittings_bonus_options").val()},
+    system:{check_result:$("#settings_check_result").val(),color_mode:$("#settings_color_mode").val(),profit:$("#settings_cashier_profit").val(),good_bingo_sound:$("#settings_good_bingo_sound").val()},
+    toggles:{will_start:$("#will_start_sound_toggle").is(":checked"),started:$("#started_sound_toggle").is(":checked"),stopped:$("#stopped_sound_toggle").is(":checked"),show_card_count:$("#counte_registerd_card").is(":checked")}
+  };
+  window._appSettingsCache = settings;
+  API.saveSettings(settings);
+  document.getElementById("new_bonus_status").innerText=settings.bonus.status;
+  document.getElementById("new_bonus_amount").innerText=settings.bonus.amount;
+  document.getElementById("max_new_bonus_per_day").innerText=settings.bonus.per_day;
+  document.getElementById("auto_check_result").innerText=settings.system.check_result;
+  document.getElementById("good_bingo_sound").innerText=settings.system.good_bingo_sound;
+  document.getElementById("profit").innerText=settings.system.profit;
+  updateBonusModalImage(settings.bonus.status);
+  const bb2=document.getElementById('bonus');const bc2=document.getElementById('bonusContainer');
+  if(settings.bonus.status==='on'){if(bb2)bb2.style.display='';if(bc2)bc2.style.display='block';}
+  else{if(bb2)bb2.style.display='none';}
+  const cc=document.getElementById("cardCounter");
+  if(cc) cc.style.display=settings.toggles.show_card_count?"inline":"none";
+  $("#settings_update_response").html("በተሳካ ሁኔታ ተመዝግቧል!").css("color","green");
+  setTimeout(function(){
+    btn.disabled=false;btn.innerText='Save Changes';btn.style.opacity='1';btn.style.cursor='pointer';
+    $("#settings_update_response").empty();
+    $("#settings-menu").removeClass("active");
+  },2000);
+});
+
+// Light/dark toggle
+document.getElementById('toggleBTN').addEventListener('click',function(){
+  const cur=localStorage.getItem('toggleState')||'dark';
+  const next=(cur==='dark')?'light':'dark';
+  localStorage.setItem('toggleState',next);
+  if(next==='light'){
+    document.getElementById('lightStyleSheet').href='bootstrap/css/light/style.css';
+    document.getElementById('modalStyleSheet').href='bootstrap/css/light/modal.css';
+    document.getElementById('giftStyleSheet').href='bootstrap/css/light/gift-unboxing.css';
+    document.getElementById('ballStyleSheet').href='bootstrap/css/light/ball.css';
+    document.getElementById('bingoStyleSheet').href='bootstrap/css/light/bingon.css';
+    document.getElementById('toggleCircle').style.left='13px';
+  } else {
+    document.getElementById('lightStyleSheet').href='bootstrap/css/style.css';
+    document.getElementById('modalStyleSheet').href='bootstrap/css/modal.css';
+    document.getElementById('giftStyleSheet').href='bootstrap/css/gift-unboxing.css';
+    document.getElementById('ballStyleSheet').href='bootstrap/css/ball.css';
+    document.getElementById('bingoStyleSheet').href='bootstrap/css/bingon.css';
+    document.getElementById('toggleCircle').style.left='3px';
+  }
+});
+
+function updateFsIcon(fs){
+  document.getElementById('fullscreenBtn').innerHTML=fs
+    ?'<svg width="14" height="14" fill="#fff" viewBox="0 0 16 16"><path d="M5.5 0a.5.5 0 0 1 .5.5v4A1.5 1.5 0 0 1 4.5 6h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5m5 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 10 4.5v-4a.5.5 0 0 1 .5-.5M0 10.5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 6 11.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5m10 1a1.5 1.5 0 0 1 1.5-1.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0z"/></svg>'
+    :'<svg width="14" height="14" fill="#fff" viewBox="0 0 16 16"><path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/></svg>';
+}
+document.getElementById('fullscreenBtn').addEventListener('click',function(){
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen().then(()=>updateFsIcon(true));
+  else document.exitFullscreen().then(()=>updateFsIcon(false));
+});
+document.addEventListener('fullscreenchange',()=>updateFsIcon(!!document.fullscreenElement));
+document.getElementById('helps').addEventListener('click',()=>$('#helpmodal').modal('show'));
+</script>
+
+<!-- ─── Main content ─── -->
+<div id="main-content" class="main-content">
+
+  <!-- ─── Start / Register Modal ─── -->
+  <div id="myModal" class="modal fade" data-keyboard="false" data-backdrop="static" style="display:none;overflow-y:auto;">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header" style="flex-direction:column;gap:12px;">
+          <div class="em-title-row">
+            <span class="em-brand">ኢትዮ-ማርክ ቢንጎ</span>
+            <span class="em-round-badge" id="modal-round-number">Round 1</span>
+          </div>
+          <div class="em-nav-row">
+            <button class="em-nav-btn em-btn-report" id="report_button">📊 Report</button>
+            <button class="em-nav-btn em-btn-register" id="register_game_button">🎴 Register Card</button>
+            <button id="pkg-modal-btn" onclick="showPackageOverlay('top-up')" class="em-nav-btn" style="background:rgba(0,198,255,0.1);border-color:rgba(0,198,255,0.35);color:#00c6ff;">💳 Package</button>
+            <button class="em-nav-btn em-btn-logout" id="logoutbtn">↩ Logout</button>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div id="amount" style="font-size:26px;font-weight:900;text-align:center;margin-bottom:10px;letter-spacing:0.5px;">ኢትዮ-ማርክ ቢንጎ</div>
+
+          <!-- Stats grid (shown when cards are registered) -->
+          <div id="modal-game-info" style="display:none;margin-bottom:14px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div style="background:rgba(0,198,255,0.08);border:1px solid rgba(0,198,255,0.25);border-radius:14px;padding:12px 10px;text-align:center;">
+                <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:rgba(0,198,255,0.7);text-transform:uppercase;margin-bottom:5px;">Pattern</div>
+                <div style="font-size:15px;font-weight:800;color:#00c6ff;" id="mi-pattern">—</div>
+              </div>
+              <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.25);border-radius:14px;padding:12px 10px;text-align:center;">
+                <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:rgba(0,230,118,0.7);text-transform:uppercase;margin-bottom:5px;">Cards</div>
+                <div style="font-size:15px;font-weight:800;color:#00e676;" id="mi-cards">0</div>
+              </div>
+              <div style="background:rgba(255,215,64,0.08);border:1px solid rgba(255,215,64,0.25);border-radius:14px;padding:12px 10px;text-align:center;">
+                <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:rgba(255,215,64,0.7);text-transform:uppercase;margin-bottom:5px;">Price/Card</div>
+                <div style="font-size:15px;font-weight:800;color:#ffd740;" id="mi-price">0 ብር</div>
+              </div>
+              <div style="background:rgba(200,120,255,0.08);border:1px solid rgba(200,120,255,0.25);border-radius:14px;padding:12px 10px;text-align:center;">
+                <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:rgba(200,120,255,0.7);text-transform:uppercase;margin-bottom:5px;">Revenue</div>
+                <div style="font-size:15px;font-weight:800;color:#c878ff;" id="mi-revenue">0 ብር</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Media area (bonus image / default logo) -->
+          <div class="em-media-area" id="modal-media-area" style="width:100%;display:flex;justify-content:center;max-height:160px;overflow:hidden;border-radius:12px;margin:4px 0;">
+            <img id="selected-numbers-container-img" src="assets/images/card1.png" style="max-width:60%;max-height:160px;object-fit:contain;" onerror="this.style.display='none'">
+            <img id="bonus-modal-img" src="assets/images/bonus-removebg.png" style="display:none;max-width:60%;max-height:160px;object-fit:contain;" onerror="this.style.display='none'">
+          </div>
+
+          <p id="bala_alert" style="color:#ff5252;font-size:15px;min-height:18px;text-align:center;animation:blink 2s infinite;margin-top:8px;"></p>
+          <button type="submit" id="mybtn" onclick="return startbingo();" style="margin-top:10px;">▶ ጀምር</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Register Card Modal ─── -->
+  <div id="registerCardModal" class="modal fade" data-keyboard="false" data-backdrop="static" style="display:none;overflow-y:auto;">
+    <div class="modal-dialog">
+      <div class="modal-content" style="padding:20px;">
+        <div class="modal-header">
+          <h2>Register New Game</h2>
+          <button class="modal-button" onclick="$('#registerCardModal').modal('hide');">Close</button>
+        </div>
+        <div class="modal-body">
+          <div style="margin-bottom:10px;">
+            <label style="font-size:20px;">Card Numbers (comma separated):</label><br>
+            <textarea id="reg_card_numbers" rows="4" style="width:100%;font-size:18px;padding:5px;" placeholder="e.g. 1,2,3,100,500"></textarea>
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="font-size:20px;">Pattern:</label><br>
+            <select id="reg_pattern" style="font-size:20px;width:100%;padding:5px;">
+              <option value="1">Any 1 line</option><option value="2">Any 2 lines</option>
+              <option value="3">Any Horizontal</option><option value="4">Any Vertical</option>
+              <option value="5">X Pattern</option><option value="6">Four Corners</option>
+              <option value="7">Center Corners</option><option value="8">Meskel</option>
+              <option value="9">T</option><option value="10">Reverse T</option>
+              <option value="11">L</option><option value="12">Full Card</option>
+            </select>
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="font-size:20px;">Price per card (ብር):</label><br>
+            <input type="number" id="reg_price" style="font-size:20px;width:100%;padding:5px;" value="10" min="1">
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="font-size:20px;">Voice:</label><br>
+            <select id="reg_voice" style="font-size:20px;width:100%;padding:5px;">
+              <option value="11">New voice</option><option value="10">Addis</option>
+              <option value="1">Bereket</option><option value="2">Nigus</option>
+              <option value="3">Amharic Arada</option><option value="4">Amharic formal</option>
+              <option value="5">Amharic yordi</option><option value="6">Amharic Beti</option>
+              <option value="7">Oromifa Female</option><option value="8">Tigrigna Female</option>
+              <option value="9">Tigrigna Male</option>
+            </select>
+          </div>
+          <button onclick="saveRegistration()" style="background:green;color:white;font-size:24px;padding:10px 30px;border:none;border-radius:5px;cursor:pointer;">Save &amp; Start</button>
+          <button onclick="clearRegistration()" style="background:red;color:white;font-size:24px;padding:10px 20px;border:none;border-radius:5px;cursor:pointer;margin-left:10px;">Clear Game</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  document.getElementById('report_button').onclick=function(){window.location.href='report.html';};
+  document.getElementById('logoutbtn').onclick=function(){
+    if(confirm('Logout? Game state will be preserved.')){
+      API.clearSession();
+      location.replace('login.html');
+    }
+  };
+  document.getElementById('register_game_button').onclick=function(){
+    window.location.href='reg_new_game.html';
+  };
+
+  /* ══════════════════════════════════════════
+     PACKAGE OVERLAY CONTROLLER
+  ══════════════════════════════════════════ */
+  async function refreshBalanceDisplay(){
+    const bal = await API.getBalance();
+    const mid = await API.getMachineId();
+    /* overlay fields */
+    document.getElementById('pkg-machine-id').textContent = mid.match(/.{1,4}/g).join('-');
+    document.getElementById('pkg-deposited').textContent  = bal.deposited.toLocaleString()+' ብር';
+    document.getElementById('pkg-used').textContent       = bal.used.toLocaleString()+' ብር';
+    const availEl = document.getElementById('pkg-available');
+    availEl.textContent = bal.available.toLocaleString()+' ብር';
+    availEl.style.color = bal.available<=0 ? '#ff5252' : (bal.available<1000 ? '#ffd740' : '#00e676');
+  }
+
+  /* track whether the game modal was open when overlay appeared */
+  let _pkgModalWasOpen = false;
+
+  function showPackageOverlay(mode){
+    const overlay = document.getElementById('pkg-overlay');
+    const banner  = document.getElementById('pkg-locked-banner');
+    const errEl   = document.getElementById('pkg-key-error');
+    const sucEl   = document.getElementById('pkg-key-success');
+    banner.style.display = (mode==='locked') ? 'block' : 'none';
+    if(errEl) errEl.style.display='none';
+    if(sucEl) sucEl.style.display='none';
+    document.getElementById('pkg-key-input').value='';
+    /* close Bootstrap modal first — its backdrop & aria-hidden block all input */
+    _pkgModalWasOpen = ($('#myModal').data('bs.modal') || {})._isShown
+                    || $('#myModal').hasClass('show')
+                    || ($('#myModal').css('display') !== 'none');
+    if(_pkgModalWasOpen) $('#myModal').modal('hide');
+    /* show overlay after modal has finished closing (~300 ms transition) */
+    setTimeout(()=>{
+      overlay.style.display='flex';
+      refreshBalanceDisplay();
+      setTimeout(()=>{
+        const inp = document.getElementById('pkg-key-input');
+        if(inp) inp.focus();
+      }, 50);
+    }, _pkgModalWasOpen ? 320 : 0);
+  }
+
+  function hidePackageOverlay(){
+    document.getElementById('pkg-overlay').style.display='none';
+    /* reopen the game modal if it was open before */
+    if(_pkgModalWasOpen){
+      setTimeout(()=>{ if(typeof initGameState==='function') initGameState(); }, 150);
+    }
+  }
+
+  function showBalanceWarning(avail){
+    if(avail>=1000) return;
+    const msg='⚠ Your wallet is going to finish — remaining package: '+avail.toLocaleString()+' ብር';
+    const bala=document.getElementById('bala_alert');
+    if(bala){ bala.textContent=msg; setTimeout(()=>{ if(bala.textContent===msg) bala.textContent=''; },10000); }
+  }
+
+  /* track the current overlay mode so Close knows if it can dismiss */
+  let _pkgOverlayMode = 'top-up';
+  const _origShow = showPackageOverlay;
+  showPackageOverlay = function(mode){
+    _pkgOverlayMode = mode || 'top-up';
+    _origShow(mode);
+  };
+
+  document.getElementById('pkg-close-btn').addEventListener('click',()=>{
+    if(_pkgOverlayMode === 'locked'){
+      /* balance is zero — must activate before closing */
+      const e=document.getElementById('pkg-key-error');
+      e.textContent='You must activate a package before you can continue.';
+      e.style.display='block';
+      return;
+    }
+    hidePackageOverlay();
+  });
+
+  document.getElementById('pkg-activate-btn').addEventListener('click', async ()=>{
+    const keyStr = document.getElementById('pkg-key-input').value.trim();
+    const errEl  = document.getElementById('pkg-key-error');
+    const sucEl  = document.getElementById('pkg-key-success');
+    const btn    = document.getElementById('pkg-activate-btn');
+    errEl.style.display='none'; sucEl.style.display='none';
+    if(!keyStr){ errEl.textContent='Please paste the license key first.'; errEl.style.display='block'; return; }
+    btn.disabled=true; btn.textContent='Activating…';
+    try {
+      const result = await API.activatePackage(keyStr);
+      sucEl.innerHTML='✓ Package activated! <strong>'+result.amount.toLocaleString()+' ብር</strong> added.<br>New balance: <strong>'+result.new_balance.toLocaleString()+' ብር</strong>';
+      sucEl.style.display='block';
+      document.getElementById('pkg-key-input').value='';
+      await refreshBalanceDisplay();
+      setTimeout(()=>hidePackageOverlay(), 2500);
+    } catch(e){
+      errEl.textContent='❌ '+e.message;
+      errEl.style.display='block';
+    }
+    btn.disabled=false; btn.textContent='Activate Package';
+  });
+
+  function saveRegistration(){
+    const raw=document.getElementById('reg_card_numbers').value;
+    const cards=raw.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>0);
+    if(!cards.length){alert('Please enter at least one card number.');return;}
+    const pattern=parseInt(document.getElementById('reg_pattern').value)||1;
+    const price=parseInt(document.getElementById('reg_price').value)||10;
+    const sound=parseInt(document.getElementById('reg_voice').value)||1;
+    const gs=getGameState();
+    const newGs={round:gs.round||1,cards,pattern,price,sound,speed_range:gs.speed_range||3,randomstring:gs.randomstring||''};
+    saveGameState(newGs);
+    document.getElementById('sew').innerText=cards.length;
+    document.getElementById('birr').innerText=price;
+    document.getElementById('patt').innerText=pattern;
+    document.getElementById('voiceselect').value=sound;
+    document.getElementById('cardCounter').innerHTML='ብዛት : '+cards.length;
+    renderRegisteredCards(cards,price,newGs.round);
+    $('#registerCardModal').modal('hide');
+    showAlert('ካርዶቹ ተመዝግበዋል! ('+cards.length+' cards)','success');
+  }
+
+  function clearRegistration(){
+    if(!confirm('Clear game and start new round?')) return;
+    const gs=getGameState();
+    saveGameState({round:(gs.round||1)+1,cards:[],pattern:1,price:0,sound:1,speed_range:3,randomstring:''});
+    location.reload();
+  }
+  </script>
+
+  <!-- ─── Game Status Bar ─── -->
+  <div id="game-status-bar" style="display:none;position:sticky;top:0;z-index:500;background:linear-gradient(90deg,#031730,#051f4a);border-bottom:1px solid rgba(0,198,255,0.25);padding:6px 14px;display:none;align-items:center;gap:14px;flex-wrap:wrap;">
+    <span style="color:#00c6ff;font-weight:700;font-size:15px;" id="gsb-round">Round 1</span>
+    <span style="width:1px;height:18px;background:rgba(255,255,255,0.2);display:inline-block;"></span>
+    <span style="color:#aaa;font-size:13px;">Pattern: <b style="color:#fff;" id="gsb-pattern">—</b></span>
+    <span style="color:#aaa;font-size:13px;">Cards: <b style="color:#00e676;" id="gsb-cards">0</b></span>
+    <span style="color:#aaa;font-size:13px;">Price: <b style="color:#ffd740;" id="gsb-price">0</b> ብር</span>
+    <span style="color:#aaa;font-size:13px;">Calls: <b style="color:#ff7043;" id="gsb-calls">0</b></span>
+  </div>
+
+  <!-- ─── Game display ─── -->
+  <div class="container" style="margin-left:5px;">
+    <div class="info-bar">
+
+      <!-- Ball -->
+      <div class="info-ball-col" id="col-2">
+        <div class="ball2"><div class="ball3"><div class="ball4"><div class="ball5">
+          <p class="num" id="rand"></p>
+        </div></div></div></div>
+      </div>
+
+      <!-- Recent results -->
+      <div class="info-results-col" id="col-4">
+        <p class="lastcall">Recent Results for (<a href="#" style="color:red;font-size:20px;font-weight:900;" id="round_number_bellow_5">yyyyy</a>)</p>
+        <div class="tgable-container">
+          <table id="bingo-table">
+            <tr>
+              <td class="bingo-call" style="color:red;" t="0"></td>
+              <td class="bingo-call" t="1"></td>
+              <td class="bingo-call" t="2"></td>
+              <td class="bingo-call" t="3"></td>
+              <td class="bingo-call" t="4"></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Derash box -->
+      <div class="info-derash-col">
+        <div class="derash-box">
+          <div class="derash-content">
+            <span class="amount"><span id="amount1"></span><span>&nbsp;ደራሽ</span></span>
+          </div>
+          <span class="derash-line"></span>
+          <div class="derash-details">
+            <span class="total-card" id="cardCounter">ብዛት : 0</span>
+            <span class="total-calls">ጥሪ : <span id="drawn_number_counter">0</span></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ─── B/I/N/G/O number grid ─── -->
+    <div class="row">
+      <div class="col-12">
+        <div class="brow">
+          <div class="callb">
+            <p class="txtbox" style="background-color:#ff0404;">B</p>
+            <div class="numrow"><p class="numbox" numb="1">1</p></div><div class="numrow"><p class="numbox" numb="2">2</p></div>
+            <div class="numrow"><p class="numbox" numb="3">3</p></div><div class="numrow"><p class="numbox" numb="4">4</p></div>
+            <div class="numrow"><p class="numbox" numb="5">5</p></div><div class="numrow"><p class="numbox" numb="6">6</p></div>
+            <div class="numrow"><p class="numbox" numb="7">7</p></div><div class="numrow"><p class="numbox" numb="8">8</p></div>
+            <div class="numrow"><p class="numbox" numb="9">9</p></div><div class="numrow"><p class="numbox" numb="10">10</p></div>
+            <div class="numrow"><p class="numbox" numb="11">11</p></div><div class="numrow"><p class="numbox" numb="12">12</p></div>
+            <div class="numrow"><p class="numbox" numb="13">13</p></div><div class="numrow"><p class="numbox" numb="14">14</p></div>
+            <div class="numrow"><p class="numbox" numb="15">15</p></div>
+          </div>
+        </div>
+        <div class="irow">
+          <div class="callb">
+            <p class="txtbox" style="background-color:#0c3d75;">I</p>
+            <div class="numrow"><p class="numbox" numi="16">16</p></div><div class="numrow"><p class="numbox" numi="17">17</p></div>
+            <div class="numrow"><p class="numbox" numi="18">18</p></div><div class="numrow"><p class="numbox" numi="19">19</p></div>
+            <div class="numrow"><p class="numbox" numi="20">20</p></div><div class="numrow"><p class="numbox" numi="21">21</p></div>
+            <div class="numrow"><p class="numbox" numi="22">22</p></div><div class="numrow"><p class="numbox" numi="23">23</p></div>
+            <div class="numrow"><p class="numbox" numi="24">24</p></div><div class="numrow"><p class="numbox" numi="25">25</p></div>
+            <div class="numrow"><p class="numbox" numi="26">26</p></div><div class="numrow"><p class="numbox" numi="27">27</p></div>
+            <div class="numrow"><p class="numbox" numi="28">28</p></div><div class="numrow"><p class="numbox" numi="29">29</p></div>
+            <div class="numrow"><p class="numbox" numi="30">30</p></div>
+          </div>
+        </div>
+        <div class="irow">
+          <div class="callb">
+            <p class="txtbox" style="background-color:#34c659;color:white;">N</p>
+            <div class="numrow"><p class="numbox" numn="31">31</p></div><div class="numrow"><p class="numbox" numn="32">32</p></div>
+            <div class="numrow"><p class="numbox" numn="33">33</p></div><div class="numrow"><p class="numbox" numn="34">34</p></div>
+            <div class="numrow"><p class="numbox" numn="35">35</p></div><div class="numrow"><p class="numbox" numn="36">36</p></div>
+            <div class="numrow"><p class="numbox" numn="37">37</p></div><div class="numrow"><p class="numbox" numn="38">38</p></div>
+            <div class="numrow"><p class="numbox" numn="39">39</p></div><div class="numrow"><p class="numbox" numn="40">40</p></div>
+            <div class="numrow"><p class="numbox" numn="41">41</p></div><div class="numrow"><p class="numbox" numn="42">42</p></div>
+            <div class="numrow"><p class="numbox" numn="43">43</p></div><div class="numrow"><p class="numbox" numn="44">44</p></div>
+            <div class="numrow"><p class="numbox" numn="45">45</p></div>
+          </div>
+        </div>
+        <div class="irow">
+          <div class="callb">
+            <p class="txtbox" style="background-color:#ff8800;color:white;">G</p>
+            <div class="numrow"><p class="numbox" numg="46">46</p></div><div class="numrow"><p class="numbox" numg="47">47</p></div>
+            <div class="numrow"><p class="numbox" numg="48">48</p></div><div class="numrow"><p class="numbox" numg="49">49</p></div>
+            <div class="numrow"><p class="numbox" numg="50">50</p></div><div class="numrow"><p class="numbox" numg="51">51</p></div>
+            <div class="numrow"><p class="numbox" numg="52">52</p></div><div class="numrow"><p class="numbox" numg="53">53</p></div>
+            <div class="numrow"><p class="numbox" numg="54">54</p></div><div class="numrow"><p class="numbox" numg="55">55</p></div>
+            <div class="numrow"><p class="numbox" numg="56">56</p></div><div class="numrow"><p class="numbox" numg="57">57</p></div>
+            <div class="numrow"><p class="numbox" numg="58">58</p></div><div class="numrow"><p class="numbox" numg="59">59</p></div>
+            <div class="numrow"><p class="numbox" numg="60">60</p></div>
+          </div>
+        </div>
+        <div class="irow">
+          <div class="callb">
+            <p class="txtbox" style="background-color:rgb(10,89,31);color:white;">O</p>
+            <div class="numrow"><p class="numbox" numo="61">61</p></div><div class="numrow"><p class="numbox" numo="62">62</p></div>
+            <div class="numrow"><p class="numbox" numo="63">63</p></div><div class="numrow"><p class="numbox" numo="64">64</p></div>
+            <div class="numrow"><p class="numbox" numo="65">65</p></div><div class="numrow"><p class="numbox" numo="66">66</p></div>
+            <div class="numrow"><p class="numbox" numo="67">67</p></div><div class="numrow"><p class="numbox" numo="68">68</p></div>
+            <div class="numrow"><p class="numbox" numo="69">69</p></div><div class="numrow"><p class="numbox" numo="70">70</p></div>
+            <div class="numrow"><p class="numbox" numo="71">71</p></div><div class="numrow"><p class="numbox" numo="72">72</p></div>
+            <div class="numrow"><p class="numbox" numo="73">73</p></div><div class="numrow"><p class="numbox" numo="74">74</p></div>
+            <div class="numrow"><p class="numbox" numo="75">75</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Control row ─── -->
+    <div class="row">
+      <div class="col-12">
+        <div class="setting_box" style="display:flex;justify-content:center;align-items:center;width:80%;margin:20px auto;">
+          <button style="border:5px solid white;max-width:150px;" onclick="change()" id="bingoo" class="btnbingo">Bingo</button>
+          <button style="border:5px solid white;max-width:150px;" id="shuffle" class="btnshuffle">Shuffle</button>
+          <button style="border:5px solid red;max-width:150px;" id="finsh_game" class="btnbingo">Finsh</button>
+          <div class="sound-input-text">
+            <select id="voiceselect" class="voiceselect" onchange="change_language()">
+              <option value="11">New voice</option><option value="10">Addis</option>
+              <option value="1">Bereket</option><option value="2">Nigus</option>
+              <option value="3">Amharic Arada</option><option value="4">Amharic formal</option>
+              <option value="5">Amharic yordi</option><option value="6">Amharic Beti</option>
+              <option value="7">Oromifa Female</option><option value="8">Tigrigna Female</option>
+              <option value="9">Tigrigna Male</option>
+            </select>
+          </div>
+          <div class="check_card">
+            <input type="text" placeholder="Card Number..." id="Ecard_no" class="card-input" required>
+          </div>
+          <button style="border:5px solid white;max-width:150px;" type="submit" class="btnbingo" id="mycheck">Check</button>
+        </div>
+        <div class="row">
+          <div class="col-1"></div>
+          <div class="col-3"></div>
+          <div class="slidecontainer col-4" style="display:inline-block;">
+            <p style="margin-bottom:-1.0rem;font-size:32px;font-weight:600;text-align:center;">
+              Play speed: <span id="demo">3</span>
+            </p>
+            <input type="range" min="1" max="15" value="3" class="slider" id="myRange" style="height:60px;letter-spacing:1px;margin-top:-2.0rem;">
+          </div>
+          <div class="col-4"></div>
+        </div>
+
+        <canvas id="canvas" style="display:none;"></canvas>
+        <script src="bootstrap/js/confetti.browser.min.js"></script>
+        <canvas id="canvas2" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2999;display:none;"></canvas>
+
+        <!-- Check-card result modal -->
+        <div id="myModalcard" class="modal fade" data-keyboard="false" data-backdrop="static">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h1 class="modal-title"><span style="font-size:20px;">Round <span id="modal-card-round">1</span></span></h1>
+                <center><div id="claim-bonus-popup" class="claim-bonus-popup" onclick="showBonusNotif()" style="cursor:pointer;">Claim Bonus</div></center>
+                <button class="modal-button" style="padding:10px 15px;" id="addbingo">Close</button>
+              </div>
+              <div class="modal-body">
+                <div id="modal-body"></div>
+                <div style="width:100%;margin-top:0px;">
+                  <button class="modal-button" style="padding:10px 15px;background:green;color:white;" id="goodbingo">GOOD BINGO</button>
+                  <button class="modal-button" style="padding:10px 15px;background-color:red;color:white;" id="notbingo">NOT BINGO</button>
+                  <button class="modal-button" style="padding:10px 15px;margin-left:5px;background-color:yellow;color:black;" id="lock_card">Lock?</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Help modal -->
+        <div id="helpmodal" class="modal fade" style="overflow-y:scroll;" data-keyboard="false" data-backdrop="static">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h1 class="modal-title"><span style="font-size:20px;">Ethiomark - ኢትዮ ማርክ</span></h1>
+                <button class="modal-button" style="padding:10px 15px;" id="helpmodals">Close</button>
+              </div>
+              <div class="modal-body">
+                <div style="min-height:500px;">
+                  <div class="box1f">
+                    <h1>Sample Pattern</h1>
+                    <table id="bingoTable">
+                      <thead><tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr></thead>
+                      <tbody>
+                        <tr><td>1</td><td>16</td><td>31</td><td>46</td><td>61</td></tr>
+                        <tr><td>2</td><td>17</td><td>32</td><td>47</td><td>62</td></tr>
+                        <tr><td>3</td><td>18</td><td class="free-cell">★</td><td>48</td><td>63</td></tr>
+                        <tr><td>4</td><td>19</td><td>34</td><td>49</td><td>64</td></tr>
+                        <tr><td>5</td><td>20</td><td>35</td><td>50</td><td>65</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ─── Draw engine ─── -->
+<script>
+var uniqueRandoms=[], max=75;
+let c_round_number=parseInt(document.getElementById('round').innerText.trim(),10)||1;
+let fd_val=document.getElementById('fd').innerText.trim();
+let wc_val=document.getElementById('wc').innerText.trim().replace(/[\n\r\s]+/g,'');
+let new_bonus_status_val=document.getElementById('new_bonus_status').innerText.trim();
+let todays_nb_count=parseInt(document.getElementById('todays_new_bonus_count').innerText)||0;
+let max_nb_per_day=parseInt(document.getElementById('max_new_bonus_per_day').innerText)||1;
+let nb_chance=parseInt(document.getElementById('new_bonus_chance').innerText)||3;
+let bcsl=document.getElementById('bonusCutSize_tobe_locked').innerText.trim();
+
+let sbn_el=document.getElementById("special_bonus_data");
+let sbn_str=sbn_el.innerText.trim();
+let special_bonus_numbers=sbn_str.split(',').map(n=>parseInt(n,10)).filter(n=>!isNaN(n));
+
+// Parse WC
+let wc_sets=wc_val.split('*').map(s=>s.trim()).filter(s=>s.length>0);
+let sel_block=wc_sets.find(s=>parseInt(s.split(',')[0].trim(),10)===c_round_number);
+if(sel_block) wc_val=sel_block; else wc_val="";
+let wc_parts=wc_val.split(',');
+let wc_round=parseInt(wc_parts[0],10);
+let wc_priorityNumbers=(c_round_number===wc_round)?wc_parts.slice(1).map(n=>parseInt(n,10)):[];
+if(wc_priorityNumbers.length<1&&fd_val) wc_priorityNumbers=fd_val.split(',').map(n=>parseInt(n,10));
+wc_priorityNumbers=wc_priorityNumbers.filter(n=>!special_bonus_numbers.includes(n));
+
+// Bonus logic  — new_bonus_status_val already read from settings above
+var n_val=parseInt(document.getElementById('sew').innerText)||0;
+var s_val=parseInt(document.getElementById('birr').innerText)||0;
+if(n_val*s_val<=49){
+  new_bonus_status_val="off";
+  special_bonus_numbers=[];
+} else if(todays_nb_count>=max_nb_per_day){
+  new_bonus_status_val="off";
+  special_bonus_numbers=[];
+} else if(new_bonus_status_val==="on"){
+  // Generate random bonus balls if none supplied from special_bonus_data
+  if(special_bonus_numbers.length===0){
+    const _all75=Array.from({length:75},(_,i)=>i+1);
+    shuffleArray(_all75);
+    const _chance=nb_chance||3;
+    special_bonus_numbers=_all75.slice(0,_chance);
+    document.getElementById('special_bonus_data').innerText=special_bonus_numbers.join(',');
+  } else {
+    let bcs=parseInt(bcsl,10);
+    let ri=Math.floor(Math.random()*special_bonus_numbers.length);
+    if(!isNaN(bcs)) ri=bcs;
+    special_bonus_numbers.splice(ri,nb_chance);
+  }
+  // Show bonus balls on the bonus panel buttons
+  const _bBtns=document.getElementById('special_bonus_buttons');
+  if(_bBtns) _bBtns.innerHTML=special_bonus_numbers.map(n=>`<button class="bingo-word" onclick="showBonusNotif()">${n}</button>`).join('');
+} else {
+  new_bonus_status_val="off";
+  special_bonus_numbers=[];
+}
+
+function showBonusNotif(){
+  const _amt=parseInt(document.getElementById('new_bonus_amount').innerText)||20;
+  const _notif=document.getElementById('bonusNotification');
+  document.getElementById('gift-bonus').textContent='🎁 ቦነስ '+_amt+' ብር!';
+  _notif.style.display='block';
+  const _today=new Date().toISOString().split('T')[0];
+  const _bMeta=JSON.parse(localStorage.getItem('bonus_meta')||'{}');
+  const _cnt=(_bMeta.date===_today)?(_bMeta.count||0)+1:1;
+  localStorage.setItem('bonus_meta',JSON.stringify({date:_today,count:_cnt}));
+  todays_nb_count=_cnt;
+}
+
+function shuffleArray(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}}
+
+if(!uniqueRandoms.length){
+  for(let i=1;i<=max;i++){
+    if(new_bonus_status_val==="off"){if(!wc_priorityNumbers.includes(i)&&!special_bonus_numbers.includes(i)) uniqueRandoms.push(i);}
+    else{if(!wc_priorityNumbers.includes(i)) uniqueRandoms.push(i);}
+  }
+  shuffleArray(uniqueRandoms);
+}
+
+function getRandomNumber(){
+  if(wc_priorityNumbers.length>0) return wc_priorityNumbers.shift();
+  if(uniqueRandoms.length>0) return uniqueRandoms.pop();
+  if(new_bonus_status_val==="off"&&special_bonus_numbers.length>0) return special_bonus_numbers.shift();
+  return undefined;
+}
+
+let randomstring="";
+
+// Restore any in-progress drawn string
+(function(){
+  const gs=getGameState();
+  if(gs.randomstring){
+    randomstring=gs.randomstring;
+    // Restore callnum highlights
+    const drawn=gs.randomstring.split(',').map(n=>parseInt(n)).filter(n=>!isNaN(n));
+    drawn.forEach(num=>{
+      let attr='';
+      if(num>=1&&num<=15) attr='numb';
+      else if(num<=30) attr='numi';
+      else if(num<=45) attr='numn';
+      else if(num<=60) attr='numg';
+      else if(num<=75) attr='numo';
+      if(attr){const el=document.querySelector(`[${attr}="${num}"]`);if(el) el.className+=' callnum';}
+    });
+    // Remove those from uniqueRandoms
+    uniqueRandoms=uniqueRandoms.filter(n=>!drawn.includes(n));
+    max=75-drawn.length;
+    // Update counter
+    const ce=document.getElementById("drawn_number_counter");
+    if(ce) ce.innerText=drawn.filter(n=>n>0).length;
+    // Update bingo-call table with last 5
+    if(drawn.length>0){
+      const cells=document.querySelectorAll('.bingo-call');
+      const last5=drawn.slice(-5).reverse();
+      last5.forEach((num,idx)=>{if(cells[idx]){cells[idx].textContent=num;cells[idx].setAttribute('t',num);}});
+      document.getElementById('rand').innerText=getBingoLetter(drawn[drawn.length-1])+drawn[drawn.length-1];
+      setBallColor(drawn[drawn.length-1]);
+    }
+  }
+})();
+
+function getBingoLetter(num){
+  if(num>=1&&num<=15) return 'B-';
+  if(num>=16&&num<=30) return 'I-';
+  if(num>=31&&num<=45) return 'N-';
+  if(num>=46&&num<=60) return 'G-';
+  if(num>=61&&num<=75) return 'O-';
+  return '';
+}
+
+function setBallColor(rn){
+  const b3=document.querySelector('.ball3');
+  const b4=document.querySelector('.ball4');
+  const numEl=document.getElementById('rand');
+  if(!b3) return;
+  let c3,c4,cnum;
+  if(rn<=15){       c3='#cc0000';       c4='radial-gradient(circle at 60px 60px,#7a0000,#000)'; cnum='#ff5555';}
+  else if(rn<=30){  c3='#0c3d75';       c4='radial-gradient(circle at 60px 60px,#061f4a,#000)'; cnum='#5599ff';}
+  else if(rn<=45){  c3='#1a7a38';       c4='radial-gradient(circle at 60px 60px,#0a4020,#000)'; cnum='#44dd77';}
+  else if(rn<=60){  c3='#cc6a00';       c4='radial-gradient(circle at 60px 60px,#7a3e00,#000)'; cnum='#ffaa33';}
+  else{             c3='rgb(10,89,31)'; c4='radial-gradient(circle at 60px 60px,#063d12,#000)';  cnum='#22cc55';}
+  b3.style.background=c3;
+  if(b4) b4.style.background=c4;
+  if(numEl) numEl.style.color=cnum;
+}
+
+function randomnuber(){
+  let rArr=randomstring.split(',').filter(v=>v!=='undefined'&&v!=='');
+  let drawnCount=rArr.length;
+  let ce=document.getElementById("drawn_number_counter");
+  if(ce) ce.innerText=drawnCount;
+  const gsbCalls=document.getElementById('gsb-calls');
+  if(gsbCalls) gsbCalls.textContent=drawnCount;
+  if(rArr.filter(Boolean).length===75){change();return;}
+  let rn=getRandomNumber();
+  if(rn===undefined) return;
+  voices(rn);
+  updateTable(rn);
+  // Fire bonus notification if this ball is a bonus ball
+  if(new_bonus_status_val==="on" && special_bonus_numbers.includes(rn)) showBonusNotif();
+  randomstring=randomstring+rn+",";
+  document.getElementById('ran_voice').innerText=rn;
+  if(rn<=15){document.getElementById('rand').innerText='B-'+rn;const el=document.querySelector('[numb="'+rn+'"]');if(el) el.className+=' callnum';}
+  else if(rn<=30){document.getElementById('rand').innerText='I-'+rn;const el=document.querySelector('[numi="'+rn+'"]');if(el) el.className+=' callnum';}
+  else if(rn<=45){document.getElementById('rand').innerText='N-'+rn;const el=document.querySelector('[numn="'+rn+'"]');if(el) el.className+=' callnum';}
+  else if(rn<=60){document.getElementById('rand').innerText='G-'+rn;const el=document.querySelector('[numg="'+rn+'"]');if(el) el.className+=' callnum';}
+  else if(rn<=75){document.getElementById('rand').innerText='O-'+rn;const el=document.querySelector('[numo="'+rn+'"]');if(el) el.className+=' callnum';}
+  setBallColor(rn);
+  const gs=getGameState(); gs.randomstring=randomstring; saveGameState(gs);
+}
+
+function functionC(){randomnuber();max=max-1;}
+
+const slider_el=document.getElementById("myRange");
+const output_el=document.getElementById("demo");
+output_el.innerHTML=slider_el.value;
+slider_el.oninput=function(){
+  output_el.innerHTML=this.value;
+  const gs=getGameState(); gs.speed_range=parseInt(this.value); saveGameState(gs);
+};
+
+var light=null;
+var btn=document.getElementById('bingoo');
+
+function change(){
+  var slider=document.getElementById("myRange").value;
+  if(light===null){
+    if($("#started_sound_toggle").is(":checked")) voices("start.mp3");
+    btn.style.backgroundColor='#4CAF50'; btn.innerHTML="STOP";
+    light=setInterval(functionC,slider*1000);
+    document.getElementById("shuffle").disabled=true;
+    document.getElementById("shuffle").style.color="#888888";
+    document.getElementById("shuffle").style.background="#444";
+    document.getElementById("finsh_game").disabled=true;
+    document.getElementById("finsh_game").style.color="#888888";
+    document.getElementById("finsh_game").style.background="#444";
+    document.getElementById("mycheck").disabled=true;
+    document.getElementById("mycheck").style.color="#888888";
+    document.getElementById("mycheck").style.background="#444";
+  } else {
+    document.getElementById("finsh_game").disabled=false;
+    document.getElementById("finsh_game").style.color="";
+    document.getElementById("finsh_game").style.background="";
+    document.getElementById("mycheck").disabled=false;
+    document.getElementById("mycheck").style.color="";
+    document.getElementById("mycheck").style.background="";
+    if($("#stopped_sound_toggle").is(":checked")) voices("stop.mp3");
+    btn.style.backgroundColor='#1976D2'; btn.innerHTML="Bingo";
+    window.clearInterval(light); light=null;
+    let rArr=randomstring.split(',').filter(v=>v!=='undefined');
+    let valid=rArr.join(',');
+    if(valid!==""&&/\d/.test(valid)){
+      const saveBtn=document.getElementById("bingoo");
+      saveBtn.disabled=true; saveBtn.innerText="Saving...";
+      saveBtn.style.opacity="0.6"; saveBtn.style.cursor="not-allowed";
+      const gs=getGameState(); gs.randomstring=valid; gs.last_result=valid; saveGameState(gs);
+      showAlert("✅ ተቀምጧል","success");
+      setTimeout(()=>{
+        saveBtn.disabled=false; saveBtn.innerHTML="Bingo";
+        saveBtn.style.opacity="1"; saveBtn.style.cursor="pointer";
+      },800);
+    }
+  }
+}
+
+document.getElementById("myRange").addEventListener("input",function(){
+  if(light!==null){window.clearInterval(light);light=setInterval(functionC,this.value*1000);}
+});
+
+function updateTable(a){
+  const cells=document.getElementById('bingo-table').getElementsByClassName('bingo-call');
+  for(let i=cells.length-1;i>0;i--){cells[i].textContent=cells[i-1].textContent;cells[i].setAttribute('t',cells[i-1].getAttribute('t'));}
+  cells[0].textContent=a; cells[0].setAttribute('t',a);
+}
+
+document.getElementById("shuffle").addEventListener("click",function(){
+  if(this._shuffling) return;
+  this._shuffling=true;
+  const btn=this;
+  voices("shuffle.wav");
+  btn.textContent="Shuffling…"; btn.style.opacity="0.6";
+  const randEl=document.getElementById('rand');
+  const origText=randEl.innerText||"—";
+  // Step-by-step animation: cycle random numbers rapidly for ~2.5s then settle
+  const steps=32, stepMs=78;
+  let step=0;
+  const anim=setInterval(()=>{
+    const rn=Math.floor(Math.random()*75)+1;
+    setBallColor(rn);
+    randEl.innerText=getBingoLetter(rn)+rn;
+    step++;
+    if(step>=steps){
+      clearInterval(anim);
+      // Final settled state — restore last drawn
+      setBallColor(parseInt(origText.replace(/\D/g,''))||1);
+      randEl.innerText=origText;
+      shuffleArray(uniqueRandoms);
+      btn.textContent="Shuffle"; btn.style.opacity="1";
+      btn._shuffling=false;
+      showAlert("Shuffled!","success");
+    }
+  },stepMs);
+});
+
+document.getElementById("finsh_game").addEventListener("click",function(){
+  if(!confirm('ጨዋታውን ጨርሰዋል? (Finish this game?)')) return;
+  saveGameToHistory('completed');
+  const gs=getGameState();
+  const newRound=(gs.round||1)+1;
+  const today=new Date().toISOString().split('T')[0];
+  saveGameState({round:newRound,cards:[],pattern:1,price:0,sound:gs.sound||1,speed_range:gs.speed_range||3,randomstring:'',last_active_date:today});
+  showAlert('Round ተጠናቋል! → ወደ ምዝገባ...','success');
+  setTimeout(()=>{ window.location.href='reg_new_game.html'; },800);
+});
+</script>
+
+<!-- ─── Client-side card check ─── -->
+<script>
+function lookupCard(cn){
+  /* fast path: check in-memory preloaded cards */
+  if (window._loadedCards && window._loadedCards[cn]) return window._loadedCards[cn];
+  /* fallback: check raw BINGO_CARDS array (still in memory on first load) */
+  const src = (typeof BINGO_CARDS!=='undefined') ? BINGO_CARDS : [];
+  return src.find(c=>c[0]===cn) || null;
+}
+
+function checkCardWin(card, drawn, pattern){
+  const b=card[1],ic=card[2],n=card[3],g=card[4],o=card[5];
+  const drawnSet=new Set(drawn);
+  const FREE=n[2];
+  function hit(v){return drawnSet.has(v)||v===FREE;}
+  function allHit(arr){return arr.every(v=>hit(v));}
+  const rows=[[b[0],ic[0],n[0],g[0],o[0]],[b[1],ic[1],n[1],g[1],o[1]],[b[2],ic[2],n[2],g[2],o[2]],[b[3],ic[3],n[3],g[3],o[3]],[b[4],ic[4],n[4],g[4],o[4]]];
+  const cols=[b,ic,n,g,o];
+  const diag1=[b[0],ic[1],n[2],g[3],o[4]];
+  const diag2=[b[4],ic[3],n[2],g[1],o[0]];
+  const corners=[b[0],o[0],b[4],o[4]];
+  const cCorners=[ic[1],g[1],ic[3],g[3]];
+  const meskel=[ic[2],n[1],n[3],g[2]];
+  function rowHit(i){return rows[i].filter(v=>hit(v)).length>=(i===2?4:5);}
+  function colHit(c){return c.filter(v=>hit(v)).length>=(c===n?4:5);}
+  function diagHit(d){return d.filter(v=>hit(v)).length>=4;}
+  function countLines(){
+    let cnt=0;
+    if(allHit(corners)) cnt++;
+    if(allHit(cCorners)) cnt++;
+    if(allHit(meskel)) cnt++;
+    for(let i=0;i<5;i++) if(rowHit(i)) cnt++;
+    cols.forEach(c=>{if(colHit(c)) cnt++;});
+    if(diagHit(diag1)) cnt++;
+    if(diagHit(diag2)) cnt++;
+    return cnt;
+  }
+  let win=false;
+  switch(pattern){
+    case 1: win=countLines()>=1; break;
+    case 2: win=countLines()>=2; break;
+    case 3: win=rows.some((_,i)=>rowHit(i)); break;
+    case 4: win=cols.some(c=>colHit(c)); break;
+    case 5: win=diagHit(diag1)&&diagHit(diag2); break;
+    case 6: win=allHit(corners); break;
+    case 7: win=allHit(cCorners); break;
+    case 8: win=allHit(meskel); break;
+    case 9: win=rowHit(0)&&colHit(n); break;
+    case 10: win=rowHit(4)&&colHit(n); break;
+    case 11: win=colHit(b)&&rowHit(4); break;
+    case 12: win=[b,ic,n,g,o].every(c=>c.every(v=>hit(v))); break;
+    default: win=false;
+  }
+  return {count_winning_line:win?1:0, expected_pattern:1};
+}
+
+function getWinningCells(card, drawn, pattern){
+  const b=card[1],ic=card[2],n=card[3],g=card[4],o=card[5];
+  const drawnSet=new Set(drawn);
+  const FREE=n[2];
+  function hit(v){return drawnSet.has(v)||v===FREE;}
+  function allHit(arr){return arr.every(v=>hit(v));}
+  const rows=[[b[0],ic[0],n[0],g[0],o[0]],[b[1],ic[1],n[1],g[1],o[1]],[b[2],ic[2],n[2],g[2],o[2]],[b[3],ic[3],n[3],g[3],o[3]],[b[4],ic[4],n[4],g[4],o[4]]];
+  const cols=[b,ic,n,g,o];
+  const diag1=[b[0],ic[1],n[2],g[3],o[4]];
+  const diag2=[b[4],ic[3],n[2],g[1],o[0]];
+  const corners=[b[0],o[0],b[4],o[4]];
+  const cCorners=[ic[1],g[1],ic[3],g[3]];
+  const meskel=[ic[2],n[1],n[3],g[2]];
+  function rowHit(i){return rows[i].filter(v=>hit(v)).length>=(i===2?4:5);}
+  function colHit(c){return c.filter(v=>hit(v)).length>=(c===n?4:5);}
+  function diagHit(d){return d.filter(v=>hit(v)).length>=4;}
+  const W=new Set();
+  function add(arr){arr.forEach(v=>W.add(v));}
+  switch(pattern){
+    case 1: case 2:
+      if(allHit(corners)) add(corners);
+      if(allHit(cCorners)) add(cCorners);
+      if(allHit(meskel)) add(meskel);
+      rows.forEach((r,i)=>{if(rowHit(i)) add(r);});
+      cols.forEach(c=>{if(colHit(c)) add(c);});
+      if(diagHit(diag1)) add(diag1);
+      if(diagHit(diag2)) add(diag2);
+      break;
+    case 3: rows.forEach((r,i)=>{if(rowHit(i)) add(r);}); break;
+    case 4: cols.forEach(c=>{if(colHit(c)) add(c);}); break;
+    case 5: if(diagHit(diag1)&&diagHit(diag2)){add(diag1);add(diag2);} break;
+    case 6: if(allHit(corners)) add(corners); break;
+    case 7: if(allHit(cCorners)) add(cCorners); break;
+    case 8: if(allHit(meskel)) add(meskel); break;
+    case 9: if(rowHit(0)&&colHit(n)){add(rows[0]);add(n);} break;
+    case 10: if(rowHit(4)&&colHit(n)){add(rows[4]);add(n);} break;
+    case 11: if(colHit(b)&&rowHit(4)){add(b);add(rows[4]);} break;
+    case 12: [b,ic,n,g,o].forEach(c=>add(c)); break;
+  }
+  return W;
+}
+
+function buildCardHTML(card, drawn, pattern, cardNo){
+  const b=card[1],ic=card[2],n=card[3],g=card[4],o=card[5];
+  const drawnSet=new Set(drawn);
+  const lastCalled=drawn[drawn.length-1];
+  const FREE=n[2];
+  function hit(v){return drawnSet.has(v)||v===FREE;}
+
+  const patternNames={1:'Any 1 Line',2:'Any 2 Lines',3:'Any Horizontal',4:'Any Vertical',5:'X Pattern',6:'Four Corners',7:'Center Corners',8:'Meskel',9:'T Shape',10:'Reverse T',11:'L Shape',12:'Full Card'};
+  const pName=patternNames[pattern]||('Pattern '+pattern);
+  const isWinner=checkCardWin(card,drawn,pattern).count_winning_line>=1;
+  const winCells=isWinner?getWinningCells(card,drawn,pattern):new Set();
+  const colorMode=document.getElementById('settings_color_mode')?.value||document.getElementById('color')?.innerText?.trim()||'two';
+  const colData=[b,ic,n,g,o];
+
+  let html=`<div style='font-size:26px;font-weight:bolder;background-color:white;color:black;padding:6px 10px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;border-radius:4px;'>
+    <span>Card No: <b style='color:#00478B;'>${cardNo}</b></span><span style='color:green;font-size:18px;'>${pName}</span></div>`;
+  html+=`<table id='tablefetch' style='width:90%;margin:0 auto;text-align:center;border-collapse:collapse;'>
+    <thead><tr style='line-height:2.5;'>
+      <th style='background-color:#00478B;color:white;'>B</th><th style='background-color:#00478B;color:white;'>I</th>
+      <th style='background-color:#00478B;color:white;'>N</th><th style='background-color:#00478B;color:white;'>G</th>
+      <th style='background-color:#00478B;color:white;'>O</th>
+    </tr></thead><tbody>`;
+
+  for(let row=0;row<5;row++){
+    html+='<tr>';
+    for(let col=0;col<5;col++){
+      const num=colData[col][row];
+      const isFree=(col===2&&row===2);
+      const isHit=hit(num);
+      let bg='white',fg='black';
+      if(isFree){
+        bg=isWinner?'green':'#1a6b1a'; fg='white';
+      } else if(isHit){
+        if(isWinner&&winCells.has(num)){
+          if(num===lastCalled){bg='blue';fg='white';}
+          else if(colorMode==='two'){bg='green';fg='white';}
+          else{bg='#bca106';fg='white';}
+        } else {bg='red';fg='white';}
+      }
+      html+=`<td style='background-color:${bg};color:${fg};font-size:24px;padding:8px;border:1px solid #ccc;min-width:40px;'>${isFree?'★':num}</td>`;
+    }
+    html+='</tr>';
+  }
+  html+='</tbody></table>';
+  return html;
+}
+
+function celebrate(){
+  const canvas=document.getElementById('canvas2');
+  canvas.style.display='block';
+  try{
+    const myConf=confetti.create(canvas,{resize:true,useWorker:true});
+    myConf({particleCount:200,spread:160,origin:{y:0.6}});
+  } catch(e){console.log('confetti err',e);}
+  setTimeout(()=>{canvas.style.display='none';},3000);
+}
+
+$("#mycheck").on('click',function(event){
+  const cn=parseInt(document.getElementById('Ecard_no').value);
+  if(!cn){showAlert("Please enter a card number.","danger");return;}
+  const submitBtn=document.getElementById('mycheck');
+  submitBtn.disabled=true; submitBtn.innerText='Wait...';
+  submitBtn.style.opacity='0.6'; submitBtn.style.cursor='not-allowed';
+
+  const gs=getGameState();
+  const regCards=gs.cards||[];
+  const pattern=gs.pattern||1;
+  const drawn=(gs.randomstring||randomstring).split(',').map(n=>parseInt(n)).filter(n=>!isNaN(n)&&n>0);
+
+  if(!regCards.includes(cn)){
+    voices("notreg.wav");
+    showAlert("ያስገቡት ካርድ አልተመዘገበም","danger");
+    submitBtn.disabled=false; submitBtn.innerText='Check';
+    submitBtn.style.opacity='1'; submitBtn.style.cursor='pointer';
+    return;
+  }
+  const lockedCards=gs.locked_cards||[];
+  if(lockedCards.includes(cn)){
+    voices("locked_card.mp3");
+    showAlert("ያስገቡት ካርድ የተቆለፈ ነው","danger");
+    submitBtn.disabled=false; submitBtn.innerText='Check';
+    submitBtn.style.opacity='1'; submitBtn.style.cursor='pointer';
+    return;
+  }
+
+  const card=lookupCard(cn);
+  if(!card){
+    showAlert("Card #"+cn+" not found in database.","danger");
+    submitBtn.disabled=false; submitBtn.innerText='Check';
+    submitBtn.style.opacity='1'; submitBtn.style.cursor='pointer';
+    return;
+  }
+
+  const result=checkCardWin(card,drawn,pattern);
+  const cardHTML=buildCardHTML(card,drawn,pattern,cn);
+  submitBtn.disabled=false; submitBtn.innerText='Check';
+  submitBtn.style.opacity='1'; submitBtn.style.cursor='pointer';
+
+  document.getElementById('modal-card-round').innerText=gs.round||1;
+  $('#modal-body').html(cardHTML);
+  $('#myModalcard').modal('show',{backdrop:'static',keyboard:false});
+
+  const auto=$("#settings_check_result").val()||document.getElementById("auto_check_result")?.textContent.trim()||"manual";
+  const drawn_cnt=document.getElementById("drawn_number_counter").innerText;
+  const gbs=$("#settings_good_bingo_sound").val()||document.getElementById("good_bingo_sound").innerText;
+  const isWin=result.count_winning_line>=result.expected_pattern;
+
+  if(auto==="auto"){
+    document.getElementById('notbingo')?.style.setProperty('display','none','important');
+    document.getElementById('goodbingo')?.style.setProperty('display','none','important');
+    if(isWin){
+      celebrate(); setTimeout(()=>celebrate(),300); setTimeout(()=>celebrate(),600);
+      const el=document.getElementById('canvas');
+      el.style.display='block'; el.style.pointerEvents='none';
+      el.style.zIndex='9999'; el.style.position='absolute';
+      let af="good.wav";
+      switch(gbs){case "0":af="good.wav";break;case "1":af="clapping.mp3";break;case "2":af="goodbingo.mp3";break;}
+      voices(af);
+      setTimeout(()=>{el.style.display='none';},3000);
+    } else { voices("notgood.wav"); }
+  } else {
+    document.getElementById('notbingo')?.style.setProperty('display','inline-block','important');
+    document.getElementById('goodbingo')?.style.setProperty('display','inline-block','important');
+  }
+});
+
+$(document).ready(function(){
+  $("#goodbingo").on('click',function(){
+    saveGameToHistory('win');
+    const gs=getGameState();
+    const newRound=(gs.round||1)+1;
+    const today=new Date().toISOString().split('T')[0];
+    saveGameState({round:newRound,cards:[],pattern:1,price:0,sound:gs.sound||1,speed_range:gs.speed_range||3,randomstring:'',last_active_date:today});
+    const el=document.getElementById('canvas');
+    el.style.display='block'; el.style.pointerEvents='none';
+    el.style.zIndex='9999'; el.style.position='absolute';
+    const gbs=$("#settings_good_bingo_sound").val()||document.getElementById("good_bingo_sound").innerText;
+    let af="good.wav";
+    switch(gbs){case "0":af="good.wav";break;case "1":af="clapping.mp3";break;case "2":af="goodbingo.mp3";break;}
+    voices(af); celebrate();
+    setTimeout(()=>celebrate(),300); setTimeout(()=>celebrate(),600);
+    setTimeout(()=>{el.style.display='none';},3000);
+    /* after win animation — go to registration for next round */
+    setTimeout(()=>{ window.location.href='reg_new_game.html'; },3200);
+  });
+  $("#notbingo").on('click',function(){voices("notgood.wav");$('#myModalcard').modal('hide');});
+  $("#addbingo").on('click',function(){$('#myModalcard').modal('hide');});
+  $("#helpmodals").on('click',function(){$('#helpmodal').modal('hide');});
+  document.getElementById("lock_card").addEventListener('click',function(){
+    const cn=parseInt(document.getElementById('Ecard_no').value);
+    if(!cn) return;
+    const gs=getGameState();
+    if(!gs.locked_cards) gs.locked_cards=[];
+    if(!gs.locked_cards.includes(cn)){
+      gs.locked_cards.push(cn); saveGameState(gs);
+      showAlert("Card "+cn+" locked.","success");
+    } else { showAlert("Card "+cn+" already locked.","danger"); }
+    $('#myModalcard').modal('hide');
+  });
+});
+
+function change_language(){
+  const gs=getGameState();
+  gs.sound=parseInt(document.getElementById('voiceselect').value);
+  saveGameState(gs);
+}
+</script>
+
+</body>
+</html>
