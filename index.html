@@ -2614,14 +2614,7 @@
 
   /* Draw one number and update UI */
   function randomnuber() {
-    let rArr      = randomstring.split(',').filter(v => v !== 'undefined' && v !== '');
-    let drawnCount = rArr.length;
-
-    const ce = document.getElementById('drawn_number_counter');
-    if (ce) ce.innerText = drawnCount;
-
-    const gsbCalls = document.getElementById('gsb-calls');
-    if (gsbCalls) gsbCalls.textContent = drawnCount;
+    let rArr = randomstring.split(',').filter(v => v !== 'undefined' && v !== '');
 
     if (rArr.filter(Boolean).length === 75) { change(); return; }
 
@@ -2638,6 +2631,13 @@
 
     randomstring += rn + ',';
     document.getElementById('ran_voice').innerText = rn;
+
+    /* Update counter AFTER appending the new number — correct count */
+    const drawnCount = rArr.length + 1;
+    const ce = document.getElementById('drawn_number_counter');
+    if (ce) ce.innerText = drawnCount;
+    const gsbCalls = document.getElementById('gsb-calls');
+    if (gsbCalls) gsbCalls.textContent = drawnCount;
 
     /* Highlight the drawn number on the grid and update the ball display */
     if      (rn <= 15) { document.getElementById('rand').innerText = 'B-' + rn; const el = document.querySelector('[numb="' + rn + '"]'); if (el) el.className += ' callnum'; }
@@ -2810,8 +2810,8 @@
     const gs      = getGameState();
     const winners = gs.winning_cards || [];
     if (winners.length) {
-      const drawn     = (gs.randomstring || '').split(',').map(n => parseInt(n)).filter(n => !isNaN(n) && n > 0);
-      const on_call   = drawn.length ? drawn[drawn.length - 1] : '';
+      /* Use on_call saved when the winner was confirmed, not last drawn at finish */
+      const on_call   = gs.on_call || '';
       const total_bet  = (gs.cards || []).length * (gs.price || 0);
       const profit_pct = parseInt(document.getElementById('profit')?.innerText) || 0;
       let   paid       = total_bet; /* default: 100% when bet <= 10 */
@@ -2839,6 +2839,7 @@
       randomstring:    '',
       last_active_date: today,
       winning_cards:   [],
+      on_call:         '',
       last_used_cards: lastUsedCards,
     });
     window._gameStateCache = await API.getGameState(); /* keep cache in sync */
@@ -3048,6 +3049,7 @@
 
   /* ─── Helpers: winners panel ─── */
   let _checkedCardNo = null;
+  let _currentOnCall = null; /* last drawn number at the moment of card check */
 
   function _updateWinnersUI() {
     const gs    = getGameState();
@@ -3074,6 +3076,8 @@
     const pattern    = gs.pattern || 1;
     const drawn      = (gs.randomstring || randomstring).split(',')
                           .map(n => parseInt(n)).filter(n => !isNaN(n) && n > 0);
+    /* Capture on_call at check moment — before any more numbers are drawn */
+    _currentOnCall = drawn.length ? drawn[drawn.length - 1] : null;
 
     function resetBtn() {
       submitBtn.disabled      = false;
@@ -3135,6 +3139,8 @@
       if (!gs2.winning_cards) gs2.winning_cards = [];
       if (!gs2.winning_cards.includes(cardNo)) {
         gs2.winning_cards.push(cardNo);
+        /* Save on_call at the exact moment of win confirmation */
+        if (_currentOnCall && !gs2.on_call) gs2.on_call = _currentOnCall;
         saveGameState(gs2);
       }
       _updateWinnersUI();
@@ -3183,6 +3189,8 @@
       if (!gs2.winning_cards) gs2.winning_cards = [];
       if (!gs2.winning_cards.includes(_checkedCardNo)) {
         gs2.winning_cards.push(_checkedCardNo);
+        /* Save on_call at the exact moment of win confirmation */
+        if (_currentOnCall && !gs2.on_call) gs2.on_call = _currentOnCall;
         saveGameState(gs2);
       }
       _updateWinnersUI();
