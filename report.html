@@ -31,176 +31,189 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,Ari
 /* ─── TOP NAV ─── */
 .nav{
   position:sticky;top:0;z-index:200;
-  background:rgba(7,16,31,0.95);
+  background:rgba(7,16,31,0.97);
   backdrop-filter:blur(12px);
   border-bottom:1px solid var(--border);
-  display:flex;align-items:center;padding:0 28px;height:58px;gap:16px;
+  display:flex;align-items:center;padding:0 24px;height:54px;gap:12px;
 }
-.nav-brand{font-size:18px;font-weight:900;background:linear-gradient(90deg,#00c6ff,#0072ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:.2px;white-space:nowrap;}
+.nav-brand{font-size:17px;font-weight:900;background:linear-gradient(90deg,#00c6ff,#0072ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:.2px;white-space:nowrap;}
 .nav-user{
-  margin-left:auto;
-  display:flex;align-items:center;gap:8px;
+  margin-left:auto;display:flex;align-items:center;gap:8px;
   background:var(--surface2);border:1px solid var(--border);
-  border-radius:50px;padding:5px 14px 5px 8px;
+  border-radius:50px;padding:4px 12px 4px 6px;
 }
-.nav-user-dot{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0072ff,#00c6ff);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;}
-.nav-user-name{font-size:13px;font-weight:700;color:var(--accent);}
+.nav-user-dot{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#0072ff,#00c6ff);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;}
+.nav-user-name{font-size:12px;font-weight:700;color:var(--accent);}
 .nav-btn{
   text-decoration:none;border:1px solid var(--border);background:var(--surface2);
-  color:var(--text);font-size:13px;font-weight:700;padding:8px 16px;
-  border-radius:10px;cursor:pointer;transition:all .18s;white-space:nowrap;
+  color:var(--text);font-size:12px;font-weight:700;padding:7px 14px;
+  border-radius:9px;cursor:pointer;transition:all .18s;white-space:nowrap;
 }
 .nav-btn:hover{border-color:var(--accent);color:var(--accent);}
 .nav-btn-logout{border-color:rgba(255,82,82,.3);color:#ef9a9a;background:rgba(255,82,82,.06);}
 .nav-btn-logout:hover{background:rgba(255,82,82,.15);}
 
 /* ─── PAGE ─── */
-.page{padding:28px 28px 80px;max-width:1200px;margin:0 auto;}
-
-/* ─── SECTION LABEL ─── */
-.sec-label{
-  font-size:10.5px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;
-  color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px;
-}
-.sec-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.page{padding:20px 24px 80px;max-width:1300px;margin:0 auto;}
 
 /* ─── WALLET CARD ─── */
 .wallet-card{
   background:linear-gradient(135deg,#0d2448 0%,#091a36 100%);
-  border:1px solid #1a3560;border-radius:20px;padding:0;margin-bottom:32px;
-  overflow:hidden;position:relative;
+  border:1px solid #1a3560;border-radius:18px;padding:20px 28px;
+  margin-bottom:20px;position:relative;overflow:hidden;
 }
-.wallet-card::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:3px;
-  background:linear-gradient(90deg,#0072ff,#00c6ff,#00e676);
-}
-.wallet-inner{padding:28px 32px;}
-.wallet-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;}
-.wallet-col{padding:0 28px 0 0;}
-.wallet-col+.wallet-col{padding-left:28px;border-left:1px solid rgba(255,255,255,0.06);}
-.w-label{font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
-.w-amount{font-size:36px;font-weight:900;letter-spacing:-1px;line-height:1;}
-.w-unit{font-size:12px;color:var(--muted);margin-top:5px;font-weight:600;}
-.w-deposited{color:#64b5f6;}
-.w-used{color:#ef9a9a;}
-.w-avail{color:var(--green);}
-.w-avail-low{color:var(--yellow);}
-.w-avail-empty{color:var(--red);}
-
-.wallet-bar-wrap{margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.05);}
-.wallet-bar-label{display:flex;justify-content:space-between;margin-bottom:8px;}
-.wallet-bar-label span{font-size:11px;color:var(--muted);font-weight:600;}
-.wallet-bar{height:6px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden;}
+.wallet-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#0072ff,#00c6ff,#00e676);}
+.wallet-top{display:grid;grid-template-columns:repeat(3,1fr) auto;gap:0;align-items:center;}
+.wallet-col{padding:0 24px 0 0;}
+.wallet-col+.wallet-col{padding-left:24px;border-left:1px solid rgba(255,255,255,0.06);}
+.wallet-col.wallet-bar-col{padding-left:28px;flex:1;}
+.w-label{font-size:9.5px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.w-amount{font-size:30px;font-weight:900;letter-spacing:-1px;line-height:1;}
+.w-unit{font-size:10px;color:var(--muted);margin-top:4px;font-weight:600;}
+.w-deposited{color:#64b5f6;}.w-used{color:#ef9a9a;}
+.w-avail{color:var(--green);}.w-avail-low{color:var(--yellow);}.w-avail-empty{color:var(--red);}
+.w-bar-area{min-width:180px;}
+.w-bar-label{display:flex;justify-content:space-between;margin-bottom:6px;}
+.w-bar-label span{font-size:10px;color:var(--muted);font-weight:600;}
+.wallet-bar{height:5px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden;}
 .wallet-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#0072ff,#00c6ff);transition:width .5s ease;}
-.wallet-meta{margin-top:12px;font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.3px;}
-.wallet-meta span{color:var(--muted2);font-family:monospace;font-size:12px;letter-spacing:1.5px;}
+.wallet-meta{margin-top:8px;font-size:10.5px;color:var(--muted);font-weight:600;}
+.wallet-meta span{color:var(--muted2);font-family:monospace;font-size:11px;letter-spacing:1.5px;}
+
+/* ─── SECTION LABEL ─── */
+.sec-label{font-size:10px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ─── TABS ─── */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px;}
+.tab-btn{
+  padding:11px 20px;font-size:12.5px;font-weight:800;color:var(--muted);
+  border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;
+  margin-bottom:-1px;transition:all .18s;letter-spacing:.3px;white-space:nowrap;
+}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-pane{display:none;}.tab-pane.active{display:block;}
 
 /* ─── FILTER ROW ─── */
 .filter-bar{
-  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
   background:var(--surface);border:1px solid var(--border);
-  border-radius:16px;padding:16px 20px;margin-bottom:20px;
+  border-radius:14px;padding:13px 18px;margin-bottom:16px;
 }
-.filter-label{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.filter-label{font-size:10.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
 .filter-date{
-  padding:9px 13px;border-radius:10px;border:1px solid var(--border);
-  background:#07101f;color:var(--text);font-size:13px;outline:none;
-  transition:border-color .2s;font-family:inherit;
-  color-scheme:dark;
+  padding:7px 11px;border-radius:9px;border:1px solid var(--border);
+  background:#07101f;color:var(--text);font-size:12.5px;outline:none;
+  transition:border-color .2s;font-family:inherit;color-scheme:dark;
 }
 .filter-date:focus{border-color:var(--accent);}
 .filter-spacer{flex:1;}
-.fbtn{padding:9px 18px;border-radius:10px;border:1px solid transparent;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap;}
-.fbtn-today{background:rgba(0,230,118,.1);color:var(--green);border-color:rgba(0,230,118,.25);}
-.fbtn-today:hover{background:rgba(0,230,118,.2);}
-.fbtn-search{background:linear-gradient(135deg,#0072ff,#00c6ff);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,114,255,.3);}
-.fbtn-search:hover{box-shadow:0 4px 20px rgba(0,114,255,.5);transform:translateY(-1px);}
-.fbtn-csv{background:rgba(255,183,77,.08);color:#ffb74d;border-color:rgba(255,183,77,.2);}
+.fbtn{padding:8px 16px;border-radius:9px;border:1px solid transparent;font-size:12.5px;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap;}
+.fbtn-today{background:rgba(0,230,118,.08);color:var(--green);border-color:rgba(0,230,118,.2);}
+.fbtn-today:hover{background:rgba(0,230,118,.18);}
+.fbtn-search{background:linear-gradient(135deg,#0072ff,#00c6ff);color:#fff;border:none;box-shadow:0 3px 12px rgba(0,114,255,.3);}
+.fbtn-search:hover{box-shadow:0 4px 18px rgba(0,114,255,.5);}
+.fbtn-csv{background:rgba(255,183,77,.07);color:#ffb74d;border-color:rgba(255,183,77,.18);}
 .fbtn-csv:hover{background:rgba(255,183,77,.18);}
+.perpage{padding:7px 11px;border-radius:9px;border:1px solid var(--border);background:#07101f;color:var(--text);font-size:12px;outline:none;font-family:inherit;color-scheme:dark;}
+.perpage:focus{border-color:var(--accent);}
 
-/* ─── STATS ROW ─── */
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+/* ─── STATS GRID ─── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
 .stat-card{
   background:var(--surface);border:1px solid var(--border);
-  border-radius:16px;padding:20px 22px;position:relative;overflow:hidden;
+  border-radius:14px;padding:16px 18px;position:relative;overflow:hidden;
 }
-.stat-card::after{
-  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
-}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
 .stat-card:nth-child(1)::after{background:linear-gradient(90deg,#0072ff,#00c6ff);}
 .stat-card:nth-child(2)::after{background:linear-gradient(90deg,#00bfa5,#69f0ae);}
 .stat-card:nth-child(3)::after{background:linear-gradient(90deg,#ff6f00,#ffd740);}
 .stat-card:nth-child(4)::after{background:linear-gradient(90deg,#6a1b9a,#b39ddb);}
-.stat-icon{font-size:22px;margin-bottom:12px;opacity:.8;}
-.stat-label{font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
-.stat-value{font-size:30px;font-weight:900;letter-spacing:-1px;line-height:1;}
-.stat-unit{font-size:11px;color:var(--muted);margin-top:5px;font-weight:600;}
+.stat-icon{font-size:18px;margin-bottom:8px;opacity:.8;}
+.stat-label{font-size:9.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.stat-value{font-size:26px;font-weight:900;letter-spacing:-1px;line-height:1;}
+.stat-unit{font-size:10px;color:var(--muted);margin-top:4px;font-weight:600;}
 .stat-card:nth-child(1) .stat-value{color:#64b5f6;}
 .stat-card:nth-child(2) .stat-value{color:var(--green);}
 .stat-card:nth-child(3) .stat-value{color:var(--yellow);}
 .stat-card:nth-child(4) .stat-value{color:var(--purple);}
 
-/* ─── HISTORY TABLE ─── */
-.table-card{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:18px;overflow:hidden;
-}
+/* ─── TABLE CARD ─── */
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
 .table-header{
   display:flex;align-items:center;justify-content:space-between;
-  padding:18px 24px;border-bottom:1px solid var(--border);
+  padding:14px 20px;border-bottom:1px solid var(--border);
 }
-.table-title{font-size:15px;font-weight:900;color:var(--text);}
-.table-count{
-  font-size:11px;font-weight:700;color:var(--muted);
-  background:var(--surface2);border:1px solid var(--border);
-  border-radius:50px;padding:4px 12px;
-}
+.table-title{font-size:14px;font-weight:900;color:var(--text);}
+.table-count{font-size:10.5px;font-weight:700;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:50px;padding:3px 11px;}
 .tscroll{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;}
 thead tr{background:#07101f;}
-th{
-  padding:13px 18px;font-size:10.5px;font-weight:800;
-  letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);
-  text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;
-}
-td{padding:15px 18px;border-bottom:1px solid rgba(22,42,69,.7);vertical-align:middle;}
+th{padding:11px 16px;font-size:10px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:12px 16px;border-bottom:1px solid rgba(22,42,69,.7);vertical-align:middle;}
 tbody tr:last-child td{border-bottom:none;}
 tbody tr{transition:background .15s;}
-tbody tr:hover td{background:rgba(0,114,255,.05);}
-.td-num{font-size:12px;color:var(--muted2);font-weight:700;}
-.td-round{font-size:14px;font-weight:900;color:var(--accent);}
-.td-time{font-size:13px;color:var(--muted);font-weight:600;}
-.td-cards{font-size:15px;font-weight:800;}
-.td-price{font-size:13px;color:var(--muted);}
-.td-revenue{font-size:15px;font-weight:900;color:var(--green);}
-.badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:50px;font-size:11px;font-weight:800;letter-spacing:.3px;white-space:nowrap;}
+tbody tr:hover td{background:rgba(0,114,255,.04);}
+.td-num{font-size:11px;color:var(--muted2);font-weight:700;}
+.td-round{font-size:13px;font-weight:900;color:var(--accent);}
+.td-time{font-size:12px;color:var(--muted);font-weight:600;}
+.td-cards{font-size:14px;font-weight:800;}
+.td-price{font-size:12px;color:var(--muted);}
+.td-revenue{font-size:14px;font-weight:900;color:var(--green);}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:50px;font-size:10.5px;font-weight:800;letter-spacing:.3px;white-space:nowrap;}
 .badge-win{background:rgba(0,230,118,.12);color:#69f0ae;border:1px solid rgba(0,230,118,.2);}
 .badge-stopped{background:rgba(179,157,219,.1);color:#b39ddb;border:1px solid rgba(179,157,219,.2);}
 .badge-played{background:rgba(0,198,255,.1);color:#80deea;border:1px solid rgba(0,198,255,.2);}
-.patt{
-  display:inline-block;background:rgba(255,255,255,.04);
-  border:1px solid rgba(255,255,255,.08);border-radius:8px;
-  padding:4px 10px;font-size:11.5px;color:#90caf9;font-weight:600;
-}
-.empty-row td{text-align:center;padding:60px 20px;}
-.empty-inner{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted2);}
+.badge-completed{background:rgba(38,166,154,.1);color:#80cbc4;border:1px solid rgba(128,203,196,.2);}
+.badge-success{background:rgba(0,230,118,.12);color:#69f0ae;border:1px solid rgba(0,230,118,.2);}
+.badge-failure{background:rgba(255,82,82,.1);color:#ff8a80;border:1px solid rgba(255,82,82,.2);}
+.badge-unlock{background:rgba(255,183,77,.1);color:#ffb74d;border:1px solid rgba(255,183,77,.2);}
+.patt{display:inline-block;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:3px 9px;font-size:11px;color:#90caf9;font-weight:600;}
+.empty-row td{text-align:center;padding:50px 20px;}
+.empty-inner{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted2);}
 .empty-inner svg{opacity:.3;}
-.empty-inner p{font-size:16px;font-weight:700;color:var(--muted);}
-.empty-inner small{font-size:13px;}
+.empty-inner p{font-size:15px;font-weight:700;color:var(--muted);}
+.empty-inner small{font-size:12px;}
+
+/* ─── PAGINATION ─── */
+.pagination{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:8px;
+}
+.pg-info{font-size:11.5px;color:var(--muted);font-weight:600;}
+.pg-btns{display:flex;gap:6px;align-items:center;}
+.pg-btn{
+  padding:6px 13px;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface2);color:var(--text);font-size:12px;font-weight:700;
+  cursor:pointer;transition:all .15s;
+}
+.pg-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+.pg-btn:disabled{opacity:.35;cursor:not-allowed;}
+.pg-btn.current{background:rgba(0,114,255,.2);border-color:var(--accent2);color:var(--accent);}
+.pg-num-group{display:flex;gap:4px;}
+
+/* ─── WALLET TX TABLE ─── */
+.tx-amount-pos{font-size:14px;font-weight:900;color:var(--green);}
+.tx-amount-neg{font-size:14px;font-weight:700;color:var(--red);}
+.tx-msg{font-size:11.5px;color:var(--muted);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tx-msg:hover{white-space:normal;overflow:visible;}
 
 /* ─── RESPONSIVE ─── */
-@media(max-width:900px){
-  .stats-grid{grid-template-columns:repeat(2,1fr);}
-  .wallet-grid{grid-template-columns:1fr;}
-  .wallet-col{padding:0 0 20px 0;border-left:none!important;border-bottom:1px solid rgba(255,255,255,0.05);}
-  .wallet-col:last-child{border-bottom:none;padding-bottom:0;}
-}
-@media(max-width:600px){
-  .page{padding:16px 14px 60px;}
+@media(max-width:1000px){.stats-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:700px){
+  .page{padding:14px 12px 60px;}
+  .wallet-top{grid-template-columns:1fr 1fr;gap:14px;}
+  .wallet-col.wallet-bar-col{grid-column:1/-1;border-left:none;padding-left:0;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06);}
   .stats-grid{grid-template-columns:1fr 1fr;}
-  .filter-bar{gap:8px;}
+  .nav{padding:0 12px;}
+  .filter-bar{gap:6px;}
   th:nth-child(5),td:nth-child(5){display:none;}
-  .nav{padding:0 14px;}
+}
+@media(max-width:480px){
+  .wallet-top{grid-template-columns:1fr;}
+  .wallet-col+.wallet-col{border-left:none;padding-left:0;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05);}
+  .tab-btn{padding:10px 13px;font-size:11.5px;}
 }
 </style>
 </head>
@@ -223,103 +236,210 @@ tbody tr:hover td{background:rgba(0,114,255,.05);}
   <!-- ── WALLET STATUS ── -->
   <div class="sec-label">Wallet Status</div>
   <div class="wallet-card">
-    <div class="wallet-inner">
-      <div class="wallet-grid">
-        <div class="wallet-col">
-          <div class="w-label">Total Deposited</div>
-          <div class="w-amount w-deposited" id="w-deposited">—</div>
-          <div class="w-unit">Ethiopian Birr (ብር)</div>
-        </div>
-        <div class="wallet-col">
-          <div class="w-label">Amount Used</div>
-          <div class="w-amount w-used" id="w-used">—</div>
-          <div class="w-unit">Ethiopian Birr (ብር)</div>
-        </div>
-        <div class="wallet-col">
-          <div class="w-label">Remaining Balance</div>
-          <div class="w-amount" id="w-avail">—</div>
-          <div class="w-unit">Ethiopian Birr (ብር)</div>
-        </div>
+    <div class="wallet-top">
+      <div class="wallet-col">
+        <div class="w-label">Total Deposited</div>
+        <div class="w-amount w-deposited" id="w-deposited">—</div>
+        <div class="w-unit">Ethiopian Birr (ብር)</div>
       </div>
-      <div class="wallet-bar-wrap">
-        <div class="wallet-bar-label">
-          <span>Usage</span>
-          <span id="w-pct">0%</span>
-        </div>
+      <div class="wallet-col">
+        <div class="w-label">Amount Used</div>
+        <div class="w-amount w-used" id="w-used">—</div>
+        <div class="w-unit">Ethiopian Birr (ብር)</div>
+      </div>
+      <div class="wallet-col">
+        <div class="w-label">Remaining Balance</div>
+        <div class="w-amount" id="w-avail">—</div>
+        <div class="w-unit">Ethiopian Birr (ብር)</div>
+      </div>
+      <div class="wallet-col wallet-bar-col w-bar-area">
+        <div class="w-bar-label"><span>Usage</span><span id="w-pct">0%</span></div>
         <div class="wallet-bar"><div class="wallet-bar-fill" id="w-bar" style="width:0%"></div></div>
         <div class="wallet-meta">Machine ID: <span id="w-mid">—</span></div>
       </div>
     </div>
   </div>
 
-  <!-- ── GAME HISTORY ── -->
-  <div class="sec-label">Game History</div>
-
-  <!-- filter -->
-  <div class="filter-bar">
-    <div class="filter-label">From</div>
-    <input type="date" class="filter-date" id="dateFrom">
-    <div class="filter-label">To</div>
-    <input type="date" class="filter-date" id="dateTo">
-    <button class="fbtn fbtn-today" onclick="setToday()">Today</button>
-    <button class="fbtn fbtn-search" onclick="loadReport()">Search</button>
-    <div class="filter-spacer"></div>
-    <button class="fbtn fbtn-csv" onclick="exportCSV()">⬇ Export CSV</button>
+  <!-- ── TABS ── -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('game')">🎮 Game History</button>
+    <button class="tab-btn" onclick="switchTab('wallet')">💳 Wallet Transactions</button>
+    <button class="tab-btn" onclick="switchTab('activity')">🔐 Activation Activity</button>
   </div>
 
-  <!-- stats -->
-  <div class="stats-grid" id="statsGrid">
-    <div class="stat-card"><div class="stat-icon">🎮</div><div class="stat-label">Rounds Played</div><div class="stat-value" id="s-rounds">0</div></div>
-    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Total Revenue</div><div class="stat-value" id="s-rev">0</div><div class="stat-unit">ብር</div></div>
-    <div class="stat-card"><div class="stat-icon">🎴</div><div class="stat-label">Total Cards</div><div class="stat-value" id="s-cards">0</div></div>
-    <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-label">Avg Cards / Round</div><div class="stat-value" id="s-avg">0</div></div>
-  </div>
+  <!-- ══════════════════════ TAB: GAME HISTORY ══════════════════════ -->
+  <div class="tab-pane active" id="tab-game">
 
-  <!-- table -->
-  <div class="table-card">
-    <div class="table-header">
-      <div class="table-title">Round Details</div>
-      <div class="table-count" id="tbl-count">—</div>
+    <div class="filter-bar">
+      <div class="filter-label">From</div>
+      <input type="date" class="filter-date" id="dateFrom">
+      <div class="filter-label">To</div>
+      <input type="date" class="filter-date" id="dateTo">
+      <button class="fbtn fbtn-today" onclick="setToday()">Today</button>
+      <button class="fbtn fbtn-search" onclick="loadGameReport()">Search</button>
+      <div class="filter-spacer"></div>
+      <select class="perpage" id="gamePerPage" onchange="gamePage=1;renderGameTable()">
+        <option value="15">15 / page</option>
+        <option value="25">25 / page</option>
+        <option value="50">50 / page</option>
+        <option value="100">100 / page</option>
+      </select>
+      <button class="fbtn fbtn-csv" onclick="exportCSV()">⬇ CSV</button>
     </div>
-    <div class="tscroll">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Round</th>
-            <th>Time</th>
-            <th>Cards</th>
-            <th>Price / Card</th>
-            <th>Revenue</th>
-            <th>Pattern</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="reportBody">
-          <tr class="empty-row"><td colspan="8">
-            <div class="empty-inner"><p>Loading data…</p></div>
-          </td></tr>
-        </tbody>
-      </table>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon">🎮</div><div class="stat-label">Rounds Played</div><div class="stat-value" id="s-rounds">0</div></div>
+      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Total Revenue</div><div class="stat-value" id="s-rev">0</div><div class="stat-unit">ብር</div></div>
+      <div class="stat-card"><div class="stat-icon">🎴</div><div class="stat-label">Total Cards</div><div class="stat-value" id="s-cards">0</div></div>
+      <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-label">Avg Cards / Round</div><div class="stat-value" id="s-avg">0</div></div>
     </div>
-  </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">Round Details</div>
+        <div class="table-count" id="tbl-count">—</div>
+      </div>
+      <div class="tscroll">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Round</th><th>Time</th>
+            <th>Cards</th><th>Price/Card</th><th>Revenue</th>
+            <th>Pattern</th><th>Status</th>
+          </tr></thead>
+          <tbody id="reportBody">
+            <tr class="empty-row"><td colspan="8"><div class="empty-inner"><p>Loading…</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="gamePagination" style="display:none;"></div>
+    </div>
+
+  </div><!-- /tab-game -->
+
+  <!-- ══════════════════════ TAB: WALLET TRANSACTIONS ══════════════════════ -->
+  <div class="tab-pane" id="tab-wallet">
+
+    <div class="filter-bar">
+      <div class="filter-label">From</div>
+      <input type="date" class="filter-date" id="wDateFrom">
+      <div class="filter-label">To</div>
+      <input type="date" class="filter-date" id="wDateTo">
+      <button class="fbtn fbtn-today" onclick="setWalletToday()">Today</button>
+      <button class="fbtn fbtn-search" onclick="loadWalletReport()">Search</button>
+      <div class="filter-spacer"></div>
+      <select class="perpage" id="walletPerPage" onchange="walletPage=1;renderWalletTable()">
+        <option value="15">15 / page</option>
+        <option value="25">25 / page</option>
+        <option value="50">50 / page</option>
+      </select>
+    </div>
+
+    <!-- wallet summary stats -->
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">Successful Deposits</div><div class="stat-value" id="w-success-count">0</div></div>
+      <div class="stat-card"><div class="stat-icon">💵</div><div class="stat-label">Total Deposited</div><div class="stat-value" id="w-success-amt">0</div><div class="stat-unit">ብር</div></div>
+      <div class="stat-card"><div class="stat-icon">❌</div><div class="stat-label">Failed Attempts</div><div class="stat-value" id="w-fail-count">0</div></div>
+      <div class="stat-card"><div class="stat-icon">🔓</div><div class="stat-label">Unlock Events</div><div class="stat-value" id="w-unlock-count">0</div></div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">Wallet Transaction Log</div>
+        <div class="table-count" id="wTblCount">—</div>
+      </div>
+      <div class="tscroll">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Date / Time</th><th>Action</th>
+            <th>Amount</th><th>Status</th><th>Message</th>
+          </tr></thead>
+          <tbody id="walletBody">
+            <tr class="empty-row"><td colspan="6"><div class="empty-inner"><p>Loading…</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="walletPagination" style="display:none;"></div>
+    </div>
+
+  </div><!-- /tab-wallet -->
+
+  <!-- ══════════════════════ TAB: ACTIVATION ACTIVITY ══════════════════════ -->
+  <div class="tab-pane" id="tab-activity">
+
+    <div class="filter-bar">
+      <div class="filter-label">From</div>
+      <input type="date" class="filter-date" id="aDateFrom">
+      <div class="filter-label">To</div>
+      <input type="date" class="filter-date" id="aDateTo">
+      <button class="fbtn fbtn-today" onclick="setActivityToday()">Today</button>
+      <button class="fbtn fbtn-search" onclick="loadActivityReport()">Search</button>
+      <div class="filter-spacer"></div>
+      <select class="perpage" id="activityPerPage" onchange="activityPage=1;renderActivityTable()">
+        <option value="15">15 / page</option>
+        <option value="25">25 / page</option>
+        <option value="50">50 / page</option>
+      </select>
+    </div>
+
+    <!-- activation summary -->
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon">🔑</div><div class="stat-label">Total Activations</div><div class="stat-value" id="a-total">0</div></div>
+      <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">Successful</div><div class="stat-value" id="a-ok">0</div></div>
+      <div class="stat-card"><div class="stat-icon">❌</div><div class="stat-label">Failed</div><div class="stat-value" id="a-fail">0</div></div>
+      <div class="stat-card"><div class="stat-icon">🔒</div><div class="stat-label">Lock Events</div><div class="stat-value" id="a-lock">0</div></div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">Activation Attempt Log</div>
+        <div class="table-count" id="aTblCount">—</div>
+      </div>
+      <div class="tscroll">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Date / Time</th><th>Type</th>
+            <th>Amount</th><th>Result</th><th>Details</th>
+          </tr></thead>
+          <tbody id="activityBody">
+            <tr class="empty-row"><td colspan="6"><div class="empty-inner"><p>Loading…</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="activityPagination" style="display:none;"></div>
+    </div>
+
+  </div><!-- /tab-activity -->
 
 </div><!-- /page -->
 
 <script>
 const PATT={1:'Any 1 Line',2:'Any 2 Lines',3:'Horizontal',4:'Vertical',5:'X Pattern',6:'Four Corners',7:'Center Corners',8:'Meskel',9:'T Shape',10:'Reverse T',11:'L Shape',12:'Full Card'};
 
-window._hist=[];
+/* ── State ── */
+let _hist=[], _walletTx=[], _filteredGames=[], _filteredWallet=[], _filteredActivity=[];
+let gamePage=1, walletPage=1, activityPage=1;
 
+/* ── Tab switcher ── */
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active', ['game','wallet','activity'][i]===name));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+/* ── Init ── */
 async function init(){
   const sess=API.getSession()||'@cashier';
   document.getElementById('sideUsername').textContent=sess;
   document.getElementById('navInitial').textContent=sess.replace('@','').charAt(0).toUpperCase();
 
-  const [bal,mid,hist]=await Promise.all([API.getBalance(),API.getMachineId(),API.getHistory()]);
-  window._hist=hist;
+  const [bal,mid,hist,wallet]=await Promise.all([
+    API.getBalance(), API.getMachineId(),
+    API.getHistory(), API.getWalletTransactions()
+  ]);
+  _hist   = hist;
+  _walletTx = wallet;
 
-  /* wallet */
+  /* wallet card */
   document.getElementById('w-deposited').textContent=bal.deposited.toLocaleString();
   document.getElementById('w-used').textContent=bal.used.toLocaleString();
   const availEl=document.getElementById('w-avail');
@@ -328,30 +448,33 @@ async function init(){
   availEl.className='w-amount '+cls;
   const pct=bal.deposited>0?Math.min(100,Math.round(bal.used/bal.deposited*100)):0;
   document.getElementById('w-pct').textContent=pct+'% used';
-  document.getElementById('w-bar').style.width=pct+'%';
-  document.getElementById('w-bar').style.background=pct>85?'linear-gradient(90deg,#ff5252,#ff8a65)':pct>60?'linear-gradient(90deg,#ff6f00,#ffd740)':'linear-gradient(90deg,#0072ff,#00c6ff)';
+  const bar=document.getElementById('w-bar');
+  bar.style.width=pct+'%';
+  bar.style.background=pct>85?'linear-gradient(90deg,#ff5252,#ff8a65)':pct>60?'linear-gradient(90deg,#ff6f00,#ffd740)':'linear-gradient(90deg,#0072ff,#00c6ff)';
   document.getElementById('w-mid').textContent=mid.match(/.{1,4}/g).join('-');
 
-  setToday();
+  const today=new Date().toISOString().split('T')[0];
+  ['dateFrom','dateTo','wDateFrom','wDateTo','aDateFrom','aDateTo'].forEach(id=>{
+    document.getElementById(id).value=today;
+  });
+
+  loadGameReport();
+  loadWalletReport();
+  loadActivityReport();
 }
 
-function setToday(){
-  const t=new Date().toISOString().split('T')[0];
-  document.getElementById('dateFrom').value=t;
-  document.getElementById('dateTo').value=t;
-  loadReport();
-}
-
-function loadReport(){
+/* ════════════ GAME HISTORY ════════════ */
+function loadGameReport(){
   const from=new Date(document.getElementById('dateFrom').value+'T00:00:00');
-  const to=new Date(document.getElementById('dateTo').value+'T23:59:59');
-  const filtered=window._hist.filter(g=>{const d=new Date(g.date);return d>=from&&d<=to;});
-  renderStats(filtered);
-  renderTable(filtered);
+  const to  =new Date(document.getElementById('dateTo').value+'T23:59:59');
+  _filteredGames=[..._hist].filter(g=>{const d=new Date(g.date);return d>=from&&d<=to;}).reverse();
+  renderStats(_filteredGames);
+  gamePage=1;
+  renderGameTable();
 }
 
 function renderStats(games){
-  const totalRev=games.reduce((s,g)=>s+(g.cards.length*g.price),0);
+  const totalRev  =games.reduce((s,g)=>s+(g.cards.length*g.price),0);
   const totalCards=games.reduce((s,g)=>s+g.cards.length,0);
   const avg=games.length?Math.round(totalCards/games.length):0;
   document.getElementById('s-rounds').textContent=games.length;
@@ -360,50 +483,266 @@ function renderStats(games){
   document.getElementById('s-avg').textContent=avg;
 }
 
-function renderTable(games){
+function renderGameTable(){
+  const perPage=parseInt(document.getElementById('gamePerPage').value)||15;
+  const total  =_filteredGames.length;
+  const pages  =Math.max(1,Math.ceil(total/perPage));
+  gamePage=Math.min(gamePage,pages);
+  const slice=_filteredGames.slice((gamePage-1)*perPage, gamePage*perPage);
   const tbody=document.getElementById('reportBody');
-  document.getElementById('tbl-count').textContent=games.length?games.length+' rounds':'No rounds';
-  if(!games.length){
+  const offset=(gamePage-1)*perPage;
+
+  document.getElementById('tbl-count').textContent=total?total+' rounds':'No rounds';
+
+  if(!total){
     tbody.innerHTML=`<tr class="empty-row"><td colspan="8">
       <div class="empty-inner">
-        <svg width="48" height="48" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#4a6880" stroke-width="1.5"/><path d="M8 2v4M16 2v4M3 10h18" stroke="#4a6880" stroke-width="1.5" stroke-linecap="round"/></svg>
-        <p>No rounds found</p>
-        <small>Try changing the date range</small>
-      </div>
-    </td></tr>`;
+        <svg width="44" height="44" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#4a6880" stroke-width="1.5"/><path d="M8 2v4M16 2v4M3 10h18" stroke="#4a6880" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <p>No rounds found</p><small>Try changing the date range</small>
+      </div></td></tr>`;
+    document.getElementById('gamePagination').style.display='none';
     return;
   }
-  const rev=[...games].reverse();
-  tbody.innerHTML=rev.map((g,i)=>{
-    const revenue=g.cards.length*g.price;
+
+  tbody.innerHTML=slice.map((g,i)=>{
+    const rev=g.cards.length*g.price;
     const t=new Date(g.date);
     const timeStr=t.toLocaleTimeString('en-ET',{hour:'2-digit',minute:'2-digit',hour12:true});
-    const badge=g.status==='win'
-      ?'<span class="badge badge-win">✓ Win</span>'
-      :g.status==='stopped'
-      ?'<span class="badge badge-stopped">◼ Stopped</span>'
-      :g.status==='completed'
-      ?'<span class="badge badge-played" style="background:rgba(38,166,154,.12);color:#80cbc4;border-color:rgba(128,203,196,.2);">✔ Completed</span>'
+    const badge=g.status==='win'?'<span class="badge badge-win">✓ Win</span>'
+      :g.status==='stopped'?'<span class="badge badge-stopped">◼ Stopped</span>'
+      :g.status==='completed'?'<span class="badge badge-completed">✔ Completed</span>'
       :'<span class="badge badge-played">● Played</span>';
     return `<tr>
-      <td class="td-num">${rev.length-i}</td>
+      <td class="td-num">${offset+i+1}</td>
       <td class="td-round">Round ${g.round}</td>
       <td class="td-time">${timeStr}</td>
       <td class="td-cards">${g.cards.length}</td>
-      <td class="td-price">${g.price.toLocaleString()} ብር</td>
-      <td class="td-revenue">${revenue.toLocaleString()} ብር</td>
+      <td class="td-price">${(g.price||0).toLocaleString()} ብር</td>
+      <td class="td-revenue">${rev.toLocaleString()} ብር</td>
       <td><span class="patt">${PATT[g.pattern]||'Pattern '+g.pattern}</span></td>
       <td>${badge}</td>
     </tr>`;
   }).join('');
+
+  renderPagination('gamePagination', pages, gamePage);
+}
+
+/* ════════════ WALLET TRANSACTIONS ════════════ */
+function setWalletToday(){
+  const t=new Date().toISOString().split('T')[0];
+  document.getElementById('wDateFrom').value=t;
+  document.getElementById('wDateTo').value=t;
+  loadWalletReport();
+}
+
+function loadWalletReport(){
+  const from=new Date(document.getElementById('wDateFrom').value+'T00:00:00');
+  const to  =new Date(document.getElementById('wDateTo').value+'T23:59:59');
+  _filteredWallet=[..._walletTx].filter(r=>{
+    const d=new Date(r.timestamp);return d>=from&&d<=to;
+  }).reverse();
+  renderWalletStats(_filteredWallet);
+  walletPage=1;
+  renderWalletTable();
+}
+
+function renderWalletStats(rows){
+  const succDeposits=rows.filter(r=>r.status==='success'&&r.amount>0);
+  const failRows    =rows.filter(r=>r.status==='failure');
+  const unlockRows  =rows.filter(r=>r.role==='Admin'&&r.status==='success');
+  document.getElementById('w-success-count').textContent=succDeposits.length;
+  document.getElementById('w-success-amt').textContent=succDeposits.reduce((s,r)=>s+Number(r.amount),0).toLocaleString();
+  document.getElementById('w-fail-count').textContent=failRows.length;
+  document.getElementById('w-unlock-count').textContent=unlockRows.length;
+}
+
+function renderWalletTable(){
+  const perPage=parseInt(document.getElementById('walletPerPage').value)||15;
+  const total  =_filteredWallet.length;
+  const pages  =Math.max(1,Math.ceil(total/perPage));
+  walletPage=Math.min(walletPage,pages);
+  const slice =_filteredWallet.slice((walletPage-1)*perPage, walletPage*perPage);
+  const tbody =document.getElementById('walletBody');
+  const offset=(walletPage-1)*perPage;
+
+  document.getElementById('wTblCount').textContent=total?total+' records':'No records';
+
+  if(!total){
+    tbody.innerHTML=`<tr class="empty-row"><td colspan="6">
+      <div class="empty-inner">
+        <svg width="44" height="44" fill="none" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" stroke="#4a6880" stroke-width="1.2"/></svg>
+        <p>No wallet transactions</p><small>Deposit a package to see records</small>
+      </div></td></tr>`;
+    document.getElementById('walletPagination').style.display='none';
+    return;
+  }
+
+  tbody.innerHTML=slice.map((r,i)=>{
+    const dt=new Date(r.timestamp);
+    const dtStr=dt.toLocaleDateString('en-ET',{month:'short',day:'numeric'})+' '+dt.toLocaleTimeString('en-ET',{hour:'2-digit',minute:'2-digit',hour12:true});
+    const actionLabel=r.action==='deposit_to_cashier'?'Deposit'
+      :r.action==='withdraw_from_cashier'?'Withdraw'
+      :r.action||r.event_type||'—';
+    const isUnlock=(r.role==='Admin'&&r.status==='success');
+    const amtHtml=r.amount>0
+      ?`<span class="tx-amount-pos">+${Number(r.amount).toLocaleString()} ብር</span>`
+      :`<span style="color:var(--muted);">—</span>`;
+    const badge=isUnlock
+      ?'<span class="badge badge-unlock">🔓 Unlock</span>'
+      :r.status==='success'
+      ?'<span class="badge badge-success">✓ Success</span>'
+      :'<span class="badge badge-failure">✕ Failed</span>';
+    const msg=r.message||'—';
+    return `<tr>
+      <td class="td-num">${offset+i+1}</td>
+      <td class="td-time">${dtStr}</td>
+      <td class="td-round">${actionLabel}</td>
+      <td>${amtHtml}</td>
+      <td>${badge}</td>
+      <td><span class="tx-msg" title="${msg.replace(/"/g,"&quot;")}">${msg}</span></td>
+    </tr>`;
+  }).join('');
+
+  renderPagination('walletPagination', pages, walletPage);
+}
+
+/* ════════════ ACTIVATION ACTIVITY ════════════ */
+function setActivityToday(){
+  const t=new Date().toISOString().split('T')[0];
+  document.getElementById('aDateFrom').value=t;
+  document.getElementById('aDateTo').value=t;
+  loadActivityReport();
+}
+
+function loadActivityReport(){
+  const from=new Date(document.getElementById('aDateFrom').value+'T00:00:00');
+  const to  =new Date(document.getElementById('aDateTo').value+'T23:59:59');
+  /* Activation activity = all wallet transactions (deposits = activation events) */
+  _filteredActivity=[..._walletTx].filter(r=>{
+    const d=new Date(r.timestamp);return d>=from&&d<=to;
+  }).reverse();
+  renderActivityStats(_filteredActivity);
+  activityPage=1;
+  renderActivityTable();
+}
+
+function renderActivityStats(rows){
+  const total  =rows.length;
+  const ok     =rows.filter(r=>r.status==='success'&&r.amount>0).length;
+  const fail   =rows.filter(r=>r.status==='failure').length;
+  const locked =rows.filter(r=>r.message&&r.message.includes('locked')).length;
+  document.getElementById('a-total').textContent=total;
+  document.getElementById('a-ok').textContent=ok;
+  document.getElementById('a-fail').textContent=fail;
+  document.getElementById('a-lock').textContent=locked;
+}
+
+function renderActivityTable(){
+  const perPage  =parseInt(document.getElementById('activityPerPage').value)||15;
+  const total    =_filteredActivity.length;
+  const pages    =Math.max(1,Math.ceil(total/perPage));
+  activityPage   =Math.min(activityPage,pages);
+  const slice    =_filteredActivity.slice((activityPage-1)*perPage, activityPage*perPage);
+  const tbody    =document.getElementById('activityBody');
+  const offset   =(activityPage-1)*perPage;
+
+  document.getElementById('aTblCount').textContent=total?total+' records':'No records';
+
+  if(!total){
+    tbody.innerHTML=`<tr class="empty-row"><td colspan="6">
+      <div class="empty-inner">
+        <svg width="44" height="44" fill="none" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" stroke="#4a6880" stroke-width="1.5"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="#4a6880" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <p>No activation records</p><small>Try activating a package key</small>
+      </div></td></tr>`;
+    document.getElementById('activityPagination').style.display='none';
+    return;
+  }
+
+  tbody.innerHTML=slice.map((r,i)=>{
+    const dt=new Date(r.timestamp);
+    const dtStr=dt.toLocaleDateString('en-ET',{month:'short',day:'numeric'})+' '+dt.toLocaleTimeString('en-ET',{hour:'2-digit',minute:'2-digit',hour12:true});
+
+    const isUnlock =(r.role==='Admin'&&r.status==='success');
+    const isLocked =(r.message&&(r.message.includes('locked after')||r.message.includes('🔒')));
+    const isSuccess=(r.status==='success'&&r.amount>0);
+    const isFail   =(r.status==='failure');
+
+    let typeBadge;
+    if(isUnlock)      typeBadge='<span class="badge badge-unlock">🔓 Unlock Reset</span>';
+    else if(isSuccess) typeBadge='<span class="badge badge-success">✓ Activated</span>';
+    else if(isLocked)  typeBadge='<span class="badge badge-failure">🔒 Lock Triggered</span>';
+    else if(isFail)    typeBadge='<span class="badge badge-failure">✕ Failed Attempt</span>';
+    else               typeBadge='<span class="badge badge-played">● Event</span>';
+
+    const amtHtml=r.amount>0
+      ?`<span class="tx-amount-pos">+${Number(r.amount).toLocaleString()} ብር</span>`
+      :`<span style="color:var(--muted);">—</span>`;
+
+    const resultBadge=isUnlock||isSuccess
+      ?'<span class="badge badge-success">✓</span>'
+      :'<span class="badge badge-failure">✕</span>';
+
+    const msg=r.message||'—';
+    return `<tr>
+      <td class="td-num">${offset+i+1}</td>
+      <td class="td-time">${dtStr}</td>
+      <td>${typeBadge}</td>
+      <td>${amtHtml}</td>
+      <td>${resultBadge}</td>
+      <td><span class="tx-msg" title="${msg.replace(/"/g,"&quot;")}">${msg}</span></td>
+    </tr>`;
+  }).join('');
+
+  renderPagination('activityPagination', pages, activityPage);
+}
+
+/* ════════════ PAGINATION RENDERER ════════════ */
+/* Named page-go helpers so onclick attrs stay HTML-safe */
+function _pgGame(p){gamePage=p;renderGameTable();}
+function _pgWallet(p){walletPage=p;renderWalletTable();}
+function _pgActivity(p){activityPage=p;renderActivityTable();}
+const _pgFns={gamePagination:'_pgGame',walletPagination:'_pgWallet',activityPagination:'_pgActivity'};
+
+function renderPagination(containerId, pages, current){
+  const el=document.getElementById(containerId);
+  if(pages<=1){el.style.display='none';return;}
+  el.style.display='flex';
+  const fn=_pgFns[containerId];
+
+  const show=new Set([1,pages,current,current-1,current+1].filter(p=>p>=1&&p<=pages));
+  const sorted=[...show].sort((a,b)=>a-b);
+
+  let nums='';
+  let prev=-1;
+  sorted.forEach(p=>{
+    if(prev!==-1&&p-prev>1) nums+='<span style="padding:6px 4px;color:var(--muted);">…</span>';
+    nums+=`<button class="pg-btn${p===current?' current':''}" onclick="${fn}(${p})">${p}</button>`;
+    prev=p;
+  });
+
+  el.innerHTML=`
+    <span class="pg-info">Page ${current} of ${pages}</span>
+    <div class="pg-btns">
+      <button class="pg-btn" onclick="${fn}(${current-1})" ${current===1?'disabled':''}>&#8592; Prev</button>
+      <div class="pg-num-group">${nums}</div>
+      <button class="pg-btn" onclick="${fn}(${current+1})" ${current===pages?'disabled':''}>Next &#8594;</button>
+    </div>`;
+}
+
+/* ════════════ HELPERS ════════════ */
+function setToday(){
+  const t=new Date().toISOString().split('T')[0];
+  document.getElementById('dateFrom').value=t;
+  document.getElementById('dateTo').value=t;
+  loadGameReport();
 }
 
 function exportCSV(){
-  if(!window._hist.length){alert('No data to export.');return;}
+  if(!_hist.length){alert('No data to export.');return;}
   let csv='Round,Date,Cards,Price,Revenue,Pattern,Status\n';
-  window._hist.forEach(g=>{
+  _hist.forEach(g=>{
     const rev=g.cards.length*g.price;
-    csv+=`${g.round},"${new Date(g.date).toLocaleString()}",${g.cards.length},${g.price},${rev},${PATT[g.pattern]||g.pattern},${g.status||'played'}\n`;
+    csv+=`${g.round},"${new Date(g.date).toLocaleString()}",${g.cards.length},${g.price},${rev},"${PATT[g.pattern]||g.pattern}",${g.status||'played'}\n`;
   });
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
