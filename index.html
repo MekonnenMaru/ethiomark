@@ -3134,88 +3134,67 @@
     _updateWinnersUI();
     $('#myModalcard').modal('show', { backdrop: 'static', keyboard: false });
 
-    const auto      = $('#settings_check_result').val()
-                   || document.getElementById('auto_check_result')?.textContent.trim()
-                   || 'manual';
-    const gbs       = $('#settings_good_bingo_sound').val()
-                   || document.getElementById('good_bingo_sound').innerText;
-    const isWin     = result.count_winning_line >= result.expected_pattern;
+    const auto  = $('#settings_check_result').val()
+               || document.getElementById('auto_check_result')?.textContent.trim()
+               || 'manual';
+    const gbs   = $('#settings_good_bingo_sound').val()
+               || document.getElementById('good_bingo_sound').innerText;
+    const isWin = result.count_winning_line >= result.expected_pattern;
 
-    const addWinBtn = document.getElementById('addwinner');
+    /* Hide all action buttons by default */
+    document.getElementById('notbingo')?.style.setProperty('display', 'none', 'important');
+    document.getElementById('goodbingo')?.style.setProperty('display', 'none', 'important');
+    document.getElementById('addwinner')?.style.setProperty('display', 'none', 'important');
 
-    if (auto === 'auto') {
-      document.getElementById('notbingo')?.style.setProperty('display', 'none', 'important');
-      document.getElementById('goodbingo')?.style.setProperty('display', 'none', 'important');
-      addWinBtn.style.display = 'none';
-      if (isWin) {
-        /* In auto mode: automatically add to winners list, play sound */
-        const gs2 = getGameState();
-        if (!gs2.winning_cards) gs2.winning_cards = [];
-        if (!gs2.winning_cards.includes(cn)) gs2.winning_cards.push(cn);
+    if (isWin) {
+      /* ── Winner: save immediately, celebrate, auto-close modal ── */
+      const gs2 = getGameState();
+      if (!gs2.winning_cards) gs2.winning_cards = [];
+      if (!gs2.winning_cards.includes(cn)) {
+        gs2.winning_cards.push(cn);
         saveGameState(gs2);
-        _updateWinnersUI();
-        celebrate();
-        setTimeout(() => celebrate(), 300);
-        setTimeout(() => celebrate(), 600);
-        const el = document.getElementById('canvas');
-        el.style.display      = 'block';
-        el.style.pointerEvents = 'none';
-        el.style.zIndex       = '9999';
-        el.style.position     = 'absolute';
-        let af = 'good.wav';
-        switch (gbs) {
-          case '0': af = 'good.wav';     break;
-          case '1': af = 'clapping.mp3'; break;
-          case '2': af = 'goodbingo.mp3'; break;
-        }
-        voices(af);
-        setTimeout(() => { el.style.display = 'none'; }, 3000);
-      } else {
-        voices('notgood.wav');
       }
+      _updateWinnersUI();
+
+      /* Confetti canvas */
+      const el = document.getElementById('canvas');
+      el.style.display       = 'block';
+      el.style.pointerEvents = 'none';
+      el.style.zIndex        = '9999';
+      el.style.position      = 'absolute';
+
+      /* Win sound */
+      let af = 'good.wav';
+      switch (gbs) {
+        case '0': af = 'good.wav';      break;
+        case '1': af = 'clapping.mp3';  break;
+        case '2': af = 'goodbingo.mp3'; break;
+      }
+      voices(af);
+      celebrate();
+      setTimeout(() => celebrate(), 300);
+      setTimeout(() => celebrate(), 600);
+      setTimeout(() => { el.style.display = 'none'; }, 3000);
+
+      /* Auto-close modal so cashier can check next card immediately */
+      setTimeout(() => { $('#myModalcard').modal('hide'); }, 3000);
+
     } else {
-      document.getElementById('notbingo')?.style.setProperty('display', 'inline-block', 'important');
-      document.getElementById('goodbingo')?.style.setProperty('display', 'inline-block', 'important');
-      /* Show "Add Winner" only if this card is a winner */
-      if (isWin) {
-        addWinBtn.style.setProperty('display', 'inline-block', 'important');
+      /* ── Not a winner ── */
+      voices('notgood.wav');
+      if (auto === 'manual') {
+        /* Manual mode: show NOT BINGO button so cashier can dismiss */
+        document.getElementById('notbingo')?.style.setProperty('display', 'inline-block', 'important');
       } else {
-        addWinBtn.style.setProperty('display', 'none', 'important');
+        /* Auto mode: close modal automatically */
+        setTimeout(() => { $('#myModalcard').modal('hide'); }, 1200);
       }
     }
   });
 
   /* ─── Post-result event handlers ─── */
   $(document).ready(function () {
-    /* Good Bingo — records current card as winner, keeps game going (same as Add Winner) */
-    $('#goodbingo').on('click', function () {
-      _addCurrentCardAsWinner();
-    });
-
-    /* Add Winner — records current card as winner, keeps game going */
-    $('#addwinner').on('click', function () {
-      _addCurrentCardAsWinner();
-    });
-
-    function _addCurrentCardAsWinner() {
-      if (!_checkedCardNo) return;
-      const gs = getGameState();
-      if (!gs.winning_cards) gs.winning_cards = [];
-      const cardNo = _checkedCardNo;
-      if (!gs.winning_cards.includes(cardNo)) {
-        gs.winning_cards.push(cardNo);
-        saveGameState(gs);
-        const total = gs.winning_cards.length;
-        showAlert('Card #' + cardNo + ' added as winner (' + total + ' total). Click Finish Round when done.', 'success');
-      } else {
-        showAlert('Card #' + cardNo + ' is already in the winners list.', 'warning');
-      }
-      _checkedCardNo = null;
-      $('#myModalcard').modal('hide');
-      _updateWinnersUI();
-    }
-
-    $('#notbingo').on('click',  function () { voices('notgood.wav'); $('#myModalcard').modal('hide'); });
+    $('#notbingo').on('click',  function () { $('#myModalcard').modal('hide'); });
     $('#addbingo').on('click',  function () { $('#myModalcard').modal('hide'); });
     $('#helpmodals').on('click', function () { $('#helpmodal').modal('hide'); });
 
