@@ -3146,24 +3146,19 @@
     document.getElementById('goodbingo')?.style.setProperty('display', 'none', 'important');
     document.getElementById('addwinner')?.style.setProperty('display', 'none', 'important');
 
-    if (isWin) {
-      /* ── Winner: save immediately, celebrate, auto-close modal ── */
+    function _celebrateWin(cardNo) {
       const gs2 = getGameState();
       if (!gs2.winning_cards) gs2.winning_cards = [];
-      if (!gs2.winning_cards.includes(cn)) {
-        gs2.winning_cards.push(cn);
+      if (!gs2.winning_cards.includes(cardNo)) {
+        gs2.winning_cards.push(cardNo);
         saveGameState(gs2);
       }
       _updateWinnersUI();
-
-      /* Confetti canvas */
       const el = document.getElementById('canvas');
       el.style.display       = 'block';
       el.style.pointerEvents = 'none';
       el.style.zIndex        = '9999';
       el.style.position      = 'absolute';
-
-      /* Win sound */
       let af = 'good.wav';
       switch (gbs) {
         case '0': af = 'good.wav';      break;
@@ -3175,26 +3170,61 @@
       setTimeout(() => celebrate(), 300);
       setTimeout(() => celebrate(), 600);
       setTimeout(() => { el.style.display = 'none'; }, 3000);
-
-      /* Auto-close modal so cashier can check next card immediately */
       setTimeout(() => { $('#myModalcard').modal('hide'); }, 3000);
+    }
 
-    } else {
-      /* ── Not a winner ── */
-      voices('notgood.wav');
-      if (auto === 'manual') {
-        /* Manual mode: show NOT BINGO button so cashier can dismiss */
-        document.getElementById('notbingo')?.style.setProperty('display', 'inline-block', 'important');
+    if (auto === 'auto') {
+      /* ── Auto mode: system decides ── */
+      if (isWin) {
+        _celebrateWin(cn);
       } else {
-        /* Auto mode: close modal automatically */
+        voices('notgood.wav');
         setTimeout(() => { $('#myModalcard').modal('hide'); }, 1200);
+      }
+    } else {
+      /* ── Manual mode: cashier decides with buttons ── */
+      document.getElementById('notbingo')?.style.setProperty('display', 'inline-block', 'important');
+      if (isWin) {
+        document.getElementById('goodbingo')?.style.setProperty('display', 'inline-block', 'important');
       }
     }
   });
 
   /* ─── Post-result event handlers ─── */
   $(document).ready(function () {
-    $('#notbingo').on('click',  function () { $('#myModalcard').modal('hide'); });
+    /* Manual mode: cashier confirms win → save + celebrate */
+    $('#goodbingo').on('click', function () {
+      if (!_checkedCardNo) return;
+      const gbs2 = $('#settings_good_bingo_sound').val()
+                || document.getElementById('good_bingo_sound').innerText;
+      const gs2 = getGameState();
+      if (!gs2.winning_cards) gs2.winning_cards = [];
+      if (!gs2.winning_cards.includes(_checkedCardNo)) {
+        gs2.winning_cards.push(_checkedCardNo);
+        saveGameState(gs2);
+      }
+      _updateWinnersUI();
+      const el = document.getElementById('canvas');
+      el.style.display       = 'block';
+      el.style.pointerEvents = 'none';
+      el.style.zIndex        = '9999';
+      el.style.position      = 'absolute';
+      let af = 'good.wav';
+      switch (gbs2) {
+        case '0': af = 'good.wav';      break;
+        case '1': af = 'clapping.mp3';  break;
+        case '2': af = 'goodbingo.mp3'; break;
+      }
+      voices(af);
+      celebrate();
+      setTimeout(() => celebrate(), 300);
+      setTimeout(() => celebrate(), 600);
+      setTimeout(() => { el.style.display = 'none'; }, 3000);
+      setTimeout(() => { $('#myModalcard').modal('hide'); }, 3000);
+      _checkedCardNo = null;
+    });
+
+    $('#notbingo').on('click',  function () { voices('notgood.wav'); $('#myModalcard').modal('hide'); });
     $('#addbingo').on('click',  function () { $('#myModalcard').modal('hide'); });
     $('#helpmodals').on('click', function () { $('#helpmodal').modal('hide'); });
 
