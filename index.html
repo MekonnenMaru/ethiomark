@@ -5,18 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ethiomark Bingo</title>
 
-  <!-- ─── Stylesheets (IDs allow light/dark swapping) ─── -->
-  <link rel="stylesheet" id="lightStyleSheet" href="bootstrap/css/style.css">
-  <link rel="stylesheet" id="modalStyleSheet" href="bootstrap/css/modal.css">
-  <link rel="stylesheet" id="giftStyleSheet"  href="bootstrap/css/gift-unboxing.css">
-  <link rel="stylesheet" id="ballStyleSheet"  href="bootstrap/css/ball.css">
-  <link rel="stylesheet" id="bingoStyleSheet" href="bootstrap/css/bingon.css">
-  <link rel="stylesheet" href="bootstrap/css/congura.css">
-  <link rel="stylesheet" href="cashier/right-menu.css">
-  <link rel="stylesheet" href="bootstrap/css/reg_card.css">
-  <link rel="stylesheet" href="cashier/side-nav.css">
-  <link rel="stylesheet" href="cashier/container.css">
-  <link rel="stylesheet" href="bootstrap/css/modern.css">
+  <!-- ─── Stylesheets ─── -->
+  <link rel="stylesheet" href="bootstrap/css/base.css">
+  <link rel="stylesheet" href="bootstrap/css/app.css">
   <link rel="stylesheet" href="bootstrap/css/themes.css">
 
   <!-- ─── Thin IDB wrapper (audio cache) ─── -->
@@ -65,13 +56,6 @@
     (function () {
       var t = localStorage.getItem('em_theme') || 'dark';
       document.documentElement.setAttribute('data-theme', t);
-      if (t === 'light') {
-        document.getElementById('lightStyleSheet').href = 'bootstrap/css/light/style.css';
-        document.getElementById('modalStyleSheet').href = 'bootstrap/css/light/modal.css';
-        document.getElementById('giftStyleSheet').href  = 'bootstrap/css/light/gift-unboxing.css';
-        document.getElementById('ballStyleSheet').href  = 'bootstrap/css/light/ball.css';
-        document.getElementById('bingoStyleSheet').href = 'bootstrap/css/light/bingon.css';
-      }
     })();
   </script>
 
@@ -1488,20 +1472,6 @@
     function emApplyTheme(t) {
       document.documentElement.setAttribute('data-theme', t);
       localStorage.setItem('em_theme', t);
-      /* light theme swaps CSS files; all others use dark base */
-      if (t === 'light') {
-        document.getElementById('lightStyleSheet').href = 'bootstrap/css/light/style.css';
-        document.getElementById('modalStyleSheet').href = 'bootstrap/css/light/modal.css';
-        document.getElementById('giftStyleSheet').href  = 'bootstrap/css/light/gift-unboxing.css';
-        document.getElementById('ballStyleSheet').href  = 'bootstrap/css/light/ball.css';
-        document.getElementById('bingoStyleSheet').href = 'bootstrap/css/light/bingon.css';
-      } else {
-        document.getElementById('lightStyleSheet').href = 'bootstrap/css/style.css';
-        document.getElementById('modalStyleSheet').href = 'bootstrap/css/modal.css';
-        document.getElementById('giftStyleSheet').href  = 'bootstrap/css/gift-unboxing.css';
-        document.getElementById('ballStyleSheet').href  = 'bootstrap/css/ball.css';
-        document.getElementById('bingoStyleSheet').href = 'bootstrap/css/bingon.css';
-      }
       /* update swatch active border */
       document.querySelectorAll('.em-swatch').forEach(function(btn) {
         btn.style.borderColor = (btn.getAttribute('data-theme') === t)

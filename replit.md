@@ -41,7 +41,9 @@ A fully client-side Bingo management and gaming system for the Ethiopian market,
 - `assets/images/bonus-removebg.png` — Bonus mode image shown in main modal when bonus is ON
 - `start.sh` — Starts a simple PHP file server (no DB, no PHP logic used)
 - `service-worker.js` — PWA service worker caching static assets
-- `bootstrap/css/` — Existing CSS assets (style.css, bingon.css, ball.css, modal.css, etc.)
+- `bootstrap/css/base.css` — All CSS custom properties (design tokens). Edit colors here only.
+- `bootstrap/css/app.css` — All component and layout rules for the game board (merged from the original 11 CSS files)
+- `bootstrap/css/themes.css` — Theme variable overrides per `[data-theme]` attribute
 - `bootstrap/js/confetti.browser.min.js` — Confetti animation library
 
 ## Game Flow
@@ -70,7 +72,7 @@ A fully client-side Bingo management and gaming system for the Ethiopian market,
 - **Apply**: Sets `data-theme` attribute on `<html>` element before page render (inline script in `<head>`)
 - **Scope**: Propagates automatically to `index.html`, `login.html`, `reg_new_game.html`, `report.html`, `keygen.html`
 - **Picker UI (index.html)**: 6 color swatches in the Settings panel; 🎨 button in top-right cycles through themes
-- **Light theme**: Also swaps 5 CSS files (`bootstrap/css/light/*`); all other themes use the dark base files + `themes.css` variable overrides
+- **Light theme**: Handled purely via `themes.css` CSS variable overrides — no file swapping. The old `light/` directory has been eliminated.
 - **Themes**: Dark (navy/cyan), Light (gray/white), Emerald (forest green), Purple (galaxy), Fire (crimson/orange), Gold (dark gold)
 
 ## Authentication / Login System
