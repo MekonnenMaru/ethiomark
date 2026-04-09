@@ -3199,73 +3199,33 @@
 
   /* ─── Post-result event handlers ─── */
   $(document).ready(function () {
-    /* ─── Build win opts (winners list + paid + on_call) ─── */
-    function _buildWinOpts(includeCurrentCard) {
-      const gs    = getGameState();
-      const drawn = (gs.randomstring || '').split(',').map(n => parseInt(n)).filter(n => !isNaN(n) && n > 0);
-      const on_call = drawn.length ? drawn[drawn.length - 1] : '';
-      const winners = [...(gs.winning_cards || [])];
-      if (includeCurrentCard && _checkedCardNo && !winners.includes(_checkedCardNo)) {
-        winners.push(_checkedCardNo);
-      }
-      const total_bet = (gs.cards || []).length * (gs.price || 0);
-      const paid      = Math.round(total_bet * 0.9);
-      return { winners, on_call, paid };
-    }
-
-    /* ─── Shared: confirm win, celebrate, advance round ─── */
-    function _confirmWin() {
-      const opts = _buildWinOpts(true);
-      saveGameToHistory('win', opts);
-      const gs       = getGameState();
-      const newRound = (gs.round || 1) + 1;
-      const today    = new Date().toISOString().split('T')[0];
-      saveGameState({
-        round: newRound, cards: [], pattern: 1, price: 0,
-        sound: gs.sound || 1, speed_range: gs.speed_range || 3,
-        randomstring: '', last_active_date: today, winning_cards: []
-      });
-      const el = document.getElementById('canvas');
-      el.style.display       = 'block';
-      el.style.pointerEvents = 'none';
-      el.style.zIndex        = '9999';
-      el.style.position      = 'absolute';
-      const gbs = $('#settings_good_bingo_sound').val()
-               || document.getElementById('good_bingo_sound').innerText;
-      let af = 'good.wav';
-      switch (gbs) {
-        case '0': af = 'good.wav';     break;
-        case '1': af = 'clapping.mp3'; break;
-        case '2': af = 'goodbingo.mp3'; break;
-      }
-      voices(af);
-      celebrate();
-      setTimeout(() => celebrate(), 300);
-      setTimeout(() => celebrate(), 600);
-      setTimeout(() => { el.style.display = 'none'; }, 3000);
-      /* After win animation — go to registration for next round */
-      setTimeout(() => { window.location.href = 'reg_new_game.html'; }, 3200);
-    }
-
-    /* Good Bingo — adds current card as winner, ends round */
+    /* Good Bingo — records current card as winner, keeps game going (same as Add Winner) */
     $('#goodbingo').on('click', function () {
-      _confirmWin();
+      _addCurrentCardAsWinner();
     });
 
     /* Add Winner — records current card as winner, keeps game going */
     $('#addwinner').on('click', function () {
+      _addCurrentCardAsWinner();
+    });
+
+    function _addCurrentCardAsWinner() {
       if (!_checkedCardNo) return;
       const gs = getGameState();
       if (!gs.winning_cards) gs.winning_cards = [];
-      if (!gs.winning_cards.includes(_checkedCardNo)) {
-        gs.winning_cards.push(_checkedCardNo);
+      const cardNo = _checkedCardNo;
+      if (!gs.winning_cards.includes(cardNo)) {
+        gs.winning_cards.push(cardNo);
         saveGameState(gs);
-        showAlert('Card #' + _checkedCardNo + ' added as winner. Keep checking cards.', 'success');
+        const total = gs.winning_cards.length;
+        showAlert('Card #' + cardNo + ' added as winner (' + total + ' total). Click Finish Round when done.', 'success');
+      } else {
+        showAlert('Card #' + cardNo + ' is already in the winners list.', 'warning');
       }
       _checkedCardNo = null;
       $('#myModalcard').modal('hide');
       _updateWinnersUI();
-    });
+    }
 
     /* Finish Round — ends round using all accumulated winners (no new card) */
     document.getElementById('btn-finish-round').addEventListener('click', function () {
