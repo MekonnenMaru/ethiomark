@@ -193,6 +193,7 @@ window.API = (() => {
     await EthiomarkDB.dbSaveLicense({
       machine_id: mid, packages: [], total_deposited: 0, total_revenue: 0,
       activation_attempts: 0, activation_locked: false, activation_locked_at: null,
+      unlock_nonce: 0,
     });
     return mid;
   }
@@ -203,6 +204,7 @@ window.API = (() => {
     return lic || {
       machine_id: null, packages: [], total_deposited: 0, total_revenue: 0,
       activation_attempts: 0, activation_locked: false, activation_locked_at: null,
+      unlock_nonce: 0,
     };
   }
 
@@ -362,23 +364,27 @@ window.API = (() => {
   }
 
   /**
-   * Verify an unlock code and reset the trial lock.
-   * Unlock code = first 8 chars of HMAC-SHA256(machineId, _ULS), uppercase.
+   * Verify a one-time unlock code and reset the trial lock.
+   * Unlock code = first 8 chars of HMAC-SHA256(machineId + ":" + nonce, _ULS), uppercase.
+   * On success: clears the lock AND increments unlock_nonce so the same code never works again.
    * Throws if the code is wrong.
    */
   async function unlockActivation(code) {
     code = (code || '').replace(/\s/g,'').toUpperCase();
-    const mid      = await getMachineId();
-    const expected = (await _hmacUnlock(mid)).substring(0, 8).toUpperCase();
+    const mid   = await getMachineId();
+    const lic   = await getLicenseInfo();
+    const nonce = lic.unlock_nonce ?? 0;
+
+    const expected = (await _hmacUnlock(mid + ':' + nonce)).substring(0, 8).toUpperCase();
     if (code !== expected)
       throw new Error('Invalid unlock code. Please contact your administrator.');
 
-    const lic = await getLicenseInfo();
     await EthiomarkDB.dbSaveLicense({
       ...lic,
       activation_attempts  : 0,
       activation_locked    : false,
       activation_locked_at : null,
+      unlock_nonce         : nonce + 1,
     });
 
     /* log unlock wallet transaction */
@@ -392,17 +398,28 @@ window.API = (() => {
       cashier_id : getSession() || '',
       partner_id : '',
       status     : 'success',
-      message    : 'Activation lock cleared with unlock code',
+      message    : 'Activation lock cleared with one-time unlock code (use #' + nonce + ')',
     }).catch(() => {});
   }
 
   /**
-   * Admin helper: compute the unlock code for a given machine ID.
+   * Admin helper: compute the one-time unlock code for a given machine ID + nonce.
    * Used in keygen.html — format: XXXXXXXX (8 hex chars, uppercase).
+   * nonce must match the machine's current unlock_nonce value.
    */
-  async function generateUnlockCode(machineId) {
+  async function generateUnlockCode(machineId, nonce) {
     machineId = machineId.replace(/-/g,'').trim().toUpperCase();
-    return (await _hmacUnlock(machineId)).substring(0, 8).toUpperCase();
+    nonce     = parseInt(nonce, 10) || 0;
+    return (await _hmacUnlock(machineId + ':' + nonce)).substring(0, 8).toUpperCase();
+  }
+
+  /**
+   * Return the current unlock nonce for display in the UI.
+   * The cashier shares this number with the admin when requesting an unlock code.
+   */
+  async function getUnlockNonce() {
+    const lic = await getLicenseInfo();
+    return lic.unlock_nonce ?? 0;
   }
 
   /** Record collected revenue (called when a game finishes). */
@@ -476,7 +493,7 @@ window.API = (() => {
     getMachineId, getLicenseInfo, getBalance,
     isLicensed, activatePackage, addRevenue,
     generateLicenseKey,
-    getActivationLockStatus, unlockActivation, generateUnlockCode,
+    getActivationLockStatus, unlockActivation, generateUnlockCode, getUnlockNonce,
     /* daily reset */
     checkAndResetDailyRound, stampActiveDate,
   };

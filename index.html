@@ -1193,8 +1193,25 @@
                 border-radius:16px; padding:20px;">
       <div style="font-size:11px; font-weight:700; color:rgba(255,152,0,0.7);
                   letter-spacing:1.2px; text-transform:uppercase; margin-bottom:10px;">
-        🔑 Enter Unlock Code from Admin
+        🔑 Enter One-Time Unlock Code from Admin
       </div>
+
+      <!-- Nonce display — cashier shares this number with admin -->
+      <div style="background:rgba(0,198,255,0.07); border:1px solid rgba(0,198,255,0.2);
+                  border-radius:12px; padding:12px 16px; margin-bottom:14px; text-align:center;">
+        <div style="font-size:10px; font-weight:700; color:rgba(0,198,255,0.55);
+                    letter-spacing:1.3px; text-transform:uppercase; margin-bottom:6px;">
+          📋 Tell your admin this Use # (required to generate your code)
+        </div>
+        <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
+          <span style="font-family:monospace; font-size:26px; font-weight:900;
+                       color:#00c6ff; letter-spacing:4px;">Use #&thinsp;<span id="pkg-unlock-nonce">0</span></span>
+        </div>
+        <div style="font-size:11px; color:rgba(255,255,255,0.3); margin-top:5px;">
+          Each code is valid only once — the number changes after every use
+        </div>
+      </div>
+
       <input id="pkg-unlock-input" type="text" maxlength="8"
              placeholder="e.g.  A3F92B1C"
              style="width:100%; background:rgba(255,255,255,0.06);
@@ -1945,6 +1962,10 @@
             trialBanner.style.display  = 'block';
             activateSec.style.display  = 'none';
             unlockSec.style.display    = 'block';
+            API.getUnlockNonce().then(n => {
+              const el = document.getElementById('pkg-unlock-nonce');
+              if (el) el.textContent = n;
+            }).catch(() => {});
             const inp = document.getElementById('pkg-unlock-input');
             if (inp) { inp.value = ''; inp.focus(); }
           } else {
@@ -2083,12 +2104,16 @@
         /* If now locked, flip UI to unlock section */
         if (e.message.startsWith('🔒 Activation locked after')) {
           setTimeout(() => {
-            document.getElementById('pkg-trial-banner').style.display    = 'block';
+            document.getElementById('pkg-trial-banner').style.display     = 'block';
             document.getElementById('pkg-activate-section').style.display = 'none';
             document.getElementById('pkg-unlock-section').style.display   = 'block';
-            document.getElementById('pkg-key-error').style.display         = 'none';
+            document.getElementById('pkg-key-error').style.display        = 'none';
             document.getElementById('pkg-unlock-input').value             = '';
             document.getElementById('pkg-unlock-input').focus();
+            API.getUnlockNonce().then(n => {
+              const el = document.getElementById('pkg-unlock-nonce');
+              if (el) el.textContent = n;
+            }).catch(() => {});
           }, 1200);
         }
       }

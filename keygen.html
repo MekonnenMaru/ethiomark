@@ -147,29 +147,41 @@ body{background:#07101f;color:#e3eaf6;font-family:'Segoe UI',Arial,sans-serif;mi
 
   <!-- Unlock code generator -->
   <div id="unlockCard" class="card">
-    <h3>🔐 Unlock Code Generator</h3>
+    <h3>🔐 One-Time Unlock Code Generator</h3>
     <p style="font-size:13px;color:#4a6880;margin-bottom:16px;line-height:1.6;">
-      When a cashier's activation is locked (5 failed attempts), enter their
-      Machine ID below to generate a one-time unlock code.
+      When a cashier's activation is locked (5 failed attempts), ask them for their
+      <strong style="color:#90caf9;">Machine ID</strong> and their
+      <strong style="color:#00c6ff;">Use #</strong> (both shown on their locked screen),
+      then generate the code below.
+      <br><br>
+      <span style="color:#ff9800;font-weight:700;">⚠ Each code works exactly once.</span>
+      After use the number changes — a new code is needed for the next lock event.
     </p>
     <div class="field">
       <label>Machine ID (from cashier's screen)</label>
       <input type="text" id="unlockMid" placeholder="e.g. 76058E59" maxlength="9"
              oninput="this.value=this.value.replace(/[^0-9A-Fa-f\-]/g,'').toUpperCase()">
-      <small>8 hex characters — same field shown on the Package overlay</small>
+      <small>8 hex characters — shown on the Package overlay</small>
     </div>
-    <button id="unlockBtn" onclick="generateUnlock()">🔓 Generate Unlock Code</button>
+    <div class="field">
+      <label>Use # (from cashier's screen)</label>
+      <input type="number" id="unlockNonce" placeholder="e.g. 0" min="0" value="0"
+             style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:2px;">
+      <small>The number shown next to "Use #" on the cashier's locked screen — increases by 1 after each unlock</small>
+    </div>
+    <button id="unlockBtn" onclick="generateUnlock()">🔓 Generate One-Time Unlock Code</button>
     <div class="unlock-out" id="unlockOut">
       <div style="font-size:11px;font-weight:700;color:rgba(255,152,0,.6);
                   letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px;">
-        Unlock Code — send this to the cashier
+        One-Time Unlock Code — send this to the cashier
       </div>
       <div class="unlock-code" id="unlockCode" onclick="copyText(this.textContent)"
            title="Click to copy">—</div>
       <div class="unlock-hint">
-        Click the code above to copy it. It is valid only for machine
-        <span id="unlockMidDisplay" style="color:#90caf9;font-weight:700;"></span>.
-        After they enter it, the lock resets and they can try again.
+        Click the code above to copy it. Valid <strong>once only</strong> for machine
+        <span id="unlockMidDisplay" style="color:#90caf9;font-weight:700;"></span>
+        at Use # <span id="unlockNonceDisplay" style="color:#00c6ff;font-weight:700;"></span>.
+        After entry the lock resets and the Use # increments — the same code will not work again.
       </div>
     </div>
   </div>
@@ -368,26 +380,35 @@ function copyText(txt) {
   });
 }
 
-/* ── Unlock code generator ── */
+/* ── Unlock code generator (nonce-based one-time code) ── */
 async function generateUnlock() {
   const midRaw = document.getElementById('unlockMid').value.replace(/-/g,'').trim().toUpperCase();
+  const nonce  = parseInt(document.getElementById('unlockNonce').value, 10);
+
   if (midRaw.length !== 8) {
     alert('Machine ID must be exactly 8 hex characters (e.g. 76058E59)');
     return;
   }
+  if (isNaN(nonce) || nonce < 0) {
+    alert('Use # must be 0 or a positive number (exactly as shown on the cashier screen).');
+    return;
+  }
+
   const btn = document.getElementById('unlockBtn');
   btn.disabled    = true;
   btn.textContent = 'Generating…';
   try {
-    const code = (await _hmacWith(UNLOCK_SECRET, midRaw)).substring(0, 8).toUpperCase();
-    document.getElementById('unlockCode').textContent        = code;
-    document.getElementById('unlockMidDisplay').textContent  = midRaw.match(/.{1,4}/g).join('-');
-    document.getElementById('unlockOut').style.display       = 'block';
+    const payload = midRaw + ':' + nonce;
+    const code    = (await _hmacWith(UNLOCK_SECRET, payload)).substring(0, 8).toUpperCase();
+    document.getElementById('unlockCode').textContent          = code;
+    document.getElementById('unlockMidDisplay').textContent    = midRaw.match(/.{1,4}/g).join('-');
+    document.getElementById('unlockNonceDisplay').textContent  = nonce;
+    document.getElementById('unlockOut').style.display         = 'block';
   } catch(e) {
     alert('Error: ' + e.message);
   }
   btn.disabled    = false;
-  btn.textContent = '🔓 Generate Unlock Code';
+  btn.textContent = '🔓 Generate One-Time Unlock Code';
 }
 
 /* ── Export JSON ── */
