@@ -857,14 +857,11 @@
 
     const gi          = document.getElementById('modal-game-info');
     const noCardsView = document.getElementById('modal-no-cards-view');
-    const imgCard     = document.getElementById('selected-numbers-container-img');
-    /* image is always shown — make sure it's visible */
-    if (imgCard) imgCard.style.display = '';
 
     if (cards.length > 0) {
-      /* ── Cards registered: show stats, hide title ── */
-      if (gi)          gi.style.display          = 'block';
+      /* ── Cards registered: show stats only, hide title + image ── */
       if (noCardsView) noCardsView.style.display = 'none';
+      if (gi)          gi.style.display          = 'block';
 
       const gs      = getGameState();
       const pn      = patternNames[gs.pattern || 1] || ('Pattern ' + (gs.pattern || 1));
@@ -882,9 +879,9 @@
       const mybtn = document.getElementById('mybtn');
       if (mybtn) { mybtn.style.opacity = ''; mybtn.title = ''; }
     } else {
-      /* ── No cards: show title, hide stats ── */
+      /* ── No cards: show title + image, hide stats ── */
       if (gi)          gi.style.display          = 'none';
-      if (noCardsView) noCardsView.style.display = 'block';
+      if (noCardsView) noCardsView.style.display = 'flex';
 
       const mybtn = document.getElementById('mybtn');
       if (mybtn) { mybtn.style.opacity = '0.45'; mybtn.title = 'Register cards first'; }
@@ -1740,18 +1737,18 @@
 
         <div class="modal-body">
 
-          <!-- ① Title: shown only when NO cards registered -->
-          <div id="modal-no-cards-view" class="em-modal-title">ኢትዮ-ማርክ ቢንጎ</div>
-
-          <!-- ② Image: always visible -->
-          <div class="em-ad-strip" id="modal-media-area">
-            <img id="selected-numbers-container-img" src="assets/images/card1.png"
-                 onerror="this.style.display='none'">
-            <img id="bonus-modal-img" src="assets/images/bonus-removebg.png"
-                 style="display:none;" onerror="this.style.display='none'">
+          <!-- ① NO-CARDS STATE: title + image (hidden together when cards registered) -->
+          <div id="modal-no-cards-view" style="display:flex; flex-direction:column; align-items:center; width:100%; gap:10px;">
+            <div class="em-modal-title">ኢትዮ-ማርክ ቢንጎ</div>
+            <div class="em-ad-strip" id="modal-media-area">
+              <img id="selected-numbers-container-img" src="assets/images/card1.png"
+                   onerror="this.style.display='none'">
+              <img id="bonus-modal-img" src="assets/images/bonus-removebg.png"
+                   style="display:none;" onerror="this.style.display='none'">
+            </div>
           </div>
 
-          <!-- ③ ደራሽ stats: shown only when cards ARE registered -->
+          <!-- ② CARDS-REGISTERED STATE: ደራሽ stats only (hidden when no cards) -->
           <div id="modal-game-info" style="display:none; width:100%;">
             <div id="amount"></div>
             <div class="em-stats-grid">
