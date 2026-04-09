@@ -863,9 +863,18 @@
       if (noCardsView) noCardsView.style.display = 'none';
       if (gi)          gi.style.display          = 'block';
 
-      const revenue = cards.length * (price || 0);
-      const miRev   = document.getElementById('mi-revenue');
-      if (miRev) miRev.textContent = revenue.toLocaleString() + ' ብር';
+      const total_bet  = cards.length * (price || 0);
+      const profit_pct = parseInt(document.getElementById('profit')?.innerText) || 0;
+      let   derash     = total_bet;
+      if (total_bet >= 11) {
+        let house_profit = total_bet * profit_pct / 100;
+        const ld = house_profit % 10;
+        house_profit = house_profit - ld + (ld > 5 ? 10 : 0);
+        if (house_profit < 10) house_profit = 10;
+        derash = total_bet - house_profit;
+      }
+      const miRev = document.getElementById('mi-revenue');
+      if (miRev) miRev.textContent = derash.toLocaleString() + ' ብር';
 
       const mybtn = document.getElementById('mybtn');
       if (mybtn) { mybtn.style.opacity = ''; mybtn.title = ''; }
@@ -974,27 +983,31 @@
       if (bb) bb.style.display = 'none';
     }
 
-    /* Calculate prize amount */
+    /* Calculate prize amount (ደራሽ = total_bet − house_profit) */
     const dr = n * s;
-    let total = 0;
-    if (profit == 0) {
-      if      (dr >  120 && dr < 320)  total = dr * 0.20;
-      else if (dr >= 320 && dr < 800)  total = dr * 0.22;
-      else if (dr >= 800 && dr < 1000) total = dr * 0.25;
-      else if (dr >= 1000)             total = dr * 0.30;
-      else                             total = dr * 0.20;
-    } else {
-      total = dr * profit / 100;
-    }
-
     let roundedTotal = 0;
-    if (lock_d == 0) {
-      const ld     = total % 10;
-      roundedTotal = total - ld + (ld > 5 ? 10 : 0);
-    } else {
-      roundedTotal = total;
+    if (dr >= 11) {
+      /* Only take profit when total bet is 11 ብር or more */
+      let total = 0;
+      if (profit == 0) {
+        if      (dr >  120 && dr < 320)  total = dr * 0.20;
+        else if (dr >= 320 && dr < 800)  total = dr * 0.22;
+        else if (dr >= 800 && dr < 1000) total = dr * 0.25;
+        else if (dr >= 1000)             total = dr * 0.30;
+        else                             total = dr * 0.20;
+      } else {
+        total = dr * profit / 100;
+      }
+      if (lock_d == 0) {
+        const ld = total % 10;
+        roundedTotal = total - ld + (ld > 5 ? 10 : 0);
+      } else {
+        roundedTotal = total;
+      }
+      /* Minimum 10 ብር profit when bet is large enough */
+      if (roundedTotal < 10) roundedTotal = 10;
     }
-    if (roundedTotal < 10 && total <= 10) roundedTotal = 10;
+    /* If dr <= 10: roundedTotal stays 0 → ደራሽ = 100% of total bet */
 
     const income = dr;
     if (n != 0 && s != 0 && b > 0) {
@@ -2799,8 +2812,16 @@
     if (winners.length) {
       const drawn     = (gs.randomstring || '').split(',').map(n => parseInt(n)).filter(n => !isNaN(n) && n > 0);
       const on_call   = drawn.length ? drawn[drawn.length - 1] : '';
-      const total_bet = (gs.cards || []).length * (gs.price || 0);
-      const paid      = Math.round(total_bet * 0.9);
+      const total_bet  = (gs.cards || []).length * (gs.price || 0);
+      const profit_pct = parseInt(document.getElementById('profit')?.innerText) || 0;
+      let   paid       = total_bet; /* default: 100% when bet <= 10 */
+      if (total_bet >= 11) {
+        let house_profit = total_bet * profit_pct / 100;
+        const ld = house_profit % 10;
+        house_profit = house_profit - ld + (ld > 5 ? 10 : 0);
+        if (house_profit < 10) house_profit = 10;
+        paid = total_bet - house_profit;
+      }
       saveGameToHistory('win', { winners, on_call, paid });
     } else {
       saveGameToHistory('completed');
