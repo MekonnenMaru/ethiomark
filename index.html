@@ -2551,36 +2551,24 @@
     cells[0].setAttribute('t', a);
   }
 
-  /* ── Grid shuffle scanner: rapidly flashes all 75 cells in random order ── */
+  /* ── Grid shuffle scanner: randomly flashes cells for 7 seconds ── */
   function shuffleGridVisual() {
-    /* Collect all 75 numbox cells */
     const allCells = Array.from(document.querySelectorAll('.numbox'));
-
-    /* Fisher-Yates shuffle of the cell references */
-    for (let i = allCells.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [allCells[i], allCells[j]] = [allCells[j], allCells[i]];
-    }
-
-    /* Flash each cell in rapid sequence */
-    const litMs  = 55;   /* how long each cell stays highlighted */
-    const stepMs = 22;   /* interval between flashing next cell(s) */
-    const batch  = 2;    /* how many cells light up per tick */
-    let   idx    = 0;
+    const totalMs  = 7000;  /* match shuffle sound length */
+    const stepMs   = 22;    /* interval per tick */
+    const litMs    = 60;    /* how long each flash stays on */
+    const batch    = 2;     /* cells lit per tick */
+    const endsAt   = Date.now() + totalMs;
 
     const scan = setInterval(() => {
-      /* Light up the next batch */
+      if (Date.now() >= endsAt) { clearInterval(scan); return; }
       for (let b = 0; b < batch; b++) {
-        const cell = allCells[idx + b];
-        if (!cell) break;
-        /* Don't flash cells that are already drawn (keep their state clean) */
+        const cell = allCells[Math.floor(Math.random() * allCells.length)];
         if (!cell.classList.contains('drawn')) {
           cell.classList.add('grid-scanning');
           setTimeout(() => cell.classList.remove('grid-scanning'), litMs);
         }
       }
-      idx += batch;
-      if (idx >= allCells.length) clearInterval(scan);
     }, stepMs);
   }
 
@@ -2599,7 +2587,7 @@
     /* Immediately reshuffle the visible 75-ball grid */
     shuffleGridVisual();
 
-    const steps  = 32;
+    const steps  = 90;   /* 90 × 78ms ≈ 7 s — matches shuffle sound */
     const stepMs = 78;
     let step     = 0;
     const anim   = setInterval(() => {
