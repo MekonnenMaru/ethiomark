@@ -11,6 +11,32 @@ A fully client-side Bingo management and gaming system for the Ethiopian market,
 - **Audio**: Fetched from `/assets/sound/` voice directories and cached in IndexedDB
 - **PWA**: `service-worker.js` caches static assets for offline play; `manifest.json` for install
 
+### Backend switching
+
+Two complete API drivers with identical `window.API` surfaces:
+
+| File | Backend | When to use |
+|---|---|---|
+| `api.js` | IndexedDB (browser) | Default — no server needed |
+| `api_php.js` | MySQL via `api.php` | XAMPP / multi-device |
+
+**To switch to PHP/MySQL:** in every HTML file change one line:
+```html
+<!-- from: -->  <script src="api.js"></script>
+<!-- to:   -->  <script src="api_php.js"></script>
+```
+Files to update: `index.html`, `login.html`, `reg_new_game.html`, `report.html`, `keygen.html`
+
+**`api.php` setup (XAMPP):**
+1. Start Apache + MySQL in XAMPP Control Panel
+2. Open `phpMyAdmin` — create database `ethiomark_bingo` (or let `api.php` auto-create it)
+3. Edit `DB_USER`/`DB_PASS` at the top of `api.php` if needed (defaults: root / empty)
+4. Tables are auto-created on first page load
+
+Cards (4,470 records) remain bundled in `cards_data.js` in both modes — never stored in MySQL.
+Session stays in `localStorage.em_cashier_id` in both modes.
+HMAC key validation runs client-side in both modes — `keygen.html` works unchanged.
+
 ### API layer (`api.js`) surface
 
 | Group | Methods |
