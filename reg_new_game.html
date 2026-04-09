@@ -331,6 +331,8 @@ html, body {
   flex-shrink: 0;
 }
 .btn-go:hover { transform: translateY(-2px); box-shadow: 0 0 32px rgba(0,200,83,0.5); }
+.btn-go:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* scrollbars */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -561,9 +563,8 @@ async function init() {
   const gs = getGameState();
   document.getElementById('roundDisplay').textContent = gs.round || 1;
 
-  // Only restore cards if a game is actively in progress (has drawn numbers)
-  // Prevents leftover cards from previous finished games from showing as pre-selected
-  if (gs.cards && gs.cards.length && gs.randomstring) gs.cards.forEach(n => selectedCards.add(n));
+  // Always restore previously registered cards so the cashier can continue from where they left off
+  if (gs.cards && gs.cards.length) gs.cards.forEach(n => selectedCards.add(n));
   if (gs.pattern)     document.getElementById('bp_pattern').value = gs.pattern;
   if (gs.price)       document.getElementById('bp_price').value   = gs.price;
   if (gs.sound)       document.getElementById('bp_voice').value   = gs.sound;
@@ -665,19 +666,34 @@ function clearSelection() {
   updateStats();
 }
 
-function saveAndGo() {
+async function saveAndGo() {
   if (selectedCards.size === 0) { alert('Please select at least one card.'); return; }
+
+  const btn = document.querySelector('.btn-go');
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;animation:spin 0.8s linear infinite;">⏳</span> Saving…';
+
   const gs = getGameState();
-  saveGameState({
-    round:        gs.round || 1,
+  const newState = {
+    round:        gs.round        || 1,
     cards:        Array.from(selectedCards).sort((a, b) => a - b),
     pattern:      parseInt(document.getElementById('bp_pattern').value) || 1,
     price:        parseInt(document.getElementById('bp_price').value)   || 10,
     sound:        parseInt(document.getElementById('bp_voice').value)   || 1,
     speed_range:  parseInt(document.getElementById('bp_speed').value)   || 3,
     randomstring: gs.randomstring  || '',
-    locked_cards: gs.locked_cards  || []
-  });
+    locked_cards: gs.locked_cards  || [],
+    winning_cards: gs.winning_cards || [],
+  };
+
+  try {
+    await API.saveGameState(newState);
+    window._gameStateCache = newState;
+  } catch(e) {
+    /* fallback: sync path still works */
+    window._gameStateCache = newState;
+  }
+
   window.location.href = 'index.html';
 }
 

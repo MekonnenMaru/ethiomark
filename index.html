@@ -879,6 +879,22 @@
       if (gi)        gi.style.display        = 'none';
       if (mediaArea) mediaArea.style.display = 'flex';
       if (imgCard)   imgCard.style.display   = '';
+      /* Show hint when no cards registered */
+      const hint = document.getElementById('no-cards-hint');
+      if (hint) hint.style.display = 'block';
+      const mybtn = document.getElementById('mybtn');
+      if (mybtn) {
+        mybtn.style.opacity = '0.45';
+        mybtn.title = 'Register cards first';
+      }
+    }
+
+    /* Always hide hint if cards exist */
+    if (cards.length > 0) {
+      const hint = document.getElementById('no-cards-hint');
+      if (hint) hint.style.display = 'none';
+      const mybtn = document.getElementById('mybtn');
+      if (mybtn) { mybtn.style.opacity = ''; mybtn.title = ''; }
     }
   }
 
@@ -922,6 +938,14 @@
 
   function startbingo() {
     if (hasBeenCalled) return false;
+
+    /* Guard: require a registered game (cards must be set up first) */
+    const gs = getGameState();
+    if (!gs || !gs.cards || !gs.cards.length) {
+      showAlert('ምዝገባ አልተደረገም — መጀመሪያ ካርዶችን ይመዝግቡ። (No cards registered — please register cards first.)', 'danger');
+      return false;
+    }
+
     hasBeenCalled = true;
 
     /* Check package balance before allowing game to start */
@@ -1759,6 +1783,16 @@
              style="color:#ff5252; font-size:15px; min-height:18px; text-align:center;
                     animation:blink 2s infinite; margin-top:8px;">
           </p>
+          <!-- Shown only when no cards are registered -->
+          <div id="no-cards-hint" style="display:none; background:rgba(255,82,82,0.1);
+               border:1px solid rgba(255,82,82,0.35); border-radius:12px;
+               padding:10px 16px; margin:8px 0; text-align:center;
+               font-size:13px; font-weight:700; color:#ff8a80; line-height:1.5;">
+            ⚠️ ምዝገባ አልተደረገም<br>
+            <span style="font-size:11.5px; color:#90a4ae; font-weight:600;">
+              Click <b style="color:#64b5f6;">🎴 Register Card</b> above to set up cards before starting.
+            </span>
+          </div>
           <button type="submit" id="mybtn" onclick="return startbingo();" style="margin-top:10px;">
             ▶ ጀምር
           </button>
