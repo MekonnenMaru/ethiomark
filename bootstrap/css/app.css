@@ -1095,14 +1095,15 @@ h1 { margin: 0; }
   align-items: stretch;
   justify-content: space-between;
   width: 100%;
-  gap: 4px;
-  padding: 3px 8px;
+  gap: 5px;
+  padding: 3px 10px;
   box-sizing: border-box;
 }
 
 .numrow {
   flex: 1;
   min-width: 0;
+  max-width: 58px;
   display: flex;
   justify-content: center;
   align-items: center;
