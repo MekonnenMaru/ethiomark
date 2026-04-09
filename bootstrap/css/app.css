@@ -1557,30 +1557,29 @@ h1 { margin: 0; }
   object-fit: contain;
 }
 
-/* ③ ደራሽ stats grid — shown when cards registered */
-#myModal .em-stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 8px;
+/* ③ ደራሽ revenue display — shown when cards registered */
+#myModal .em-derash-revenue-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 0 4px;
   width: 100%;
 }
-.em-stat-cell {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid;
-  border-radius: 10px;
-  padding: 12px 8px;
-  text-align: center;
-}
-.em-stat-label {
-  font-size: 11px;
+#myModal .em-derash-tag {
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  margin-bottom: 6px;
+  color: rgba(200,120,255,0.85);
 }
-.em-stat-val {
-  font-size: 16px;
+#myModal .em-derash-amount {
+  font-size: 36px;
   font-weight: 900;
+  color: #c878ff;
+  text-shadow: 0 0 20px rgba(200,120,255,0.5), 0 2px 8px rgba(0,0,0,0.5);
+  letter-spacing: 1px;
+  line-height: 1.1;
 }
 
 .em-btn-report {

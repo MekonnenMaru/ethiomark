@@ -859,29 +859,20 @@
     const noCardsView = document.getElementById('modal-no-cards-view');
 
     if (cards.length > 0) {
-      /* ── Cards registered: show stats only, hide title + image ── */
+      /* ── Cards registered: hide title, show ደራሽ revenue; image stays ── */
       if (noCardsView) noCardsView.style.display = 'none';
       if (gi)          gi.style.display          = 'block';
 
-      const gs      = getGameState();
-      const pn      = patternNames[gs.pattern || 1] || ('Pattern ' + (gs.pattern || 1));
       const revenue = cards.length * (price || 0);
-
-      const miPat   = document.getElementById('mi-pattern');
-      const miCards = document.getElementById('mi-cards');
-      const miPrice = document.getElementById('mi-price');
       const miRev   = document.getElementById('mi-revenue');
-      if (miPat)   miPat.textContent   = pn;
-      if (miCards) miCards.textContent = cards.length;
-      if (miPrice) miPrice.textContent = (price || 0) + ' ብር';
-      if (miRev)   miRev.textContent   = revenue.toLocaleString() + ' ብር';
+      if (miRev) miRev.textContent = revenue.toLocaleString() + ' ብር';
 
       const mybtn = document.getElementById('mybtn');
       if (mybtn) { mybtn.style.opacity = ''; mybtn.title = ''; }
     } else {
-      /* ── No cards: show title + image, hide stats ── */
+      /* ── No cards: show brand title; image stays ── */
       if (gi)          gi.style.display          = 'none';
-      if (noCardsView) noCardsView.style.display = 'flex';
+      if (noCardsView) noCardsView.style.display = 'block';
 
       const mybtn = document.getElementById('mybtn');
       if (mybtn) { mybtn.style.opacity = '0.45'; mybtn.title = 'Register cards first'; }
@@ -1737,37 +1728,23 @@
 
         <div class="modal-body">
 
-          <!-- ① NO-CARDS STATE: title + image (hidden together when cards registered) -->
-          <div id="modal-no-cards-view" style="display:flex; flex-direction:column; align-items:center; width:100%; gap:10px;">
-            <div class="em-modal-title">ኢትዮ-ማርክ ቢንጎ</div>
-            <div class="em-ad-strip" id="modal-media-area">
-              <img id="selected-numbers-container-img" src="assets/images/card1.png"
-                   onerror="this.style.display='none'">
-              <img id="bonus-modal-img" src="assets/images/bonus-removebg.png"
-                   style="display:none;" onerror="this.style.display='none'">
-            </div>
+          <!-- ① Image: ALWAYS visible -->
+          <div class="em-ad-strip" id="modal-media-area">
+            <img id="selected-numbers-container-img" src="assets/images/card1.png"
+                 onerror="this.style.display='none'">
+            <img id="bonus-modal-img" src="assets/images/bonus-removebg.png"
+                 style="display:none;" onerror="this.style.display='none'">
           </div>
 
-          <!-- ② CARDS-REGISTERED STATE: ደራሽ stats only (hidden when no cards) -->
-          <div id="modal-game-info" style="display:none; width:100%;">
+          <!-- ② NO-CARDS STATE: big brand title only -->
+          <div id="modal-no-cards-view" class="em-modal-title">ኢትዮ-ማርክ ቢንጎ</div>
+
+          <!-- ③ CARDS-REGISTERED STATE: ደራሽ revenue display only -->
+          <div id="modal-game-info" style="display:none; width:100%; text-align:center;">
             <div id="amount"></div>
-            <div class="em-stats-grid">
-              <div class="em-stat-cell" style="border-color:rgba(0,198,255,0.35);">
-                <div class="em-stat-label" style="color:rgba(0,198,255,0.8);">Pattern</div>
-                <div class="em-stat-val"   style="color:#00c6ff;" id="mi-pattern">—</div>
-              </div>
-              <div class="em-stat-cell" style="border-color:rgba(0,230,118,0.35);">
-                <div class="em-stat-label" style="color:rgba(0,230,118,0.8);">Cards</div>
-                <div class="em-stat-val"   style="color:#00e676;" id="mi-cards">0</div>
-              </div>
-              <div class="em-stat-cell" style="border-color:rgba(255,215,64,0.35);">
-                <div class="em-stat-label" style="color:rgba(255,215,64,0.8);">Price</div>
-                <div class="em-stat-val"   style="color:#ffd740;" id="mi-price">0 ብር</div>
-              </div>
-              <div class="em-stat-cell" style="border-color:rgba(200,120,255,0.35);">
-                <div class="em-stat-label" style="color:rgba(200,120,255,0.8);">Revenue</div>
-                <div class="em-stat-val"   style="color:#c878ff;" id="mi-revenue">0 ብር</div>
-              </div>
+            <div class="em-derash-revenue-wrap">
+              <span class="em-derash-tag">ደራሽ</span>
+              <span class="em-derash-amount" id="mi-revenue">0 ብር</span>
             </div>
           </div>
 
