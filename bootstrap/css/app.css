@@ -764,14 +764,15 @@ input[type="number"].bonus-input { width: 80px; }
 
 /* bingo grid (numbox) */
 .txtbox {
-  display: block !important;
-  flex: 0 0 52px !important;
-  width: 52px !important;
-  height: 52px !important;
-  line-height: 52px !important;
-  text-align: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  align-self: stretch !important;
+  aspect-ratio: 1 !important;
+  min-width: 36px !important;
   border-radius: 10px !important;
-  font-size: 24px !important;
+  font-size: 22px !important;
   font-weight: 900 !important;
   letter-spacing: 1px !important;
   color: #fff !important;
@@ -780,14 +781,14 @@ input[type="number"].bonus-input { width: 80px; }
 }
 
 .numbox {
-  display: block !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   width: 100% !important;
-  height: 52px !important;
-  line-height: 52px !important;
-  text-align: center !important;
+  aspect-ratio: 1 !important;
   border-radius: 7px !important;
   font-weight: 700 !important;
-  font-size: 22px !important;
+  font-size: 20px !important;
   margin: 0 !important;
   background: rgba(255,255,255,0.11) !important;
   border: 1.5px solid rgba(255,255,255,0.28) !important;
@@ -1091,11 +1092,11 @@ h1 { margin: 0; }
 
 .callb {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
   width: 100%;
-  gap: 2px;
-  padding: 2px 4px;
+  gap: 4px;
+  padding: 3px 8px;
   box-sizing: border-box;
 }
 
