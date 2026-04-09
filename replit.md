@@ -6,7 +6,7 @@ A fully client-side Bingo management and gaming system for the Ethiopian market,
 
 - **Frontend**: Single `index.html` with embedded CSS + JavaScript (no framework)
 - **API layer**: `api.js` — the only interface the frontend talks to. Wraps all data operations behind `window.API`. Swap to a REST backend (PHP/Node.js) by replacing only this file; zero HTML changes required.
-- **Storage driver**: `db.js` — IndexedDB implementation backing `api.js`. Stores: cards, game_state, app_settings, game_history, cashiers, license (DB_VERSION=5).
+- **Storage driver**: `db.js` — IndexedDB implementation backing `api.js`. Stores: cards, game_state, app_settings, game_history, cashiers, license, transaction, wallettransaction (DB_VERSION=6).
 - **Card data**: `cards_data.js` — 4,470 bingo cards (cards 1–628 across categories) in compact format
 - **Audio**: Fetched from `/assets/sound/` voice directories and cached in IndexedDB
 - **PWA**: `service-worker.js` caches static assets for offline play; `manifest.json` for install

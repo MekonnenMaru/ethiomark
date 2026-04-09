@@ -51,6 +51,14 @@ body{background:#07101f;color:#e3eaf6;font-family:'Segoe UI',Arial,sans-serif;mi
 .copy-hint{position:absolute;top:12px;right:14px;font-size:10px;color:#2d4a68;font-weight:700;letter-spacing:.5px;}
 .copy-toast{display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#00e676;color:#07101f;padding:10px 22px;border-radius:50px;font-size:13px;font-weight:900;z-index:9999;}
 
+/* ── unlock tool ── */
+#unlockCard{margin-bottom:20px;}
+#unlockCard .unlock-out{display:none;background:#07101f;border:2px solid rgba(255,152,0,.35);border-radius:14px;padding:16px 20px;margin-top:12px;}
+#unlockCard .unlock-code{font-family:monospace;font-size:28px;font-weight:900;color:#ffd740;letter-spacing:6px;cursor:pointer;user-select:all;}
+#unlockCard .unlock-hint{font-size:11px;color:#4a6880;margin-top:6px;}
+#unlockBtn{width:100%;padding:13px;background:linear-gradient(135deg,#ff6f00,#ff9800);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:900;cursor:pointer;transition:all .2s;}
+#unlockBtn:hover{opacity:.88;}
+
 /* ── history ── */
 #histWrap{display:none;}
 .hist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
@@ -137,6 +145,35 @@ body{background:#07101f;color:#e3eaf6;font-family:'Segoe UI',Arial,sans-serif;mi
     <div class="key-meta" id="keyMeta"></div>
   </div>
 
+  <!-- Unlock code generator -->
+  <div id="unlockCard" class="card">
+    <h3>🔐 Unlock Code Generator</h3>
+    <p style="font-size:13px;color:#4a6880;margin-bottom:16px;line-height:1.6;">
+      When a cashier's activation is locked (5 failed attempts), enter their
+      Machine ID below to generate a one-time unlock code.
+    </p>
+    <div class="field">
+      <label>Machine ID (from cashier's screen)</label>
+      <input type="text" id="unlockMid" placeholder="e.g. 76058E59" maxlength="9"
+             oninput="this.value=this.value.replace(/[^0-9A-Fa-f\-]/g,'').toUpperCase()">
+      <small>8 hex characters — same field shown on the Package overlay</small>
+    </div>
+    <button id="unlockBtn" onclick="generateUnlock()">🔓 Generate Unlock Code</button>
+    <div class="unlock-out" id="unlockOut">
+      <div style="font-size:11px;font-weight:700;color:rgba(255,152,0,.6);
+                  letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px;">
+        Unlock Code — send this to the cashier
+      </div>
+      <div class="unlock-code" id="unlockCode" onclick="copyText(this.textContent)"
+           title="Click to copy">—</div>
+      <div class="unlock-hint">
+        Click the code above to copy it. It is valid only for machine
+        <span id="unlockMidDisplay" style="color:#90caf9;font-weight:700;"></span>.
+        After they enter it, the lock resets and they can try again.
+      </div>
+    </div>
+  </div>
+
   <!-- session history -->
   <div id="histWrap" class="card">
     <div class="hist-head">
@@ -165,15 +202,20 @@ body{background:#07101f;color:#e3eaf6;font-family:'Segoe UI',Arial,sans-serif;mi
 
 <script>
 /* ── HMAC-SHA256 (SubtleCrypto) ── */
-const SECRET = 'EMbingo!X9pQ#2025-EthioMark-Lic3ns3-S3cr3t@Key';
-const ADMIN_MD5 = '9f9237baae65e39a07539308888c24cb'; /* MD5 of EthioAdmin@2025 */
+const SECRET        = 'EMbingo!X9pQ#2025-EthioMark-Lic3ns3-S3cr3t@Key';
+const UNLOCK_SECRET = 'EMbingo!UNLOCK@2025-EthioMark-Unl0ck-S3cr3t';
+const ADMIN_MD5     = '9f9237baae65e39a07539308888c24cb'; /* MD5 of EthioAdmin@2025 */
 
-async function hmac8(data) {
+async function _hmacWith(secret, data) {
   const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey('raw', enc.encode(SECRET),
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret),
     {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
   const sig = await crypto.subtle.sign('HMAC', key, enc.encode(data));
-  return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('').substring(0,8).toUpperCase();
+  return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function hmac8(data) {
+  return (await _hmacWith(SECRET, data)).substring(0,8).toUpperCase();
 }
 
 async function generateKey(mid, sn, amt) {
@@ -324,6 +366,28 @@ function copyText(txt) {
     t.style.display = 'block';
     setTimeout(() => { t.style.display = 'none'; }, 2000);
   });
+}
+
+/* ── Unlock code generator ── */
+async function generateUnlock() {
+  const midRaw = document.getElementById('unlockMid').value.replace(/-/g,'').trim().toUpperCase();
+  if (midRaw.length !== 8) {
+    alert('Machine ID must be exactly 8 hex characters (e.g. 76058E59)');
+    return;
+  }
+  const btn = document.getElementById('unlockBtn');
+  btn.disabled    = true;
+  btn.textContent = 'Generating…';
+  try {
+    const code = (await _hmacWith(UNLOCK_SECRET, midRaw)).substring(0, 8).toUpperCase();
+    document.getElementById('unlockCode').textContent        = code;
+    document.getElementById('unlockMidDisplay').textContent  = midRaw.match(/.{1,4}/g).join('-');
+    document.getElementById('unlockOut').style.display       = 'block';
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
+  btn.disabled    = false;
+  btn.textContent = '🔓 Generate Unlock Code';
 }
 
 /* ── Export JSON ── */

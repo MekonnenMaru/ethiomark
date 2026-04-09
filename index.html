@@ -648,21 +648,36 @@
     }
 
     function saveGameToHistory(status) {
-      const gs = getGameState();
+      const gs        = getGameState();
       if (!gs.cards || !gs.cards.length) return;
+      const revenue   = gs.cards.length * (gs.price || 0);
+      const cashierId = API.getSession() || '';
       /* Track collected revenue against package balance */
-      const revenue = gs.cards.length * (gs.price || 0);
       if (revenue > 0) API.addRevenue(revenue);
       API.addHistory({
-        round:        gs.round       || 1,
+        round:        gs.round        || 1,
         date:         new Date().toISOString(),
         cards:        gs.cards,
-        price:        gs.price       || 0,
-        pattern:      gs.pattern     || 1,
-        sound:        gs.sound       || 1,
+        price:        gs.price        || 0,
+        pattern:      gs.pattern      || 1,
+        sound:        gs.sound        || 1,
         randomstring: gs.randomstring || '',
-        status:       status         || 'played'
+        status:       status          || 'played',
+        cashier_id:   cashierId,
       });
+      /* Save game transaction record */
+      API.addTransaction({
+        cashier_id:     cashierId,
+        game_round:     gs.round    || 1,
+        santim:         gs.price    || 0,
+        sew:            gs.cards.length,
+        income:         revenue,
+        bonus:          0,
+        date:           new Date().toISOString(),
+        result:         gs.randomstring || '',
+        checked_number: '',
+        status:         status || 'played',
+      }).catch(() => {});
       /* Stamp today so daily-reset knows the last active date */
       API.stampActiveDate();
     }
@@ -1020,6 +1035,19 @@
       </div>
     </div>
 
+    <!-- Trial lock banner (shown after 5 failed activation attempts) -->
+    <div id="pkg-trial-banner"
+         style="display:none; background:rgba(255,152,0,0.1);
+                border:1px solid rgba(255,152,0,0.45); border-radius:14px;
+                padding:14px 18px; margin-bottom:16px; text-align:center;">
+      <div style="font-size:28px; margin-bottom:6px;">🔐</div>
+      <div style="color:#ff9800; font-weight:900; font-size:16px; margin-bottom:6px;">Activation Locked</div>
+      <div style="color:rgba(255,180,100,0.85); font-size:13px; line-height:1.6;">
+        Too many failed attempts. Enter the unlock code from your admin<br>
+        to reset the lock and try again.
+      </div>
+    </div>
+
     <!-- Step 1: Machine ID -->
     <div style="background:rgba(0,198,255,0.06); border:1px solid rgba(0,198,255,0.2);
                 border-radius:16px; padding:18px; margin-bottom:12px;">
@@ -1075,7 +1103,8 @@
     </div>
 
     <!-- Step 3: Paste & activate key -->
-    <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+    <div id="pkg-activate-section"
+         style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
                 border-radius:16px; padding:20px;">
       <div style="font-size:11px; font-weight:700; color:rgba(255,255,255,0.45);
                   letter-spacing:1.2px; text-transform:uppercase; margin-bottom:10px;">
@@ -1108,6 +1137,48 @@
           ✓ Activate Package
         </button>
         <button id="pkg-close-btn"
+                style="padding:13px 18px; border:1px solid rgba(255,255,255,0.15);
+                       border-radius:10px; cursor:pointer; background:rgba(255,255,255,0.04);
+                       color:rgba(255,255,255,0.5); font-size:14px;">
+          Close
+        </button>
+      </div>
+    </div>
+
+    <!-- Unlock code section (shown instead of key input when trial-locked) -->
+    <div id="pkg-unlock-section"
+         style="display:none; background:rgba(255,152,0,0.05); border:1px solid rgba(255,152,0,0.3);
+                border-radius:16px; padding:20px;">
+      <div style="font-size:11px; font-weight:700; color:rgba(255,152,0,0.7);
+                  letter-spacing:1.2px; text-transform:uppercase; margin-bottom:10px;">
+        🔑 Enter Unlock Code from Admin
+      </div>
+      <input id="pkg-unlock-input" type="text" maxlength="8"
+             placeholder="e.g.  A3F92B1C"
+             style="width:100%; background:rgba(255,255,255,0.06);
+                    border:1px solid rgba(255,152,0,0.3); border-radius:10px;
+                    color:#ffd740; font-family:monospace; font-size:22px; font-weight:900;
+                    letter-spacing:4px; text-align:center; padding:12px; outline:none;
+                    text-transform:uppercase;">
+      <div id="pkg-unlock-error"
+           style="display:none; color:#ff5252; font-size:12px; font-weight:600;
+                  margin-top:8px; padding:8px 10px; background:rgba(255,82,82,0.1);
+                  border:1px solid rgba(255,82,82,0.25); border-radius:8px;">
+      </div>
+      <div id="pkg-unlock-success"
+           style="display:none; color:#00e676; font-size:13px; font-weight:700;
+                  margin-top:8px; padding:10px 12px; background:rgba(0,230,118,0.1);
+                  border:1px solid rgba(0,230,118,0.25); border-radius:8px; text-align:center;">
+      </div>
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button id="pkg-unlock-btn"
+                style="flex:1; padding:13px; border:none; border-radius:10px; cursor:pointer;
+                       background:linear-gradient(135deg,#ff6f00,#ff9800); color:#fff;
+                       font-size:15px; font-weight:900; letter-spacing:0.3px;
+                       box-shadow:0 4px 16px rgba(255,111,0,0.35);">
+          🔓 Unlock
+        </button>
+        <button id="pkg-close-btn2"
                 style="padding:13px 18px; border:1px solid rgba(255,255,255,0.15);
                        border-radius:10px; cursor:pointer; background:rgba(255,255,255,0.04);
                        color:rgba(255,255,255,0.5); font-size:14px;">
@@ -1785,15 +1856,24 @@
     let _pkgModalWasOpen = false;
 
     function showPackageOverlay(mode) {
-      const overlay = document.getElementById('pkg-overlay');
-      const banner  = document.getElementById('pkg-locked-banner');
-      const errEl   = document.getElementById('pkg-key-error');
-      const sucEl   = document.getElementById('pkg-key-success');
+      const overlay       = document.getElementById('pkg-overlay');
+      const balBanner     = document.getElementById('pkg-locked-banner');
+      const trialBanner   = document.getElementById('pkg-trial-banner');
+      const activateSec   = document.getElementById('pkg-activate-section');
+      const unlockSec     = document.getElementById('pkg-unlock-section');
+      const errEl         = document.getElementById('pkg-key-error');
+      const sucEl         = document.getElementById('pkg-key-success');
+      const unlockErrEl   = document.getElementById('pkg-unlock-error');
+      const unlockSucEl   = document.getElementById('pkg-unlock-success');
 
-      banner.style.display = (mode === 'locked') ? 'block' : 'none';
-      if (errEl) errEl.style.display = 'none';
-      if (sucEl) sucEl.style.display = 'none';
+      /* Reset messages */
+      if (errEl)       errEl.style.display      = 'none';
+      if (sucEl)       sucEl.style.display      = 'none';
+      if (unlockErrEl) unlockErrEl.style.display = 'none';
+      if (unlockSucEl) unlockSucEl.style.display = 'none';
       document.getElementById('pkg-key-input').value = '';
+
+      balBanner.style.display = (mode === 'locked') ? 'block' : 'none';
 
       /* Close Bootstrap modal first — its backdrop blocks all input */
       _pkgModalWasOpen = ($('#myModal').data('bs.modal') || {})._isShown
@@ -1802,13 +1882,31 @@
       if (_pkgModalWasOpen) $('#myModal').modal('hide');
 
       /* Show overlay after modal has finished closing (~300 ms) */
-      setTimeout(() => {
+      setTimeout(async () => {
         overlay.style.display = 'flex';
         refreshBalanceDisplay();
-        setTimeout(() => {
-          const inp = document.getElementById('pkg-key-input');
-          if (inp) inp.focus();
-        }, 50);
+
+        /* Check trial-lock state and switch UI sections */
+        try {
+          const lockStatus = await API.getActivationLockStatus();
+          if (lockStatus.locked) {
+            trialBanner.style.display  = 'block';
+            activateSec.style.display  = 'none';
+            unlockSec.style.display    = 'block';
+            const inp = document.getElementById('pkg-unlock-input');
+            if (inp) { inp.value = ''; inp.focus(); }
+          } else {
+            trialBanner.style.display  = 'none';
+            activateSec.style.display  = 'block';
+            unlockSec.style.display    = 'none';
+            const inp = document.getElementById('pkg-key-input');
+            if (inp) inp.focus();
+          }
+        } catch (_) {
+          trialBanner.style.display = 'none';
+          activateSec.style.display = 'block';
+          unlockSec.style.display   = 'none';
+        }
       }, _pkgModalWasOpen ? 320 : 0);
     }
 
@@ -1849,6 +1947,57 @@
       hidePackageOverlay();
     });
 
+    /* ── Unlock code button ── */
+    document.getElementById('pkg-unlock-btn').addEventListener('click', async () => {
+      const code      = document.getElementById('pkg-unlock-input').value.trim();
+      const errEl     = document.getElementById('pkg-unlock-error');
+      const sucEl     = document.getElementById('pkg-unlock-success');
+      const btn       = document.getElementById('pkg-unlock-btn');
+
+      errEl.style.display = 'none';
+      sucEl.style.display = 'none';
+
+      if (!code) {
+        errEl.textContent   = 'Please enter the unlock code from your admin.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      btn.disabled    = true;
+      btn.textContent = 'Verifying…';
+
+      try {
+        await API.unlockActivation(code);
+        sucEl.textContent   = '✓ Lock cleared! You can now activate a package.';
+        sucEl.style.display = 'block';
+        /* After 1.5s switch back to the key input UI */
+        setTimeout(() => {
+          document.getElementById('pkg-trial-banner').style.display  = 'none';
+          document.getElementById('pkg-unlock-section').style.display = 'none';
+          document.getElementById('pkg-activate-section').style.display = 'block';
+          document.getElementById('pkg-key-input').focus();
+        }, 1500);
+      } catch (e) {
+        errEl.textContent   = '❌ ' + e.message;
+        errEl.style.display = 'block';
+      }
+
+      btn.disabled    = false;
+      btn.textContent = '🔓 Unlock';
+    });
+
+    /* Close button inside unlock section */
+    document.getElementById('pkg-close-btn2').addEventListener('click', () => {
+      if (_pkgOverlayMode === 'locked') {
+        const e = document.getElementById('pkg-unlock-error');
+        e.textContent   = 'You must activate a package before you can continue.';
+        e.style.display = 'block';
+        return;
+      }
+      hidePackageOverlay();
+    });
+
+    /* ── Activate package button ── */
     document.getElementById('pkg-activate-btn').addEventListener('click', async () => {
       const keyStr = document.getElementById('pkg-key-input').value.trim();
       const errEl  = document.getElementById('pkg-key-error');
@@ -1859,7 +2008,7 @@
       sucEl.style.display = 'none';
 
       if (!keyStr) {
-        errEl.textContent  = 'Please paste the license key first.';
+        errEl.textContent   = 'Please paste the license key first.';
         errEl.style.display = 'block';
         return;
       }
@@ -1877,12 +2026,23 @@
         await refreshBalanceDisplay();
         setTimeout(() => hidePackageOverlay(), 2500);
       } catch (e) {
-        errEl.textContent  = '❌ ' + e.message;
+        errEl.textContent   = '❌ ' + e.message;
         errEl.style.display = 'block';
+        /* If now locked, flip UI to unlock section */
+        if (e.message.startsWith('🔒 Activation locked after')) {
+          setTimeout(() => {
+            document.getElementById('pkg-trial-banner').style.display    = 'block';
+            document.getElementById('pkg-activate-section').style.display = 'none';
+            document.getElementById('pkg-unlock-section').style.display   = 'block';
+            document.getElementById('pkg-key-error').style.display         = 'none';
+            document.getElementById('pkg-unlock-input').value             = '';
+            document.getElementById('pkg-unlock-input').focus();
+          }, 1200);
+        }
       }
 
       btn.disabled    = false;
-      btn.textContent = 'Activate Package';
+      btn.textContent = '✓ Activate Package';
     });
 
     /* ── Quick in-modal card registration ── */

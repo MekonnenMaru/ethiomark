@@ -1,14 +1,18 @@
 /* ═══════════════════════════════════════════════
    EthiomarkBingoDB  —  IndexedDB data layer
    Object stores:
-     cards        — all bingo cards  (keyPath: id)
-     game_state   — single 'current' record
-     app_settings — single 'settings' record
-     game_history — auto-increment log
+     cards            — all bingo cards  (keyPath: id)
+     game_state       — single 'current' record
+     app_settings     — single 'settings' record
+     game_history     — auto-increment log
+     cashiers         — cashier accounts  (keyPath: id)
+     license          — machine ID + packages + balance
+     transaction      — game revenue log (auto-increment)
+     wallettransaction— wallet deposit/withdraw log (auto-increment)
    ═══════════════════════════════════════════════ */
 
 const DB_NAME    = 'EthiomarkBingoDB';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 let _db = null;
 
 /* ── open / upgrade ── */
@@ -30,6 +34,11 @@ function openDB() {
         db.createObjectStore('cashiers', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('license'))
         db.createObjectStore('license');
+      /* v6 — transaction logs */
+      if (!db.objectStoreNames.contains('transaction'))
+        db.createObjectStore('transaction', { autoIncrement: true });
+      if (!db.objectStoreNames.contains('wallettransaction'))
+        db.createObjectStore('wallettransaction', { autoIncrement: true });
     };
     req.onsuccess  = e => { _db = e.target.result; resolve(_db); };
     req.onerror    = e => reject(e.target.error);
@@ -173,6 +182,46 @@ async function dbAddHistory(entry) {
   });
 }
 
+/* ── game transaction log ── */
+async function dbAddTransaction(entry) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('transaction', 'readwrite');
+    tx.objectStore('transaction').add({ ...entry, date: entry.date || new Date().toISOString() });
+    tx.oncomplete = resolve;
+    tx.onerror    = e => reject(e.target.error);
+  });
+}
+
+async function dbGetTransactions() {
+  const db = await openDB();
+  return new Promise(resolve => {
+    const req = db.transaction('transaction','readonly').objectStore('transaction').getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror   = () => resolve([]);
+  });
+}
+
+/* ── wallet transaction log ── */
+async function dbAddWalletTransaction(entry) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('wallettransaction', 'readwrite');
+    tx.objectStore('wallettransaction').add({ ...entry, timestamp: entry.timestamp || new Date().toISOString() });
+    tx.oncomplete = resolve;
+    tx.onerror    = e => reject(e.target.error);
+  });
+}
+
+async function dbGetWalletTransactions() {
+  const db = await openDB();
+  return new Promise(resolve => {
+    const req = db.transaction('wallettransaction','readonly').objectStore('wallettransaction').getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror   = () => resolve([]);
+  });
+}
+
 /* ── license ── */
 async function dbGetLicense() {
   const db = await openDB();
@@ -221,6 +270,8 @@ window.EthiomarkDB = {
   dbGetGameState, dbSaveGameState, dbClearGameState,
   dbGetAppSettings, dbSaveAppSettings,
   dbGetHistory, dbAddHistory,
+  dbAddTransaction, dbGetTransactions,
+  dbAddWalletTransaction, dbGetWalletTransactions,
   seedCashiers, getCashier,
   dbGetLicense, dbSaveLicense
 };
