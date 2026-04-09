@@ -2852,14 +2852,8 @@
       sound: gs.sound || 1, speed_range: gs.speed_range || 3,
       randomstring: '', last_active_date: today, winning_cards: []
     });
-    if (winners.length) {
-      celebrate();
-      setTimeout(() => celebrate(), 300);
-      setTimeout(() => { window.location.href = 'reg_new_game.html'; }, 2000);
-    } else {
-      showAlert('Round ተጠናቋል! → ወደ ምዝገባ...', 'success');
-      setTimeout(() => { window.location.href = 'reg_new_game.html'; }, 800);
-    }
+    showAlert('Round ተጠናቋል! → ወደ ምዝገባ...', 'success');
+    setTimeout(() => { window.location.href = 'reg_new_game.html'; }, 800);
   });
 </script>
 
@@ -3184,9 +3178,7 @@
     } else {
       /* ── Manual mode: cashier decides with buttons ── */
       document.getElementById('notbingo')?.style.setProperty('display', 'inline-block', 'important');
-      if (isWin) {
-        document.getElementById('goodbingo')?.style.setProperty('display', 'inline-block', 'important');
-      }
+      document.getElementById('goodbingo')?.style.setProperty('display', 'inline-block', 'important');
     }
   });
 
@@ -3220,7 +3212,7 @@
       setTimeout(() => celebrate(), 300);
       setTimeout(() => celebrate(), 600);
       setTimeout(() => { el.style.display = 'none'; }, 3000);
-      setTimeout(() => { $('#myModalcard').modal('hide'); }, 3000);
+      /* Modal stays open — cashier must close it manually after verifying */
       _checkedCardNo = null;
     });
 
