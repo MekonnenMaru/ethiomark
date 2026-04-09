@@ -765,12 +765,12 @@ input[type="number"].bonus-input { width: 80px; }
 /* bingo grid (numbox) */
 .txtbox {
   display: block !important;
-  width: 46px !important;
-  height: 40px !important;
-  line-height: 40px !important;
+  width: 56px !important;
+  height: 48px !important;
+  line-height: 48px !important;
   text-align: center !important;
   border-radius: 10px !important;
-  font-size: 22px !important;
+  font-size: 24px !important;
   font-weight: 900 !important;
   letter-spacing: 1px !important;
   color: #fff !important;
@@ -781,13 +781,13 @@ input[type="number"].bonus-input { width: 80px; }
 
 .numbox {
   display: block !important;
-  width: 46px !important;
-  height: 40px !important;
-  line-height: 40px !important;
+  width: 56px !important;
+  height: 48px !important;
+  line-height: 48px !important;
   text-align: center !important;
   border-radius: 7px !important;
   font-weight: 700 !important;
-  font-size: 20px !important;
+  font-size: 22px !important;
   margin: 2px !important;
   background: rgba(255,255,255,0.11) !important;
   border: 1.5px solid rgba(255,255,255,0.28) !important;
