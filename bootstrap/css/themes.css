@@ -116,6 +116,17 @@ html[data-theme="light"] .tgable-container {
 html[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(0,85,204,0.35); }
 html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0,85,204,0.55); }
 
+html[data-theme="light"] .numbox {
+  background: rgba(0,0,0,0.06) !important;
+  border: 1.5px solid rgba(0,0,0,0.20) !important;
+  color: #1a1a2e !important;
+}
+html[data-theme="light"] .numbox.callnum {
+  background: linear-gradient(135deg, #f5c518, #e09900) !important;
+  border-color: #c88000 !important;
+  color: #111 !important;
+}
+
 /* ── EMERALD (forest green) ───────────────────────────────────── */
 html[data-theme="emerald"] {
   --bg-deep:    #010e08;

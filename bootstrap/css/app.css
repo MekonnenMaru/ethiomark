@@ -772,17 +772,30 @@ input[type="number"].bonus-input { width: 80px; }
 }
 
 .numbox {
+  display: block !important;
+  width: 46px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  text-align: center !important;
   border-radius: 7px !important;
   font-weight: 700 !important;
+  font-size: 20px !important;
+  margin: 2px !important;
+  background: rgba(255,255,255,0.08) !important;
+  border: 1.5px solid rgba(255,255,255,0.14) !important;
+  color: rgba(255,255,255,0.82) !important;
+  cursor: default !important;
   transition: all 0.25s cubic-bezier(.34,1.56,.64,1) !important;
-  font-size: 17px !important;
 }
 
 .numbox.callnum {
-  transform: scale(1.25) !important;
+  transform: scale(1.22) !important;
   z-index: 1 !important;
   position: relative !important;
-  box-shadow: 0 0 16px rgba(255,215,0,0.6) !important;
+  background: linear-gradient(135deg, #f5c518, #e09900) !important;
+  border-color: #f5c518 !important;
+  color: #111 !important;
+  box-shadow: 0 0 14px rgba(255,215,0,0.65) !important;
   animation: popIn 0.4s cubic-bezier(.34,1.56,.64,1) forwards !important;
 }
 
