@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="cashier/side-nav.css">
   <link rel="stylesheet" href="cashier/container.css">
   <link rel="stylesheet" href="bootstrap/css/modern.css">
+  <link rel="stylesheet" href="bootstrap/css/themes.css">
 
   <!-- ─── Thin IDB wrapper (audio cache) ─── -->
   <script>
@@ -59,11 +60,12 @@
     })();
   </script>
 
-  <!-- ─── Light / dark mode init (runs before render to avoid flash) ─── -->
+  <!-- ─── Theme init (runs before render to avoid flash) ─── -->
   <script>
     (function () {
-      var s = localStorage.getItem('toggleState');
-      if (s === 'light') {
+      var t = localStorage.getItem('em_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+      if (t === 'light') {
         document.getElementById('lightStyleSheet').href = 'bootstrap/css/light/style.css';
         document.getElementById('modalStyleSheet').href = 'bootstrap/css/light/modal.css';
         document.getElementById('giftStyleSheet').href  = 'bootstrap/css/light/gift-unboxing.css';
@@ -1109,21 +1111,14 @@
               display:flex; flex-direction:column; gap:5px;
               align-items:flex-end; width:50px;">
 
-    <!-- Light / dark mode toggle -->
+    <!-- Theme cycle button -->
     <button id="toggleBTN"
+            title="Change Theme"
             style="display:flex; align-items:center; justify-content:center;
-                   padding:15px 0; background-color:transparent; color:white;
+                   padding:10px 0; background-color:transparent; color:white;
                    border:2px solid #28a745; border-radius:5px; cursor:pointer;
-                   width:100%; text-align:center;">
-      <div id="toggleIcon"
-           style="display:flex; align-items:center; justify-content:center;
-                  width:30px; height:20px; background-color:white; border-radius:10px;
-                  margin-right:10px; position:relative;">
-        <div id="toggleCircle"
-             style="width:14px; height:14px; background-color:#28a745; border-radius:50%;
-                    position:absolute; top:3px; left:3px; transition:left 0.3s;">
-        </div>
-      </div>
+                   width:100%; text-align:center; font-size:18px;">
+      🎨
     </button>
 
     <!-- Fullscreen toggle -->
@@ -1292,6 +1287,44 @@
       </div>
     </div>
 
+    <!-- Theme Picker -->
+    <div class="settings-option" style="flex-direction:column; gap:8px;">
+      <label style="font-size:13px; font-weight:700; letter-spacing:.5px;">Theme - ቀለም:</label>
+      <div id="em-theme-swatches"
+           style="display:flex; gap:8px; flex-wrap:wrap; padding:4px 0;">
+        <button class="em-swatch" data-theme="dark"
+                title="Dark"
+                style="width:32px; height:32px; border-radius:50%; cursor:pointer;
+                       background:radial-gradient(circle at 40% 35%,#0d1f3c,#020b18);
+                       border:3px solid #00c6ff;"></button>
+        <button class="em-swatch" data-theme="light"
+                title="Light"
+                style="width:32px; height:32px; border-radius:50%; cursor:pointer;
+                       background:radial-gradient(circle at 40% 35%,#f0efef,#c7c3c3);
+                       border:3px solid transparent;"></button>
+        <button class="em-swatch" data-theme="emerald"
+                title="Emerald"
+                style="width:32px; height:32px; border-radius:50%; cursor:pointer;
+                       background:radial-gradient(circle at 40% 35%,#082818,#010e08);
+                       border:3px solid transparent;"></button>
+        <button class="em-swatch" data-theme="purple"
+                title="Purple"
+                style="width:32px; height:32px; border-radius:50%; cursor:pointer;
+                       background:radial-gradient(circle at 40% 35%,#240848,#0d0120);
+                       border:3px solid transparent;"></button>
+        <button class="em-swatch" data-theme="fire"
+                title="Fire"
+                style="width:32px; height:32px; border-radius:50%; cursor:pointer;
+                       background:radial-gradient(circle at 40% 35%,#2e0800,#0e0100);
+                       border:3px solid transparent;"></button>
+        <button class="em-swatch" data-theme="gold"
+                title="Gold"
+                style="width:32px; height:32px; border-radius:50%; cursor:pointer;
+                       background:radial-gradient(circle at 40% 35%,#2a1f00,#0a0800);
+                       border:3px solid transparent;"></button>
+      </div>
+    </div>
+
     <center>
       <button id="submit_settings_form" class="settings-option" style="color:green; font-size:30px;">
         Save Changes
@@ -1441,26 +1474,61 @@
       }, 2000);
     });
 
-    /* Light / dark mode toggle */
-    document.getElementById('toggleBTN').addEventListener('click', function () {
-      const cur  = localStorage.getItem('toggleState') || 'dark';
-      const next = (cur === 'dark') ? 'light' : 'dark';
-      localStorage.setItem('toggleState', next);
-      if (next === 'light') {
+    /* ── Theme system ── */
+    var EM_THEMES = ['dark','light','emerald','purple','fire','gold'];
+    var EM_SWATCH_COLORS = {
+      dark:    '#00c6ff',
+      light:   '#0055cc',
+      emerald: '#00e676',
+      purple:  '#ce93d8',
+      fire:    '#ff6d00',
+      gold:    '#ffd740'
+    };
+
+    function emApplyTheme(t) {
+      document.documentElement.setAttribute('data-theme', t);
+      localStorage.setItem('em_theme', t);
+      /* light theme swaps CSS files; all others use dark base */
+      if (t === 'light') {
         document.getElementById('lightStyleSheet').href = 'bootstrap/css/light/style.css';
         document.getElementById('modalStyleSheet').href = 'bootstrap/css/light/modal.css';
         document.getElementById('giftStyleSheet').href  = 'bootstrap/css/light/gift-unboxing.css';
         document.getElementById('ballStyleSheet').href  = 'bootstrap/css/light/ball.css';
         document.getElementById('bingoStyleSheet').href = 'bootstrap/css/light/bingon.css';
-        document.getElementById('toggleCircle').style.left = '13px';
       } else {
         document.getElementById('lightStyleSheet').href = 'bootstrap/css/style.css';
         document.getElementById('modalStyleSheet').href = 'bootstrap/css/modal.css';
         document.getElementById('giftStyleSheet').href  = 'bootstrap/css/gift-unboxing.css';
         document.getElementById('ballStyleSheet').href  = 'bootstrap/css/ball.css';
         document.getElementById('bingoStyleSheet').href = 'bootstrap/css/bingon.css';
-        document.getElementById('toggleCircle').style.left = '3px';
       }
+      /* update swatch active border */
+      document.querySelectorAll('.em-swatch').forEach(function(btn) {
+        btn.style.borderColor = (btn.getAttribute('data-theme') === t)
+          ? EM_SWATCH_COLORS[t] || '#fff'
+          : 'transparent';
+      });
+    }
+
+    /* init swatch active state */
+    (function() {
+      var cur = localStorage.getItem('em_theme') || 'dark';
+      emApplyTheme(cur);
+    })();
+
+    /* swatch clicks */
+    document.querySelectorAll('.em-swatch').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        emApplyTheme(this.getAttribute('data-theme'));
+      });
+    });
+
+    /* palette button → cycle through themes */
+    document.getElementById('toggleBTN').addEventListener('click', function () {
+      var cur = localStorage.getItem('em_theme') || 'dark';
+      var idx = EM_THEMES.indexOf(cur);
+      var next = EM_THEMES[(idx + 1) % EM_THEMES.length];
+      emApplyTheme(next);
     });
 
     /* Fullscreen toggle */

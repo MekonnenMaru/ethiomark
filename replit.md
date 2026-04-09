@@ -63,6 +63,16 @@ A fully client-side Bingo management and gaming system for the Ethiopian market,
 - Meskel: I[2], N[1], N[3], G[2]
 - `count_winning_line >= pattern` = BINGO
 
+## Theme System
+
+- **File**: `bootstrap/css/themes.css` — loaded after `modern.css` on all pages
+- **Storage**: `localStorage.em_theme` — values: `dark` | `light` | `emerald` | `purple` | `fire` | `gold`
+- **Apply**: Sets `data-theme` attribute on `<html>` element before page render (inline script in `<head>`)
+- **Scope**: Propagates automatically to `index.html`, `login.html`, `reg_new_game.html`, `report.html`, `keygen.html`
+- **Picker UI (index.html)**: 6 color swatches in the Settings panel; 🎨 button in top-right cycles through themes
+- **Light theme**: Also swaps 5 CSS files (`bootstrap/css/light/*`); all other themes use the dark base files + `themes.css` variable overrides
+- **Themes**: Dark (navy/cyan), Light (gray/white), Emerald (forest green), Purple (galaxy), Fire (crimson/orange), Gold (dark gold)
+
 ## Authentication / Login System
 
 - `login.html` — Glassmorphism dark login page. Cashier ID + password (MD5 hashed). Inline MD5 JS function (RFC 1321). On success, stores cashier ID in `localStorage.em_cashier_id`.

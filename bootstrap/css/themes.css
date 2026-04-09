@@ -1,0 +1,430 @@
+/* ═══════════════════════════════════════════════════════════════
+   Ethiomark Bingo — Multi-Theme System
+   Loaded AFTER modern.css so it wins the specificity battle.
+
+   Themes  : dark (default) | light | emerald | purple | fire | gold
+   Storage : localStorage.em_theme
+   Apply   : document.documentElement.setAttribute('data-theme', t)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── DARK (default — matches existing modern.css values) ─────── */
+html[data-theme="dark"] body {
+  background: radial-gradient(ellipse at top, #071428 0%, #020b18 100%) !important;
+}
+
+html,
+html[data-theme="dark"] {
+  --bg-deep:    #020b18;
+  --bg-panel:   #071428;
+  --bg-card:    #0d1f3c;
+  --accent:     #00c6ff;
+  --accent2:    #0072ff;
+  --glow:       rgba(0,198,255,0.25);
+  --border:     rgba(0,198,255,0.18);
+  --subtext:    #90caf9;
+  --text:       #ffffff;
+  /* report.html vars */
+  --bg:         #020b18;
+  --surface:    #071428;
+  --surface2:   #0d1f3c;
+  --muted:      #4a6880;
+  --muted2:     #2d4a68;
+  /* reg_new_game.html vars */
+  --panel:      #071428;
+  --card:       #0d1f3c;
+  --sub:        #90caf9;
+  --th-panel-a: #071428;
+  --th-panel-b: #0d1f3c;
+  --th-mod-a:   #0d1f3c;
+  --th-mod-b:   #071428;
+  --th-hdr-a:   #031730;
+  --th-hdr-b:   #051f4a;
+}
+
+/* ── LIGHT ────────────────────────────────────────────────────── */
+html[data-theme="light"] {
+  --bg-deep:    #c9cdd8;
+  --bg-panel:   #e8ebf4;
+  --bg-card:    #f5f7fc;
+  --accent:     #0055cc;
+  --accent2:    #003d99;
+  --glow:       rgba(0,85,204,0.15);
+  --border:     rgba(0,85,204,0.22);
+  --subtext:    #334466;
+  --text:       #111827;
+  --bg:         #c7c3c3;
+  --surface:    #e2e0e0;
+  --surface2:   #f0efef;
+  --muted:      #667799;
+  --muted2:     #8899bb;
+  --panel:      #e8ebf4;
+  --card:       #f5f7fc;
+  --sub:        #334466;
+  --th-panel-a: #d8dce8;
+  --th-panel-b: #e8ebf4;
+  --th-mod-a:   #e8ebf4;
+  --th-mod-b:   #d8dce8;
+  --th-hdr-a:   #c0c8dc;
+  --th-hdr-b:   #d0d8ec;
+}
+
+html[data-theme="light"] body {
+  background: #c7c3c3 !important;
+  color: #111827 !important;
+}
+html[data-theme="light"] .derash-box {
+  background: linear-gradient(145deg, #e0e4ef 0%, #edf0f8 100%) !important;
+  border-color: rgba(0,85,204,0.2) !important;
+  box-shadow: 0 0 25px rgba(0,85,204,0.08) !important;
+}
+html[data-theme="light"] #myModal .modal-content {
+  background: linear-gradient(160deg, #edf0f8 0%, #e0e4ef 100%) !important;
+  border-color: rgba(0,85,204,0.22) !important;
+  color: #111827 !important;
+}
+html[data-theme="light"] #myModal .modal-header,
+html[data-theme="light"] #myModalcard .modal-header,
+html[data-theme="light"] #helpmodal .modal-header {
+  background: linear-gradient(90deg, #c8d0e0 0%, #d8e0f0 100%) !important;
+  border-color: rgba(0,85,204,0.22) !important;
+}
+html[data-theme="light"] .settings-menu {
+  background: linear-gradient(145deg, #edf0f8, #e0e4ef) !important;
+  border-color: rgba(0,85,204,0.22) !important;
+  color: #111827 !important;
+}
+html[data-theme="light"] .settings-header {
+  background: linear-gradient(90deg, #c8d0e0, #d8e0f0) !important;
+  border-color: rgba(0,85,204,0.22) !important;
+}
+html[data-theme="light"] .settings-header h2 {
+  background: linear-gradient(90deg, #0055cc, #0072ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+html[data-theme="light"] #myModalcard .modal-content,
+html[data-theme="light"] #helpmodal .modal-content {
+  background: linear-gradient(145deg, #edf0f8, #e0e4ef) !important;
+  border-color: rgba(0,85,204,0.22) !important;
+  color: #111827 !important;
+}
+html[data-theme="light"] .tgable-container {
+  background: rgba(0,85,204,0.04) !important;
+  border-color: rgba(0,85,204,0.22) !important;
+}
+html[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(0,85,204,0.35); }
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0,85,204,0.55); }
+
+/* ── EMERALD (forest green) ───────────────────────────────────── */
+html[data-theme="emerald"] {
+  --bg-deep:    #010e08;
+  --bg-panel:   #041a0d;
+  --bg-card:    #082818;
+  --accent:     #00e676;
+  --accent2:    #00c853;
+  --glow:       rgba(0,230,118,0.25);
+  --border:     rgba(0,230,118,0.20);
+  --subtext:    #a5d6a7;
+  --text:       #e8f5e9;
+  --bg:         #010e08;
+  --surface:    #041a0d;
+  --surface2:   #082818;
+  --muted:      #2e6b45;
+  --muted2:     #1a4a2e;
+  --panel:      #041a0d;
+  --card:       #082818;
+  --sub:        #a5d6a7;
+  --th-panel-a: #041a0d;
+  --th-panel-b: #082818;
+  --th-mod-a:   #082818;
+  --th-mod-b:   #041a0d;
+  --th-hdr-a:   #021008;
+  --th-hdr-b:   #041a0d;
+}
+
+html[data-theme="emerald"] body {
+  background: radial-gradient(ellipse at top, #041a0d 0%, #010e08 100%) !important;
+}
+html[data-theme="emerald"] .derash-box {
+  background: linear-gradient(145deg, #041a0d 0%, #082818 100%) !important;
+  border: 1px solid rgba(0,230,118,0.20) !important;
+  box-shadow: 0 0 25px rgba(0,230,118,0.10) !important;
+}
+html[data-theme="emerald"] #myModal .modal-content {
+  background: linear-gradient(160deg, #082818 0%, #041a0d 100%) !important;
+  border-color: rgba(0,230,118,0.20) !important;
+  box-shadow: 0 0 60px rgba(0,200,83,0.25), 0 0 120px rgba(0,230,118,0.08) !important;
+}
+html[data-theme="emerald"] #myModal .modal-header,
+html[data-theme="emerald"] #myModalcard .modal-header,
+html[data-theme="emerald"] #helpmodal .modal-header {
+  background: linear-gradient(90deg, #021008 0%, #041a0d 100%) !important;
+  border-color: rgba(0,230,118,0.20) !important;
+}
+html[data-theme="emerald"] .settings-menu {
+  background: linear-gradient(145deg, #082818, #041a0d) !important;
+  border-color: rgba(0,230,118,0.20) !important;
+}
+html[data-theme="emerald"] .settings-header {
+  background: linear-gradient(90deg, #021008, #041a0d) !important;
+  border-color: rgba(0,230,118,0.20) !important;
+}
+html[data-theme="emerald"] .settings-header h2 {
+  background: linear-gradient(90deg, #00e676, #69f0ae);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+html[data-theme="emerald"] #myModalcard .modal-content,
+html[data-theme="emerald"] #helpmodal .modal-content {
+  background: linear-gradient(145deg, #082818, #041a0d) !important;
+  border-color: rgba(0,230,118,0.20) !important;
+  box-shadow: 0 0 60px rgba(0,200,83,0.20) !important;
+}
+html[data-theme="emerald"] .tgable-container {
+  background: rgba(0,230,118,0.04) !important;
+  border-color: rgba(0,230,118,0.20) !important;
+}
+html[data-theme="emerald"] #mybtn, html[data-theme="emerald"] #myModal .modal-start-btn {
+  background: linear-gradient(135deg, #00c853, #00e676) !important;
+  box-shadow: 0 0 35px rgba(0,230,118,0.40) !important;
+}
+html[data-theme="emerald"] .card-input:focus { border-color: #00e676 !important; }
+html[data-theme="emerald"] ::-webkit-scrollbar-thumb { background: rgba(0,230,118,0.3); }
+html[data-theme="emerald"] ::-webkit-scrollbar-thumb:hover { background: rgba(0,230,118,0.5); }
+
+/* ── PURPLE (royal galaxy) ────────────────────────────────────── */
+html[data-theme="purple"] {
+  --bg-deep:    #0d0120;
+  --bg-panel:   #1a0535;
+  --bg-card:    #240848;
+  --accent:     #ce93d8;
+  --accent2:    #9c27b0;
+  --glow:       rgba(206,147,216,0.25);
+  --border:     rgba(206,147,216,0.22);
+  --subtext:    #e1bee7;
+  --text:       #f3e5f5;
+  --bg:         #0d0120;
+  --surface:    #1a0535;
+  --surface2:   #240848;
+  --muted:      #7b3fa0;
+  --muted2:     #4a1a6b;
+  --panel:      #1a0535;
+  --card:       #240848;
+  --sub:        #e1bee7;
+  --th-panel-a: #1a0535;
+  --th-panel-b: #240848;
+  --th-mod-a:   #240848;
+  --th-mod-b:   #1a0535;
+  --th-hdr-a:   #0d0120;
+  --th-hdr-b:   #1a0535;
+}
+
+html[data-theme="purple"] body {
+  background: radial-gradient(ellipse at top, #1a0535 0%, #0d0120 100%) !important;
+}
+html[data-theme="purple"] .derash-box {
+  background: linear-gradient(145deg, #1a0535 0%, #240848 100%) !important;
+  border: 1px solid rgba(206,147,216,0.22) !important;
+  box-shadow: 0 0 25px rgba(206,147,216,0.10) !important;
+}
+html[data-theme="purple"] #myModal .modal-content {
+  background: linear-gradient(160deg, #240848 0%, #1a0535 100%) !important;
+  border-color: rgba(206,147,216,0.22) !important;
+  box-shadow: 0 0 60px rgba(156,39,176,0.30), 0 0 120px rgba(206,147,216,0.08) !important;
+}
+html[data-theme="purple"] #myModal .modal-header,
+html[data-theme="purple"] #myModalcard .modal-header,
+html[data-theme="purple"] #helpmodal .modal-header {
+  background: linear-gradient(90deg, #0d0120 0%, #1a0535 100%) !important;
+  border-color: rgba(206,147,216,0.22) !important;
+}
+html[data-theme="purple"] .settings-menu {
+  background: linear-gradient(145deg, #240848, #1a0535) !important;
+  border-color: rgba(206,147,216,0.22) !important;
+}
+html[data-theme="purple"] .settings-header {
+  background: linear-gradient(90deg, #0d0120, #1a0535) !important;
+  border-color: rgba(206,147,216,0.22) !important;
+}
+html[data-theme="purple"] .settings-header h2 {
+  background: linear-gradient(90deg, #ce93d8, #e040fb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+html[data-theme="purple"] #myModalcard .modal-content,
+html[data-theme="purple"] #helpmodal .modal-content {
+  background: linear-gradient(145deg, #240848, #1a0535) !important;
+  border-color: rgba(206,147,216,0.22) !important;
+  box-shadow: 0 0 60px rgba(156,39,176,0.25) !important;
+}
+html[data-theme="purple"] .tgable-container {
+  background: rgba(206,147,216,0.04) !important;
+  border-color: rgba(206,147,216,0.22) !important;
+}
+html[data-theme="purple"] #mybtn, html[data-theme="purple"] #myModal .modal-start-btn {
+  background: linear-gradient(135deg, #9c27b0, #ce93d8) !important;
+  box-shadow: 0 0 35px rgba(206,147,216,0.40) !important;
+}
+html[data-theme="purple"] .card-input:focus { border-color: #ce93d8 !important; }
+html[data-theme="purple"] ::-webkit-scrollbar-thumb { background: rgba(206,147,216,0.3); }
+html[data-theme="purple"] ::-webkit-scrollbar-thumb:hover { background: rgba(206,147,216,0.5); }
+
+/* ── FIRE (crimson / red) ─────────────────────────────────────── */
+html[data-theme="fire"] {
+  --bg-deep:    #0e0100;
+  --bg-panel:   #1e0500;
+  --bg-card:    #2e0800;
+  --accent:     #ff6d00;
+  --accent2:    #dd2c00;
+  --glow:       rgba(255,109,0,0.25);
+  --border:     rgba(255,109,0,0.22);
+  --subtext:    #ffccbc;
+  --text:       #fbe9e7;
+  --bg:         #0e0100;
+  --surface:    #1e0500;
+  --surface2:   #2e0800;
+  --muted:      #7b3b00;
+  --muted2:     #4a2000;
+  --panel:      #1e0500;
+  --card:       #2e0800;
+  --sub:        #ffccbc;
+  --th-panel-a: #1e0500;
+  --th-panel-b: #2e0800;
+  --th-mod-a:   #2e0800;
+  --th-mod-b:   #1e0500;
+  --th-hdr-a:   #0e0100;
+  --th-hdr-b:   #1e0500;
+}
+
+html[data-theme="fire"] body {
+  background: radial-gradient(ellipse at top, #1e0500 0%, #0e0100 100%) !important;
+}
+html[data-theme="fire"] .derash-box {
+  background: linear-gradient(145deg, #1e0500 0%, #2e0800 100%) !important;
+  border: 1px solid rgba(255,109,0,0.22) !important;
+  box-shadow: 0 0 25px rgba(255,109,0,0.10) !important;
+}
+html[data-theme="fire"] #myModal .modal-content {
+  background: linear-gradient(160deg, #2e0800 0%, #1e0500 100%) !important;
+  border-color: rgba(255,109,0,0.22) !important;
+  box-shadow: 0 0 60px rgba(221,44,0,0.30), 0 0 120px rgba(255,109,0,0.08) !important;
+}
+html[data-theme="fire"] #myModal .modal-header,
+html[data-theme="fire"] #myModalcard .modal-header,
+html[data-theme="fire"] #helpmodal .modal-header {
+  background: linear-gradient(90deg, #0e0100 0%, #1e0500 100%) !important;
+  border-color: rgba(255,109,0,0.22) !important;
+}
+html[data-theme="fire"] .settings-menu {
+  background: linear-gradient(145deg, #2e0800, #1e0500) !important;
+  border-color: rgba(255,109,0,0.22) !important;
+}
+html[data-theme="fire"] .settings-header {
+  background: linear-gradient(90deg, #0e0100, #1e0500) !important;
+  border-color: rgba(255,109,0,0.22) !important;
+}
+html[data-theme="fire"] .settings-header h2 {
+  background: linear-gradient(90deg, #ff6d00, #ffd740);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+html[data-theme="fire"] #myModalcard .modal-content,
+html[data-theme="fire"] #helpmodal .modal-content {
+  background: linear-gradient(145deg, #2e0800, #1e0500) !important;
+  border-color: rgba(255,109,0,0.22) !important;
+  box-shadow: 0 0 60px rgba(221,44,0,0.25) !important;
+}
+html[data-theme="fire"] .tgable-container {
+  background: rgba(255,109,0,0.04) !important;
+  border-color: rgba(255,109,0,0.22) !important;
+}
+html[data-theme="fire"] #mybtn, html[data-theme="fire"] #myModal .modal-start-btn {
+  background: linear-gradient(135deg, #dd2c00, #ff6d00) !important;
+  box-shadow: 0 0 35px rgba(255,109,0,0.45) !important;
+}
+html[data-theme="fire"] .card-input:focus { border-color: #ff6d00 !important; }
+html[data-theme="fire"] ::-webkit-scrollbar-thumb { background: rgba(255,109,0,0.3); }
+html[data-theme="fire"] ::-webkit-scrollbar-thumb:hover { background: rgba(255,109,0,0.5); }
+
+/* ── GOLD (royal gold) ────────────────────────────────────────── */
+html[data-theme="gold"] {
+  --bg-deep:    #0a0800;
+  --bg-panel:   #1c1500;
+  --bg-card:    #2a1f00;
+  --accent:     #ffd740;
+  --accent2:    #ffa000;
+  --glow:       rgba(255,215,64,0.25);
+  --border:     rgba(255,215,64,0.22);
+  --subtext:    #fff8e1;
+  --text:       #fff9e6;
+  --bg:         #0a0800;
+  --surface:    #1c1500;
+  --surface2:   #2a1f00;
+  --muted:      #7b6a00;
+  --muted2:     #4a3f00;
+  --panel:      #1c1500;
+  --card:       #2a1f00;
+  --sub:        #fff8e1;
+  --th-panel-a: #1c1500;
+  --th-panel-b: #2a1f00;
+  --th-mod-a:   #2a1f00;
+  --th-mod-b:   #1c1500;
+  --th-hdr-a:   #0a0800;
+  --th-hdr-b:   #1c1500;
+}
+
+html[data-theme="gold"] body {
+  background: radial-gradient(ellipse at top, #1c1500 0%, #0a0800 100%) !important;
+}
+html[data-theme="gold"] .derash-box {
+  background: linear-gradient(145deg, #1c1500 0%, #2a1f00 100%) !important;
+  border: 1px solid rgba(255,215,64,0.22) !important;
+  box-shadow: 0 0 25px rgba(255,215,64,0.10) !important;
+}
+html[data-theme="gold"] #myModal .modal-content {
+  background: linear-gradient(160deg, #2a1f00 0%, #1c1500 100%) !important;
+  border-color: rgba(255,215,64,0.22) !important;
+  box-shadow: 0 0 60px rgba(255,160,0,0.25), 0 0 120px rgba(255,215,64,0.08) !important;
+}
+html[data-theme="gold"] #myModal .modal-header,
+html[data-theme="gold"] #myModalcard .modal-header,
+html[data-theme="gold"] #helpmodal .modal-header {
+  background: linear-gradient(90deg, #0a0800 0%, #1c1500 100%) !important;
+  border-color: rgba(255,215,64,0.22) !important;
+}
+html[data-theme="gold"] .settings-menu {
+  background: linear-gradient(145deg, #2a1f00, #1c1500) !important;
+  border-color: rgba(255,215,64,0.22) !important;
+}
+html[data-theme="gold"] .settings-header {
+  background: linear-gradient(90deg, #0a0800, #1c1500) !important;
+  border-color: rgba(255,215,64,0.22) !important;
+}
+html[data-theme="gold"] .settings-header h2 {
+  background: linear-gradient(90deg, #ffd740, #ffab40);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+html[data-theme="gold"] #myModalcard .modal-content,
+html[data-theme="gold"] #helpmodal .modal-content {
+  background: linear-gradient(145deg, #2a1f00, #1c1500) !important;
+  border-color: rgba(255,215,64,0.22) !important;
+  box-shadow: 0 0 60px rgba(255,160,0,0.20) !important;
+}
+html[data-theme="gold"] .tgable-container {
+  background: rgba(255,215,64,0.04) !important;
+  border-color: rgba(255,215,64,0.22) !important;
+}
+html[data-theme="gold"] #mybtn, html[data-theme="gold"] #myModal .modal-start-btn {
+  background: linear-gradient(135deg, #ffa000, #ffd740) !important;
+  color: #1a0f00 !important;
+  box-shadow: 0 0 35px rgba(255,215,64,0.45) !important;
+}
+html[data-theme="gold"] .card-input:focus { border-color: #ffd740 !important; }
+html[data-theme="gold"] ::-webkit-scrollbar-thumb { background: rgba(255,215,64,0.3); }
+html[data-theme="gold"] ::-webkit-scrollbar-thumb:hover { background: rgba(255,215,64,0.5); }
