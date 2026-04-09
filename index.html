@@ -858,9 +858,11 @@
     const gi          = document.getElementById('modal-game-info');
     const noCardsView = document.getElementById('modal-no-cards-view');
     const imgCard     = document.getElementById('selected-numbers-container-img');
+    /* image is always shown — make sure it's visible */
+    if (imgCard) imgCard.style.display = '';
 
     if (cards.length > 0) {
-      /* ── Cards registered: show ደራሽ stats, hide title+image ── */
+      /* ── Cards registered: show stats, hide title ── */
       if (gi)          gi.style.display          = 'block';
       if (noCardsView) noCardsView.style.display = 'none';
 
@@ -880,10 +882,9 @@
       const mybtn = document.getElementById('mybtn');
       if (mybtn) { mybtn.style.opacity = ''; mybtn.title = ''; }
     } else {
-      /* ── No cards: show title + image, hide stats ── */
+      /* ── No cards: show title, hide stats ── */
       if (gi)          gi.style.display          = 'none';
-      if (noCardsView) noCardsView.style.display = 'flex';
-      if (imgCard)     imgCard.style.display     = '';
+      if (noCardsView) noCardsView.style.display = 'block';
 
       const mybtn = document.getElementById('mybtn');
       if (mybtn) { mybtn.style.opacity = '0.45'; mybtn.title = 'Register cards first'; }
@@ -1739,48 +1740,46 @@
 
         <div class="modal-body">
 
-          <!-- NO-CARDS STATE: big title + image (hidden when cards exist) -->
-          <div id="modal-no-cards-view" style="display:flex; flex-direction:column; align-items:center; width:100%; gap:10px;">
-            <div class="em-modal-title">ኢትዮ-ማርክ ቢንጎ</div>
-            <div class="em-ad-strip" id="modal-media-area">
-              <img id="selected-numbers-container-img" src="assets/images/card1.png"
-                   style="max-width:70%; max-height:180px; object-fit:contain;"
-                   onerror="this.style.display='none'">
-              <img id="bonus-modal-img" src="assets/images/bonus-removebg.png"
-                   style="display:none; max-width:70%; max-height:180px; object-fit:contain;"
-                   onerror="this.style.display='none'">
-            </div>
+          <!-- ① Title: shown only when NO cards registered -->
+          <div id="modal-no-cards-view" class="em-modal-title">ኢትዮ-ማርክ ቢንጎ</div>
+
+          <!-- ② Image: always visible -->
+          <div class="em-ad-strip" id="modal-media-area">
+            <img id="selected-numbers-container-img" src="assets/images/card1.png"
+                 onerror="this.style.display='none'">
+            <img id="bonus-modal-img" src="assets/images/bonus-removebg.png"
+                 style="display:none;" onerror="this.style.display='none'">
           </div>
 
-          <!-- CARDS-REGISTERED STATE: ደራሽ stats only (hidden when no cards) -->
+          <!-- ③ ደራሽ stats: shown only when cards ARE registered -->
           <div id="modal-game-info" style="display:none; width:100%;">
-            <div id="amount" style="text-align:center; margin-bottom:8px;"></div>
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px;">
-              <div class="em-stat-cell" style="border-color:rgba(0,198,255,0.3);">
-                <div class="em-stat-label" style="color:rgba(0,198,255,0.75);">Pattern</div>
+            <div id="amount"></div>
+            <div class="em-stats-grid">
+              <div class="em-stat-cell" style="border-color:rgba(0,198,255,0.35);">
+                <div class="em-stat-label" style="color:rgba(0,198,255,0.8);">Pattern</div>
                 <div class="em-stat-val"   style="color:#00c6ff;" id="mi-pattern">—</div>
               </div>
-              <div class="em-stat-cell" style="border-color:rgba(0,230,118,0.3);">
-                <div class="em-stat-label" style="color:rgba(0,230,118,0.75);">Cards</div>
+              <div class="em-stat-cell" style="border-color:rgba(0,230,118,0.35);">
+                <div class="em-stat-label" style="color:rgba(0,230,118,0.8);">Cards</div>
                 <div class="em-stat-val"   style="color:#00e676;" id="mi-cards">0</div>
               </div>
-              <div class="em-stat-cell" style="border-color:rgba(255,215,64,0.3);">
-                <div class="em-stat-label" style="color:rgba(255,215,64,0.75);">Price</div>
+              <div class="em-stat-cell" style="border-color:rgba(255,215,64,0.35);">
+                <div class="em-stat-label" style="color:rgba(255,215,64,0.8);">Price</div>
                 <div class="em-stat-val"   style="color:#ffd740;" id="mi-price">0 ብር</div>
               </div>
-              <div class="em-stat-cell" style="border-color:rgba(200,120,255,0.3);">
-                <div class="em-stat-label" style="color:rgba(200,120,255,0.75);">Revenue</div>
+              <div class="em-stat-cell" style="border-color:rgba(200,120,255,0.35);">
+                <div class="em-stat-label" style="color:rgba(200,120,255,0.8);">Revenue</div>
                 <div class="em-stat-val"   style="color:#c878ff;" id="mi-revenue">0 ብር</div>
               </div>
             </div>
           </div>
 
           <p id="bala_alert"
-             style="color:#ff5252; font-size:13px; min-height:0; text-align:center;
-                    animation:blink 2s infinite; margin:0;">
+             style="color:#ff5252; font-size:14px; min-height:0; text-align:center;
+                    animation:blink 2s infinite; margin:0; width:100%;">
           </p>
 
-          <!-- Start button -->
+          <!-- ④ Start button -->
           <button type="submit" id="mybtn" onclick="return startbingo();">▶ ጀምር</button>
 
         </div>
