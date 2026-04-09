@@ -563,8 +563,9 @@ async function init() {
   const gs = getGameState();
   document.getElementById('roundDisplay').textContent = gs.round || 1;
 
-  // Always restore previously registered cards so the cashier can continue from where they left off
-  if (gs.cards && gs.cards.length) gs.cards.forEach(n => selectedCards.add(n));
+  // Restore cards: use current round's cards if present, otherwise fall back to last used cards
+  const cardsToRestore = (gs.cards && gs.cards.length) ? gs.cards : (gs.last_used_cards || []);
+  cardsToRestore.forEach(n => selectedCards.add(n));
   if (gs.pattern)     document.getElementById('bp_pattern').value = gs.pattern;
   if (gs.price)       document.getElementById('bp_price').value   = gs.price;
   if (gs.sound)       document.getElementById('bp_voice').value   = gs.sound;

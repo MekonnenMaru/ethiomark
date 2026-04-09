@@ -2832,7 +2832,7 @@
   });
 
   /* Finish game button */
-  document.getElementById('finsh_game').addEventListener('click', function () {
+  document.getElementById('finsh_game').addEventListener('click', async function () {
     if (!confirm('ጨዋታውን ጨርሰዋል? (Finish this game?)')) return;
     const gs      = getGameState();
     const winners = gs.winning_cards || [];
@@ -2845,15 +2845,24 @@
     } else {
       saveGameToHistory('completed');
     }
-    const newRound = (gs.round || 1) + 1;
-    const today    = new Date().toISOString().split('T')[0];
-    saveGameState({
-      round: newRound, cards: [], pattern: 1, price: 0,
-      sound: gs.sound || 1, speed_range: gs.speed_range || 3,
-      randomstring: '', last_active_date: today, winning_cards: []
+    const newRound      = (gs.round || 1) + 1;
+    const today         = new Date().toISOString().split('T')[0];
+    const lastUsedCards = (gs.cards || []).slice(); /* keep for next-round pre-fill */
+    await API.saveGameState({
+      round:           newRound,
+      cards:           [],
+      pattern:         gs.pattern     || 1,
+      price:           gs.price       || 0,
+      sound:           gs.sound       || 1,
+      speed_range:     gs.speed_range || 3,
+      randomstring:    '',
+      last_active_date: today,
+      winning_cards:   [],
+      last_used_cards: lastUsedCards,
     });
+    window._gameStateCache = await API.getGameState(); /* keep cache in sync */
     showAlert('Round ተጠናቋል! → ወደ ምዝገባ...', 'success');
-    setTimeout(() => { window.location.href = 'reg_new_game.html'; }, 800);
+    setTimeout(() => { window.location.href = 'reg_new_game.html'; }, 400);
   });
 </script>
 
