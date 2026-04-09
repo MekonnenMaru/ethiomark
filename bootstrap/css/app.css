@@ -1305,14 +1305,17 @@ h1 { margin: 0; }
   display: block;
 }
 
-/* Slide-in animation for the dialog */
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL BASE — shared by all modals
+   (animation, dialog shell, backdrop, generic buttons)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Slide-in animation */
 .modal.fade .modal-dialog {
   transition: transform 0.3s ease-out;
   transform: translateY(-50px);
 }
-.modal.show .modal-dialog {
-  transform: none;
-}
+.modal.show .modal-dialog { transform: none; }
 
 .modal-dialog {
   margin: 1.75rem auto;
@@ -1328,6 +1331,7 @@ h1 { margin: 0; }
   min-height: calc(100% - 3.5rem);
 }
 
+/* base shell — overridden per-modal below */
 .modal-content {
   width: 100%;
   opacity: 0.95;
@@ -1349,14 +1353,13 @@ h1 { margin: 0; }
 }
 
 .modal-header a {
-  color: #ffffff;
+  color: #fff;
   text-decoration: none;
   padding: 5px 10px;
   border: 2px solid transparent;
   border-radius: 5px;
   transition: background-color 0.3s, color 0.3s, border-color 0.3s;
 }
-
 .modal-header a:hover {
   background-color: rgba(255,255,255,0.2);
   border-color: #ff9800;
@@ -1364,68 +1367,53 @@ h1 { margin: 0; }
 }
 
 .hidden-info { display: none; }
+.button-group { display: flex; margin-left: auto; }
 
-.button-group {
-  display: flex;
-  margin-left: auto;
+.modal-body {
+  background-color: #f6f7f9;
+  padding: 5px;
+  text-align: center;
+}
+.modal-body h2 {
+  font-weight: bold;
+  letter-spacing: 2px;
+  color: #828282;
+  margin-bottom: 20px;
+}
+.modal-body img {
+  width: 80%;
+  max-height: 200px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
+/* shared action button base */
 .modal-button {
   background-color: #0d4742;
-  color: rgb(255,255,255);
+  color: #fff;
   border: none;
   padding: 10px 20px;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 15px;
-  transition: background-color 0.3s;
+  font-weight: 700;
+  transition: all 0.2s;
   margin-left: 1px;
 }
-
-.modal-button:hover { background-color: #e68a00; }
-
-/* modern overrides */
-.modal-button {
-  border-radius: 8px !important;
-  font-weight: 700 !important;
-  transition: all 0.2s !important;
-}
-
-.modal-button:hover { transform: translateY(-1px) !important; }
+.modal-button:hover { background-color: #e68a00; transform: translateY(-1px); }
 
 .modal-button-register {
   background-color: #0d4742;
-  color: rgb(255,255,255);
-  border: 2px solid #ffffff;
+  color: #fff;
+  border: 2px solid #fff;
   padding: 10px 15px;
   border-radius: 5px;
   cursor: pointer;
   font-size: 15px;
   transition: background-color 0.3s, transform 0.3s, box-shadow 0.3s;
   margin-left: 1px;
-  position: relative;
 }
-
-.modal-button-register::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  border-radius: 5px;
-  background: linear-gradient(45deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
-  opacity: 0;
-  transition: opacity 0.3s;
-  z-index: -1;
-}
-
-.modal-button-register:hover {
-  background-color: #0b3b36;
-  transform: translateY(-2px);
-}
-
-.modal-button-register:hover::after {
-  opacity: 1;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-}
+.modal-button-register:hover { background-color: #0b3b36; transform: translateY(-2px); }
 
 #refresh_play_bingo {
   background-color: #ff9800;
@@ -1436,28 +1424,7 @@ h1 { margin: 0; }
   border-radius: 5px;
   transition: background-color 0.3s;
 }
-
 #refresh_play_bingo:hover { background-color: #e68900; }
-
-.modal-body {
-  background-color: #f6f7f9;
-  padding: 5px;
-  text-align: center;
-}
-
-.modal-body h2 {
-  font-weight: bold;
-  letter-spacing: 2px;
-  color: #828282;
-  margin-bottom: 20px;
-}
-
-.modal-body img {
-  width: 80%;
-  max-height: 200px;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
 
 #amount {
   font-weight: bold;
@@ -1468,8 +1435,8 @@ h1 { margin: 0; }
 
 .modal-start-btn {
   border: 4px solid rgb(3,54,53);
-  background-color: rgb(255,255,255);
-  color: #000000;
+  background-color: #fff;
+  color: #000;
   font-weight: 900;
   font-size: 24px;
   padding: 15px 20px;
@@ -1482,22 +1449,26 @@ h1 { margin: 0; }
   box-shadow: 0 5px 10px rgba(0,0,0,0.2);
   margin-bottom: 15px;
 }
-
 .modal-start-btn:hover {
   background-color: #0b3b36;
-  color: #ffffff;
+  color: #fff;
   box-shadow: 0 8px 15px rgba(0,0,0,0.3);
   transform: translateY(-3px);
 }
-
 .modal-start-btn:active {
   background-color: #276727;
   border-color: #276727;
-  box-shadow: 0 3px 5px rgba(0,0,0,0.2);
   transform: translateY(1px);
 }
 
-/* startup modal — modern overrides */
+.snake-border { animation: none !important; }
+
+
+/* ╔═══════════════════════════════════════════════════════════════╗
+   ║              START / LAUNCH MODAL  (#myModal)                ║
+   ║  Deep-space blue • glowing cyan accents • launch-pad feel    ║
+   ╚═══════════════════════════════════════════════════════════════╝ */
+
 #myModal .modal-dialog { max-width: 640px !important; }
 
 #myModal .modal-content {
@@ -1548,10 +1519,7 @@ h1 { margin: 0; }
   border-radius: 20px;
 }
 
-#myModal .modal-header .em-nav-row {
-  display: flex;
-  gap: 8px;
-}
+#myModal .modal-header .em-nav-row { display: flex; gap: 8px; }
 
 .em-nav-btn {
   flex: 1;
@@ -1663,6 +1631,7 @@ h1 { margin: 0; }
   text-align: center !important;
 }
 
+/* Start button — pulsing cyan gradient */
 #mybtn, #myModal .modal-start-btn {
   background: linear-gradient(135deg, #0072ff, #00c6ff) !important;
   color: white !important;
@@ -1701,27 +1670,198 @@ h1 { margin: 0; }
   transform: translateY(-3px) !important;
   box-shadow: 0 0 55px rgba(0,198,255,0.65) !important;
 }
-
 #mybtn:active { transform: translateY(0) !important; }
 
-.snake-border { animation: none !important; }
 
-/* card-check & help modals */
-#myModalcard .modal-content,
-#helpmodal .modal-content {
-  background: linear-gradient(145deg, #0d1f3c, #071428) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 20px !important;
-  box-shadow: 0 0 60px rgba(0,114,255,0.25) !important;
+/* ╔═══════════════════════════════════════════════════════════════╗
+   ║           CHECK RESULT MODAL  (#myModalcard)                 ║
+   ║  Emerald-green & gold • referee table feel • decisive tone   ║
+   ╚═══════════════════════════════════════════════════════════════╝ */
+
+#myModalcard .modal-dialog { max-width: 600px !important; }
+
+#myModalcard .modal-content {
+  background: linear-gradient(155deg, #051e10 0%, #03120a 100%) !important;
+  border: 1px solid rgba(0,200,83,0.35) !important;
+  border-radius: 22px !important;
+  box-shadow:
+    0 0 55px rgba(0,200,83,0.22),
+    0 0 100px rgba(0,200,83,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.06) !important;
+  overflow: hidden !important;
+  color: #e8f5e9 !important;
+}
+
+#myModalcard .modal-header {
+  background: linear-gradient(90deg, #021509 0%, #03230e 100%) !important;
+  border-bottom: 1px solid rgba(0,200,83,0.25) !important;
+  padding: 14px 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+#myModalcard .modal-header .modal-title {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  background: linear-gradient(90deg, #69f0ae, #ffd740);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 1px;
+}
+
+/* Close button inside check modal */
+#myModalcard #addbingo {
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  color: #b2dfdb !important;
+  border-radius: 10px !important;
+  padding: 8px 18px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+}
+#myModalcard #addbingo:hover {
+  background: rgba(255,255,255,0.12) !important;
+  border-color: rgba(255,255,255,0.3) !important;
   color: #fff !important;
 }
 
-#myModalcard .modal-header,
-#helpmodal .modal-header {
-  background: linear-gradient(90deg, #031730, #051f4a) !important;
-  border-bottom: 1px solid var(--border) !important;
+#myModalcard .modal-body {
+  background: transparent !important;
+  padding: 18px 20px !important;
 }
 
+/* Card grid display area */
+#myModalcard #modal-body {
+  background: rgba(0,200,83,0.04) !important;
+  border: 1px solid rgba(0,200,83,0.15) !important;
+  border-radius: 14px !important;
+  padding: 10px !important;
+  margin-bottom: 12px !important;
+}
+
+/* Winners strip */
+#myModalcard #modal-winners-strip {
+  background: rgba(0,200,83,0.1) !important;
+  border: 1px solid rgba(0,200,83,0.4) !important;
+  border-radius: 10px !important;
+  padding: 8px 14px !important;
+  margin-bottom: 10px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #69f0ae !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Action buttons row */
+#myModalcard #goodbingo {
+  background: linear-gradient(135deg, #00c853, #00e676) !important;
+  color: #000 !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 12px 22px !important;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+  letter-spacing: 1px !important;
+  cursor: pointer !important;
+  box-shadow: 0 0 20px rgba(0,200,83,0.5) !important;
+  transition: all 0.2s !important;
+}
+#myModalcard #goodbingo:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 0 35px rgba(0,200,83,0.75) !important;
+}
+
+#myModalcard #notbingo {
+  background: linear-gradient(135deg, #d32f2f, #f44336) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 12px 22px !important;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+  letter-spacing: 1px !important;
+  cursor: pointer !important;
+  box-shadow: 0 0 18px rgba(244,67,54,0.4) !important;
+  transition: all 0.2s !important;
+}
+#myModalcard #notbingo:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 0 30px rgba(244,67,54,0.65) !important;
+}
+
+#myModalcard #addwinner {
+  background: linear-gradient(135deg, #e65100, #ff8f00) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 12px 18px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  box-shadow: 0 0 16px rgba(255,143,0,0.4) !important;
+  transition: all 0.2s !important;
+}
+#myModalcard #addwinner:hover { transform: translateY(-2px) !important; }
+
+#myModalcard #lock_card {
+  background: linear-gradient(135deg, #f9a825, #ffd740) !important;
+  color: #000 !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 12px 18px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  box-shadow: 0 0 14px rgba(253,216,53,0.35) !important;
+  transition: all 0.2s !important;
+}
+#myModalcard #lock_card:hover { transform: translateY(-2px) !important; }
+
+/* Claim-bonus chip */
+#myModalcard .claim-bonus-popup {
+  background: linear-gradient(90deg, rgba(0,200,83,0.15), rgba(255,215,64,0.12));
+  border: 1px solid rgba(255,215,64,0.35);
+  border-radius: 20px;
+  padding: 5px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffd740;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+}
+#myModalcard .claim-bonus-popup:hover {
+  background: rgba(255,215,64,0.18);
+  border-color: rgba(255,215,64,0.6);
+}
+
+
+/* ╔═══════════════════════════════════════════════════════════════╗
+   ║                   HELP MODAL  (#helpmodal)                   ║
+   ║  Neutral dark slate — informational, low-contrast tone       ║
+   ╚═══════════════════════════════════════════════════════════════╝ */
+
+#helpmodal .modal-content {
+  background: linear-gradient(155deg, #101c2e 0%, #0a1422 100%) !important;
+  border: 1px solid rgba(120,144,180,0.25) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 0 50px rgba(80,120,200,0.15) !important;
+  color: #cfd8dc !important;
+}
+
+#helpmodal .modal-header {
+  background: linear-gradient(90deg, #0d1829, #111e35) !important;
+  border-bottom: 1px solid rgba(120,144,180,0.2) !important;
+  color: #90a4ae !important;
+}
+
+
+/* ─────────────────────────────────────────────
+   RESPONSIVE OVERRIDES (all modals)
+   ───────────────────────────────────────────── */
 @media (max-width: 900px) {
   .modal-dialog { max-width: 90%; }
   .modal-content { max-width: 100%; max-height: 80vh; }
