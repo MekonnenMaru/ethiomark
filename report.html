@@ -278,8 +278,11 @@ tbody tr:hover td{background:rgba(0,114,255,.04);}
       <button class="fbtn fbtn-today" onclick="setToday()">Today</button>
       <button class="fbtn fbtn-search" onclick="loadGameReport()">Search</button>
       <div class="filter-spacer"></div>
+      <input type="text" id="cardSearch" class="filter-date"
+             placeholder="Search by Card #…"
+             style="width:160px;" oninput="gamePage=1;renderGameTable()">
       <select class="perpage" id="gamePerPage" onchange="gamePage=1;renderGameTable()">
-        <option value="15">15 / page</option>
+        <option value="10">10 / page</option>
         <option value="25">25 / page</option>
         <option value="50">50 / page</option>
         <option value="100">100 / page</option>
@@ -289,9 +292,9 @@ tbody tr:hover td{background:rgba(0,114,255,.04);}
 
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-icon">🎮</div><div class="stat-label">Rounds Played</div><div class="stat-value" id="s-rounds">0</div></div>
-      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Total Revenue</div><div class="stat-value" id="s-rev">0</div><div class="stat-unit">ብር</div></div>
-      <div class="stat-card"><div class="stat-icon">🎴</div><div class="stat-label">Total Cards</div><div class="stat-value" id="s-cards">0</div></div>
-      <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-label">Avg Cards / Round</div><div class="stat-value" id="s-avg">0</div></div>
+      <div class="stat-card"><div class="stat-icon">💵</div><div class="stat-label">Total Bet</div><div class="stat-value" id="s-bet">0</div><div class="stat-unit">ብር</div></div>
+      <div class="stat-card"><div class="stat-icon">💸</div><div class="stat-label">Total Paid Out</div><div class="stat-value" id="s-paid">0</div><div class="stat-unit">ብር</div></div>
+      <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-label">Net Income</div><div class="stat-value" id="s-income">0</div><div class="stat-unit">ብር</div></div>
     </div>
 
     <div class="table-card">
@@ -302,13 +305,36 @@ tbody tr:hover td{background:rgba(0,114,255,.04);}
       <div class="tscroll">
         <table>
           <thead><tr>
-            <th>#</th><th>Round</th><th>Time</th>
-            <th>Cards</th><th>Price/Card</th><th>Revenue</th>
-            <th>Pattern</th><th>Status</th>
+            <th>#</th>
+            <th>Bet Time</th>
+            <th>Round</th>
+            <th>On Call</th>
+            <th style="color:#69f0ae;">Winner Number</th>
+            <th>Total Card</th>
+            <th>Birr</th>
+            <th>Total Bet</th>
+            <th>Paid</th>
+            <th>Income</th>
+            <th>Bonus</th>
+            <th>Income-Bonus</th>
           </tr></thead>
           <tbody id="reportBody">
-            <tr class="empty-row"><td colspan="8"><div class="empty-inner"><p>Loading…</p></div></td></tr>
+            <tr class="empty-row"><td colspan="12"><div class="empty-inner"><p>Loading…</p></div></td></tr>
           </tbody>
+          <tfoot id="reportTotals" style="display:none;">
+            <tr style="background:#07101f; font-weight:900; border-top:2px solid var(--border);">
+              <td colspan="5" style="padding:12px 16px; color:var(--muted); font-size:12px; font-weight:800; letter-spacing:1px; text-transform:uppercase;">
+                TOTAL (<span id="tot-range">—</span>)
+              </td>
+              <td style="padding:12px 16px; color:var(--text); font-size:14px;" id="tot-cards">—</td>
+              <td style="padding:12px 16px; color:var(--muted);">—</td>
+              <td style="padding:12px 16px; color:#64b5f6; font-size:14px; font-weight:900;" id="tot-bet">—</td>
+              <td style="padding:12px 16px; color:#ef9a9a; font-size:14px; font-weight:900;" id="tot-paid">—</td>
+              <td style="padding:12px 16px; color:var(--green); font-size:14px; font-weight:900;" id="tot-income">—</td>
+              <td style="padding:12px 16px; color:var(--yellow); font-size:14px; font-weight:900;" id="tot-bonus">—</td>
+              <td style="padding:12px 16px; color:var(--green); font-size:14px; font-weight:900;" id="tot-net">—</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
       <div class="pagination" id="gamePagination" style="display:none;"></div>
@@ -473,56 +499,99 @@ function loadGameReport(){
   renderGameTable();
 }
 
+function _gBet(g){return (g.total_bet!==undefined)?g.total_bet:(g.cards.length*(g.price||0));}
+function _gPaid(g){return (g.paid!==undefined)?g.paid:0;}
+function _gBonus(g){return (g.bonus!==undefined)?g.bonus:0;}
+function _gNet(g){return _gBet(g)-_gPaid(g)-_gBonus(g);}
+
 function renderStats(games){
-  const totalRev  =games.reduce((s,g)=>s+(g.cards.length*g.price),0);
-  const totalCards=games.reduce((s,g)=>s+g.cards.length,0);
-  const avg=games.length?Math.round(totalCards/games.length):0;
+  const totalBet   =games.reduce((s,g)=>s+_gBet(g),0);
+  const totalPaid  =games.reduce((s,g)=>s+_gPaid(g),0);
+  const totalIncome=games.reduce((s,g)=>s+_gNet(g),0);
   document.getElementById('s-rounds').textContent=games.length;
-  document.getElementById('s-rev').textContent=totalRev.toLocaleString();
-  document.getElementById('s-cards').textContent=totalCards;
-  document.getElementById('s-avg').textContent=avg;
+  document.getElementById('s-bet').textContent=totalBet.toLocaleString();
+  document.getElementById('s-paid').textContent=totalPaid.toLocaleString();
+  document.getElementById('s-income').textContent=totalIncome.toLocaleString();
 }
 
 function renderGameTable(){
-  const perPage=parseInt(document.getElementById('gamePerPage').value)||15;
-  const total  =_filteredGames.length;
-  const pages  =Math.max(1,Math.ceil(total/perPage));
+  const perPage=parseInt(document.getElementById('gamePerPage').value)||10;
+  const search =(document.getElementById('cardSearch').value||'').trim();
+
+  /* Apply card-number search filter on top of date filter */
+  let view=_filteredGames;
+  if(search){
+    view=view.filter(g=>{
+      const inCards  =(g.cards||[]).some(c=>String(c).includes(search));
+      const inWinners=(g.winners||[]).some(c=>String(c).includes(search));
+      return inCards||inWinners;
+    });
+  }
+
+  const total=view.length;
+  const pages=Math.max(1,Math.ceil(total/perPage));
   gamePage=Math.min(gamePage,pages);
-  const slice=_filteredGames.slice((gamePage-1)*perPage, gamePage*perPage);
+  const slice=view.slice((gamePage-1)*perPage, gamePage*perPage);
   const tbody=document.getElementById('reportBody');
+  const tfoot=document.getElementById('reportTotals');
   const offset=(gamePage-1)*perPage;
 
   document.getElementById('tbl-count').textContent=total?total+' rounds':'No rounds';
 
   if(!total){
-    tbody.innerHTML=`<tr class="empty-row"><td colspan="8">
+    tbody.innerHTML=`<tr class="empty-row"><td colspan="12">
       <div class="empty-inner">
         <svg width="44" height="44" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#4a6880" stroke-width="1.5"/><path d="M8 2v4M16 2v4M3 10h18" stroke="#4a6880" stroke-width="1.5" stroke-linecap="round"/></svg>
         <p>No rounds found</p><small>Try changing the date range</small>
       </div></td></tr>`;
+    tfoot.style.display='none';
     document.getElementById('gamePagination').style.display='none';
     return;
   }
 
   tbody.innerHTML=slice.map((g,i)=>{
-    const rev=g.cards.length*g.price;
-    const t=new Date(g.date);
-    const timeStr=t.toLocaleTimeString('en-ET',{hour:'2-digit',minute:'2-digit',hour12:true});
-    const badge=g.status==='win'?'<span class="badge badge-win">✓ Win</span>'
-      :g.status==='stopped'?'<span class="badge badge-stopped">◼ Stopped</span>'
-      :g.status==='completed'?'<span class="badge badge-completed">✔ Completed</span>'
-      :'<span class="badge badge-played">● Played</span>';
+    const bet  =_gBet(g);
+    const paid =_gPaid(g);
+    const bonus=_gBonus(g);
+    const net  =bet-paid-bonus;
+    const t    =new Date(g.date);
+    const dtStr=t.toLocaleDateString('en-ET',{year:'numeric',month:'2-digit',day:'2-digit'})
+               +' '+t.toLocaleTimeString('en-ET',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    const winners=(g.winners&&g.winners.length)?g.winners.join(', '):'[ ]';
+    const wColor =(g.winners&&g.winners.length)?'color:#69f0ae;font-weight:900;':'color:var(--muted);';
+    const onCall =g.on_call||'—';
     return `<tr>
       <td class="td-num">${offset+i+1}</td>
-      <td class="td-round">Round ${g.round}</td>
-      <td class="td-time">${timeStr}</td>
-      <td class="td-cards">${g.cards.length}</td>
-      <td class="td-price">${(g.price||0).toLocaleString()} ብር</td>
-      <td class="td-revenue">${rev.toLocaleString()} ብር</td>
-      <td><span class="patt">${PATT[g.pattern]||'Pattern '+g.pattern}</span></td>
-      <td>${badge}</td>
+      <td class="td-time">${dtStr}</td>
+      <td class="td-round">${g.round||1}</td>
+      <td style="font-size:13px;font-weight:800;color:#80cbc4;">${onCall}</td>
+      <td style="${wColor}font-size:13px;">${winners}</td>
+      <td class="td-cards">${(g.cards||[]).length}</td>
+      <td class="td-price">${(g.price||0).toLocaleString()}</td>
+      <td style="font-size:13px;font-weight:800;color:#64b5f6;">${bet.toLocaleString()}</td>
+      <td style="font-size:13px;font-weight:800;color:#ef9a9a;">${paid.toLocaleString()}</td>
+      <td class="td-revenue">${(bet-paid).toLocaleString()}</td>
+      <td style="font-size:13px;color:var(--yellow);">${bonus.toLocaleString()}</td>
+      <td class="td-revenue">${net.toLocaleString()}</td>
     </tr>`;
   }).join('');
+
+  /* Totals row — across ALL filtered (not just current page) */
+  const totCards =view.reduce((s,g)=>s+(g.cards||[]).length,0);
+  const totBet   =view.reduce((s,g)=>s+_gBet(g),0);
+  const totPaid  =view.reduce((s,g)=>s+_gPaid(g),0);
+  const totBonus =view.reduce((s,g)=>s+_gBonus(g),0);
+  const totNet   =totBet-totPaid-totBonus;
+  const fromVal  =document.getElementById('dateFrom').value;
+  const toVal    =document.getElementById('dateTo').value;
+  document.getElementById('tot-range').textContent=fromVal+(fromVal!==toVal?' – '+toVal:'');
+  document.getElementById('tot-cards').textContent=totCards.toLocaleString();
+  document.getElementById('tot-bet').textContent=totBet.toLocaleString()+' ብር';
+  document.getElementById('tot-paid').textContent=totPaid.toLocaleString()+' ብር';
+  document.getElementById('tot-income').textContent=(totBet-totPaid).toLocaleString()+' ብር';
+  document.getElementById('tot-bonus').textContent=totBonus.toLocaleString()+' ብር';
+  document.getElementById('tot-net').textContent=totNet.toLocaleString()+' ብር';
+  tfoot.style.display='table-footer-group';
 
   renderPagination('gamePagination', pages, gamePage);
 }
@@ -738,11 +807,15 @@ function setToday(){
 }
 
 function exportCSV(){
-  if(!_hist.length){alert('No data to export.');return;}
-  let csv='Round,Date,Cards,Price,Revenue,Pattern,Status\n';
-  _hist.forEach(g=>{
-    const rev=g.cards.length*g.price;
-    csv+=`${g.round},"${new Date(g.date).toLocaleString()}",${g.cards.length},${g.price},${rev},"${PATT[g.pattern]||g.pattern}",${g.status||'played'}\n`;
+  if(!_filteredGames.length){alert('No data to export.');return;}
+  let csv='Bet Time,Round,On Call,Winner Number,Total Card,Birr,Total Bet,Paid,Income,Bonus,Income-Bonus,Pattern,Status\n';
+  _filteredGames.forEach(g=>{
+    const bet  =_gBet(g);
+    const paid =_gPaid(g);
+    const bonus=_gBonus(g);
+    const net  =bet-paid-bonus;
+    const winners=(g.winners&&g.winners.length)?g.winners.join(' '):'-';
+    csv+=`"${new Date(g.date).toLocaleString()}",${g.round||1},"${g.on_call||''}","${winners}",${(g.cards||[]).length},${g.price||0},${bet},${paid},${bet-paid},${bonus},${net},"${PATT[g.pattern]||g.pattern}","${g.status||'played'}"\n`;
   });
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
