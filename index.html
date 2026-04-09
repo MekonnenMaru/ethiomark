@@ -182,12 +182,14 @@
       animation: wave 1s;
     }
 
-    /* ── Grid shuffle ripple animation ── */
-    @keyframes numGridFlash {
-      0%   { opacity: 1;    transform: scale(1); }
-      30%  { opacity: 0.15; transform: scale(0.82); }
-      70%  { opacity: 0.9;  transform: scale(1.06); }
-      100% { opacity: 1;    transform: scale(1); }
+    /* ── Grid shuffle scanner flash ── */
+    .numbox.grid-scanning {
+      background    : #00c6ff !important;
+      color         : #000    !important;
+      box-shadow    : 0 0 10px rgba(0,198,255,0.9) !important;
+      transform     : scale(1.12);
+      z-index       : 2;
+      transition    : background 0.04s, transform 0.04s, box-shadow 0.04s;
     }
 
     #selected-numbers {
@@ -2549,24 +2551,37 @@
     cells[0].setAttribute('t', a);
   }
 
-  /* ── Visual grid shuffle: reorders numrow elements inside each callb column ── */
+  /* ── Grid shuffle scanner: rapidly flashes all 75 cells in random order ── */
   function shuffleGridVisual() {
-    document.querySelectorAll('.callb').forEach(callb => {
-      const rows = Array.from(callb.querySelectorAll('.numrow'));
-      /* Fisher-Yates in-place */
-      for (let i = rows.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [rows[i], rows[j]] = [rows[j], rows[i]];
+    /* Collect all 75 numbox cells */
+    const allCells = Array.from(document.querySelectorAll('.numbox'));
+
+    /* Fisher-Yates shuffle of the cell references */
+    for (let i = allCells.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allCells[i], allCells[j]] = [allCells[j], allCells[i]];
+    }
+
+    /* Flash each cell in rapid sequence */
+    const litMs  = 55;   /* how long each cell stays highlighted */
+    const stepMs = 22;   /* interval between flashing next cell(s) */
+    const batch  = 2;    /* how many cells light up per tick */
+    let   idx    = 0;
+
+    const scan = setInterval(() => {
+      /* Light up the next batch */
+      for (let b = 0; b < batch; b++) {
+        const cell = allCells[idx + b];
+        if (!cell) break;
+        /* Don't flash cells that are already drawn (keep their state clean) */
+        if (!cell.classList.contains('drawn')) {
+          cell.classList.add('grid-scanning');
+          setTimeout(() => cell.classList.remove('grid-scanning'), litMs);
+        }
       }
-      /* Re-append in new order (txtbox label stays as first child) */
-      rows.forEach(r => callb.appendChild(r));
-      /* Ripple flash on each cell */
-      callb.querySelectorAll('.numbox').forEach((nb, idx) => {
-        nb.style.animation = 'none';
-        nb.offsetHeight;   /* force reflow */
-        nb.style.animation = `numGridFlash 0.45s ease ${idx * 14}ms both`;
-      });
-    });
+      idx += batch;
+      if (idx >= allCells.length) clearInterval(scan);
+    }, stepMs);
   }
 
   /* Shuffle button — animated ball cycle + visual grid reshuffle */
