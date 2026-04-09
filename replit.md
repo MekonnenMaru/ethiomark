@@ -11,31 +11,59 @@ A fully client-side Bingo management and gaming system for the Ethiopian market,
 - **Audio**: Fetched from `/assets/sound/` voice directories and cached in IndexedDB
 - **PWA**: `service-worker.js` caches static assets for offline play; `manifest.json` for install
 
+## File Structure
+
+```
+ethiomark/
+  index.html              ← main game page
+  login.html              ← cashier login
+  reg_new_game.html       ← register cards for a round
+  report.html             ← history & balance report
+  keygen.html             ← admin license key generator
+  api.js                  ← IDB driver (default backend)
+  db.js                   ← IndexedDB implementation
+  cards_data.js           ← 4,470 bundled bingo cards
+  service-worker.js       ← PWA offline cache
+  backend/
+    api.php               ← PHP/MySQL backend handler
+    api_php.js            ← PHP JS driver (drop-in for api.js)
+    ethiomark_bingo.sql   ← MySQL schema (import into phpMyAdmin)
+  bootstrap/css/          ← themes.css, app.css, base.css
+  assets/sound/           ← voice audio files
+```
+
 ### Backend switching
 
 Two complete API drivers with identical `window.API` surfaces:
 
 | File | Backend | When to use |
 |---|---|---|
-| `api.js` | IndexedDB (browser) | Default — no server needed |
-| `api_php.js` | MySQL via `api.php` | XAMPP / multi-device |
+| `api.js` | IndexedDB (browser) | Default — no server, works offline |
+| `backend/api_php.js` | MySQL via `backend/api.php` | XAMPP / multi-device |
 
-**To switch to PHP/MySQL:** in every HTML file change one line:
+**To switch to PHP/MySQL:** in each HTML file replace two lines with one:
 ```html
-<!-- from: -->  <script src="api.js"></script>
-<!-- to:   -->  <script src="api_php.js"></script>
-```
-Files to update: `index.html`, `login.html`, `reg_new_game.html`, `report.html`, `keygen.html`
+<!-- REMOVE these two lines: -->
+<script src="db.js"></script>
+<script src="api.js"></script>
 
-**`api.php` setup (XAMPP):**
+<!-- ADD this one line instead: -->
+<script src="backend/api_php.js"></script>
+```
+Files to update: `index.html`, `login.html`, `reg_new_game.html`, `report.html`
+(`keygen.html` has its own inline HMAC — no api.js needed there)
+
+**`backend/api.php` setup (XAMPP):**
 1. Start Apache + MySQL in XAMPP Control Panel
-2. Open `phpMyAdmin` — create database `ethiomark_bingo` (or let `api.php` auto-create it)
-3. Edit `DB_USER`/`DB_PASS` at the top of `api.php` if needed (defaults: root / empty)
-4. Tables are auto-created on first page load
+2. Copy all project files to `C:\xampp\htdocs\ethiomark\`
+3. Open `http://localhost/ethiomark/` — tables auto-created on first load
+4. OR: import `backend/ethiomark_bingo.sql` in phpMyAdmin manually
+5. Edit `DB_USER`/`DB_PASS` at top of `backend/api.php` if needed (defaults: root / empty)
 
 Cards (4,470 records) remain bundled in `cards_data.js` in both modes — never stored in MySQL.
 Session stays in `localStorage.em_cashier_id` in both modes.
 HMAC key validation runs client-side in both modes — `keygen.html` works unchanged.
+Login (`seedCashiers`) auto-inserts default cashier accounts into MySQL on first login page load.
 
 ### API layer (`api.js`) surface
 

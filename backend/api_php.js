@@ -1,48 +1,55 @@
 /*  ═══════════════════════════════════════════════════════════════
-    api_php.js  —  Ethiomark Bingo  |  PHP / MySQL backend driver
+    backend/api_php.js  —  Ethiomark Bingo  |  PHP/MySQL driver
     ───────────────────────────────────────────────────────────────
-    Drop-in replacement for api.js.
-    Exposes the IDENTICAL window.API surface — zero HTML changes
-    required except swapping the <script> tag.
+    Drop-in replacement for api.js when using the PHP/MySQL backend.
 
-    TO SWITCH BACKEND:
-      In index.html, login.html, reg_new_game.html, report.html,
-      keygen.html — change ONE line:
-        <script src="api.js"></script>
-      → <script src="api_php.js"></script>
+    TO SWITCH TO PHP/MySQL MODE:
+      In each HTML file change ONE script tag:
+        <script src="db.js"></script>        ← remove this line
+        <script src="api.js"></script>       ← change to ↓
+        <script src="backend/api_php.js"></script>
 
-    TO SWITCH BACK:
-      Reverse the change above.
+    Files to update:
+      index.html, login.html, reg_new_game.html, report.html
+
+    (keygen.html has its own inline HMAC — no api.js needed there)
+
+    TO SWITCH BACK TO IndexedDB:
+      Reverse the change above (restore db.js + api.js lines).
 
     REQUIREMENTS:
-      • api.php in the same folder
-      • MySQL running (XAMPP)
-      • cards_data.js still loaded (cards remain bundled in JS —
-        no need to import 4,470 rows into MySQL)
-
-    SESSION: still uses localStorage.em_cashier_id (same as IDB mode).
-    HMAC key generation: still runs client-side (same as IDB mode).
+      • Apache + MySQL running in XAMPP
+      • All project files inside htdocs/ethiomark/
+      • backend/api.php in the same project root
+      • cards_data.js still loaded before this file (cards stay
+        bundled in JS — no MySQL roundtrip for card lookups)
   ═══════════════════════════════════════════════════════════════ */
 
 window.API = (() => {
 
-  /* ── HTTP helper — all requests go through here ─────────────── */
+  /* ── HTTP helper ────────────────────────────────────────────── */
+  /* All calls go to backend/api.php — path is relative to the    */
+  /* HTML page (document root), not to this JS file's location.   */
+  const PHP = 'backend/api.php';
+
   async function _call(action, body) {
     try {
       const opts = (body !== undefined)
         ? {
-            method: 'POST',
+            method : 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
+            body   : JSON.stringify(body),
           }
         : { method: 'GET' };
 
-      const r    = await fetch('api.php?action=' + action, opts);
+      const r    = await fetch(PHP + '?action=' + action, opts);
       const text = await r.text();
 
       let json;
       try { json = JSON.parse(text); }
-      catch { throw new Error('api.php returned non-JSON: ' + text.slice(0, 200)); }
+      catch {
+        throw new Error('api.php returned non-JSON for "' + action + '": ' + text.slice(0, 200));
+      }
 
       if (json && typeof json === 'object' && json.error) throw new Error(json.error);
       return json;
@@ -54,18 +61,16 @@ window.API = (() => {
 
   /* ────────────────────────────────────────────────────────────
      INITIALISATION
-     Opens the MySQL connection and auto-creates all tables.
+     Connects to MySQL and auto-creates all tables on first run.
   ──────────────────────────────────────────────────────────── */
   async function init() {
     return _call('init');
   }
 
   /* ────────────────────────────────────────────────────────────
-     CARD CATALOGUE
-     Cards stay bundled in cards_data.js — no MySQL roundtrip.
+     CARD CATALOGUE  (bundled in cards_data.js — no DB needed)
   ──────────────────────────────────────────────────────────── */
   async function seedCards(onProgress) {
-    /* Cards are bundled; nothing to seed from the server. */
     if (typeof onProgress === 'function') onProgress(100);
     return true;
   }
@@ -79,9 +84,7 @@ window.API = (() => {
 
   async function getCardsBatch(cardNumbers) {
     const result = {};
-    for (const n of cardNumbers) {
-      result[n] = await getCard(n);
-    }
+    for (const n of cardNumbers) result[n] = await getCard(n);
     return result;
   }
 
@@ -93,77 +96,48 @@ window.API = (() => {
   /* ────────────────────────────────────────────────────────────
      GAME STATE
   ──────────────────────────────────────────────────────────── */
-  async function getGameState() {
-    return _call('getGameState');
-  }
-
-  async function saveGameState(state) {
-    return _call('saveGameState', { state });
-  }
-
-  async function clearGameState() {
-    return _call('clearGameState');
-  }
+  async function getGameState()      { return _call('getGameState'); }
+  async function saveGameState(s)    { return _call('saveGameState',  { state: s }); }
+  async function clearGameState()    { return _call('clearGameState'); }
 
   /* ────────────────────────────────────────────────────────────
      APP SETTINGS
   ──────────────────────────────────────────────────────────── */
-  async function getSettings() {
-    return _call('getSettings');
-  }
-
-  async function saveSettings(settings) {
-    return _call('saveSettings', { settings });
-  }
+  async function getSettings()       { return _call('getSettings'); }
+  async function saveSettings(s)     { return _call('saveSettings',  { settings: s }); }
 
   /* ────────────────────────────────────────────────────────────
      GAME HISTORY
   ──────────────────────────────────────────────────────────── */
-  async function getHistory() {
-    return _call('getHistory');
-  }
-
-  async function addHistory(entry) {
-    return _call('addHistory', { entry });
-  }
+  async function getHistory()        { return _call('getHistory'); }
+  async function addHistory(entry)   { return _call('addHistory',   { entry }); }
 
   /* ────────────────────────────────────────────────────────────
      AUTHENTICATION
+     seedCashiers: called on login page load — inserts default
+     cashier accounts if they don't exist yet (INSERT IGNORE).
   ──────────────────────────────────────────────────────────── */
-  async function seedCashiers(list) {
-    return _call('seedCashiers', { list });
-  }
-
-  async function getCashier(id) {
-    return _call('getCashier', { id });
-  }
+  async function seedCashiers(list)  { return _call('seedCashiers', { list }); }
+  async function getCashier(id)      { return _call('getCashier',   { id }); }
 
   async function verifyCredentials(id, passwordHash) {
     return _call('verifyCredentials', { id, password_hash: passwordHash });
   }
 
   /* ────────────────────────────────────────────────────────────
-     SESSION  (localStorage — unchanged from IDB mode)
+     SESSION  (localStorage — same behaviour as IDB mode)
+     Stores the logged-in cashier ID client-side.
+     PHP doesn't need a server session for single-machine XAMPP use.
   ──────────────────────────────────────────────────────────── */
-  function getSession() {
-    return localStorage.getItem('em_cashier_id') || null;
-  }
-
-  function setSession(id) {
-    localStorage.setItem('em_cashier_id', id);
-  }
-
-  function clearSession() {
-    localStorage.removeItem('em_cashier_id');
-  }
+  function getSession()   { return localStorage.getItem('em_cashier_id') || null; }
+  function setSession(id) { localStorage.setItem('em_cashier_id', id); }
+  function clearSession() { localStorage.removeItem('em_cashier_id'); }
 
   /* ────────────────────────────────────────────────────────────
      LICENSE / PACKAGE SYSTEM
-     Key validation and HMAC run client-side (same as IDB mode).
-     Activate and balance storage are handled by api.php + MySQL.
+     • Key validation + HMAC run client-side (no server secret exposed)
+     • Activation and balance tracking stored in MySQL via api.php
   ──────────────────────────────────────────────────────────── */
-
-  /* HMAC secret — must match api.js and keygen.html */
   const _LS = 'EMbingo!X9pQ#2025-EthioMark-Lic3ns3-S3cr3t@Key';
 
   async function _hmac(data) {
@@ -172,8 +146,7 @@ window.API = (() => {
       'raw', enc.encode(_LS), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
     );
     const s = await crypto.subtle.sign('HMAC', k, enc.encode(data));
-    return Array.from(new Uint8Array(s))
-      .map(b => b.toString(16).padStart(2, '0')).join('');
+    return Array.from(new Uint8Array(s)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
   async function getMachineId() {
@@ -181,13 +154,8 @@ window.API = (() => {
     return r.machine_id;
   }
 
-  async function getLicenseInfo() {
-    return _call('getLicenseInfo');
-  }
-
-  async function getBalance() {
-    return _call('getBalance');
-  }
+  async function getLicenseInfo() { return _call('getLicenseInfo'); }
+  async function getBalance()     { return _call('getBalance'); }
 
   async function isLicensed() {
     const b = await getBalance();
@@ -196,31 +164,31 @@ window.API = (() => {
 
   async function activatePackage(keyStr) {
     keyStr = (keyStr || '').replace(/\s/g, '').toUpperCase();
-    if (!keyStr.startsWith('EM-')) throw new Error('Invalid key — must start with EM-');
+    if (!keyStr.startsWith('EM-'))
+      throw new Error('Invalid key — must start with EM-');
 
     const parts = keyStr.split('-');
     if (parts.length !== 5)
       throw new Error('Invalid key format — expected EM-MACHINEID-AMOUNT-SERIAL-CODE');
 
     const [, mid, amtStr, sn, sigIn] = parts;
-    if (mid.length !== 8) throw new Error('Machine ID in key must be 8 characters');
+    if (mid.length !== 8)
+      throw new Error('Machine ID in key must be 8 characters');
 
     const amt = Number(amtStr);
-    if (!amt || isNaN(amt) || amt <= 0) throw new Error('Invalid amount in key');
+    if (!amt || isNaN(amt) || amt <= 0)
+      throw new Error('Invalid amount in key');
 
-    /* Machine check */
     const myMid = await getMachineId();
     if (mid !== myMid) {
       const fmt = s => s.slice(0, 4) + '-' + s.slice(4);
       throw new Error('Key is for machine ' + fmt(mid) + ' — yours is ' + fmt(myMid));
     }
 
-    /* Signature check */
     const expectedSig = (await _hmac([mid, sn, amt].join('|'))).substring(0, 8).toUpperCase();
     if (sigIn !== expectedSig)
       throw new Error('Key signature is invalid — key may be forged or typed incorrectly');
 
-    /* Let the server record activation and update balance */
     return _call('activatePackage', { mid, sn, amt });
   }
 
@@ -239,15 +207,10 @@ window.API = (() => {
   /* ────────────────────────────────────────────────────────────
      DAILY ROUND RESET
   ──────────────────────────────────────────────────────────── */
-  async function checkAndResetDailyRound() {
-    return _call('checkAndResetDailyRound');
-  }
+  async function checkAndResetDailyRound() { return _call('checkAndResetDailyRound'); }
+  async function stampActiveDate()         { return _call('stampActiveDate'); }
 
-  async function stampActiveDate() {
-    return _call('stampActiveDate');
-  }
-
-  /* ── public interface (identical surface to api.js) ── */
+  /* ── public interface — identical to api.js ── */
   return {
     init,
     seedCards,
