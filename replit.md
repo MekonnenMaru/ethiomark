@@ -65,6 +65,29 @@ A fully client-side Bingo management and gaming system for the Ethiopian market,
 - Meskel: I[2], N[1], N[3], G[2]
 - `count_winning_line >= pattern` = BINGO
 
+## CSS Architecture
+
+- **`bootstrap/css/base.css`** — Design tokens (CSS variables: `--bg`, `--accent`, `--border`, etc.), grid system, reset
+- **`bootstrap/css/app.css`** — All components across 19 sections:
+  1. Reset/base 2. Typography 3. Grid 4. Side nav 5. Header/buttons 6. Alerts 7. Ball animation 8. Game board 9. Controls 10. Modals 11. Win animation 12. Confetti 13. Package overlay 14. Settings panel 15. Bonus system 16. Register card modal 17. Data table 18. Scrollbars **19. Responsive system (global breakpoints)**
+- **`bootstrap/css/themes.css`** — Theme variable overrides (6 themes)
+- **`index.html` inline `<style>`** — Page-specific component styles: `.bingo-button`, `.info-bar`, `.setting_box` + responsive breakpoints at 1024 / 768 / 480 / 360px
+
+### Responsive Breakpoints
+
+| Breakpoint | Layout changes |
+|---|---|
+| ≤ 1024px (tablet) | Setting box wraps, modal narrows |
+| ≤ 768px (mobile) | Info bar stacks vertically; buttons wrap to 2 rows; voice/card inputs each take 50%; CHECK button goes full-width |
+| ≤ 480px (small phone) | numbox/txtbox shrink, buttons compact to 46px, nav buttons go 2-column |
+| ≤ 360px (extra small) | All heights reduced to 40–42px |
+
+Fluid sizing via `clamp()` is used for: ball (`.ball2`), called number (`.num`), B/I/N/G/O column buttons (`.bingo-button`), info-bar heights and widths, `.numbox`/`.txtbox` font sizes, `.voiceselect`, callb gap/padding.
+
+### Bootstrap Modal Infrastructure (fully local)
+
+`.fade`, `.modal.show`, `.modal-backdrop`, `.modal-open`, `.modal-dialog-centered` — all defined in `app.css` section 10. No CDN required.
+
 ## Theme System
 
 - **File**: `bootstrap/css/themes.css` — loaded after `modern.css` on all pages

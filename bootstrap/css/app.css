@@ -894,10 +894,7 @@ input[type="number"].bonus-input { width: 80px; }
 
 .contains { top: 2%; margin-left: 0; width: 100%; height: 100%; }
 
-@media (max-width: 1200px) { .ball2 { width: 12rem; height: 12rem; } .num { font-size: 36px; } }
-@media (max-width: 992px)  { .ball2 { width: 10rem; height: 10rem; } .num { font-size: 24px; } }
-@media (max-width: 768px)  { .ball2 { width: 8rem;  height: 8rem;  } .num { font-size: 12px; } }
-@media (max-width: 576px)  { .ball2 { width: 6rem;  height: 6rem;  } .num { font-size: 12px; } }
+/* ball & number fluid — handled by Section 19 below */
 
 
 /* ─────────────────────────────────────────────────────────
@@ -1207,7 +1204,17 @@ h1 { margin: 0; }
   margin-top: 10px;
 }
 
-.voiceselect { height: 60px; width: 80%; font-size: 30px; }
+.voiceselect {
+  height: clamp(42px, 5.5vh, 58px);
+  font-size: clamp(13px, 1.6vw, 20px);
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: #fff;
+  border-radius: 10px;
+  padding: 0 10px;
+  cursor: pointer;
+}
 
 .slidecontainer { width: 100%; color: white; }
 
@@ -2441,3 +2448,112 @@ td input[type="text"] { text-align: center; }
 ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 3px; }
 ::-webkit-scrollbar-thumb { background: rgba(0,198,255,0.3); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(0,198,255,0.5); }
+
+
+/* ─────────────────────────────────────────────────────────
+   19. RESPONSIVE SYSTEM
+   Single source of truth for all global breakpoints.
+   index.html inline <style> overrides page-specific
+   components (bingo-button, info-bar, setting_box).
+───────────────────────────────────────────────────────── */
+
+/* ── Fluid base values (all screen sizes) ── */
+
+/* Ball & number display — fluid via clamp */
+.ball2 {
+  width:  clamp(5rem,   9.5vw, 9rem)  !important;
+  height: clamp(5rem,   9.5vw, 9rem)  !important;
+}
+.num {
+  font-size: clamp(24px, 4.5vw, 52px) !important;
+  margin-top: clamp(6px, 2vh, 20px)   !important;
+}
+
+/* Control buttons — touch-friendly fluid sizing */
+.btnbingo, .btnshuffle {
+  height:     clamp(46px, 6.5vh, 62px)    !important;
+  font-size:  clamp(13px, 1.7vw, 18px)    !important;
+  padding:    0 clamp(8px, 1.5vw, 20px)   !important;
+  min-width:  clamp(72px, 10vw, 150px)    !important;
+  max-width:  clamp(110px, 17vw, 160px)   !important;
+}
+
+/* Speed label fluid size */
+.slidecontainer p { font-size: clamp(16px, 2vw, 32px); }
+
+/* numbox / txtbox — fluid font (aspect-ratio handles height) */
+.numbox { font-size: clamp(10px, 2vw, 20px) !important; }
+.txtbox { font-size: clamp(11px, 2.4vw, 22px) !important; }
+
+/* callb — fluid gap and padding */
+.callb {
+  gap:     clamp(2px, 0.6vw, 5px)   !important;
+  padding: clamp(1px, 0.5vh, 3px) clamp(4px, 1vw, 10px) !important;
+}
+
+/* ── Tablet (≤ 1024px) ── */
+@media (max-width: 1024px) {
+  .em-nav-btn {
+    font-size: 13px !important;
+    padding: 9px 10px !important;
+  }
+  .modal-dialog { max-width: 92% !important; }
+  .ball2 { width:  8rem !important; height: 8rem  !important; }
+  .num   { font-size: 36px !important; }
+}
+
+/* ── Large phone (≤ 768px) ── */
+@media (max-width: 768px) {
+  .em-nav-btn {
+    font-size: 12px !important;
+    padding:   8px 8px !important;
+  }
+  .modal-dialog { max-width: 95% !important; }
+
+  /* Derash amounts */
+  .derash-box .amount       { font-size: 24px !important; }
+  .derash-details .total-calls { font-size: 20px !important; }
+  .derash-details .total-card  { font-size: 12px !important; }
+
+  /* Ball */
+  .ball2 { width: 5rem !important;  height: 5rem !important; }
+  .num   { font-size: 28px !important; }
+
+  /* bingo-call row */
+  .bingo-call  { font-size: 14px !important; }
+  .lastcall    { font-size: 14px !important; }
+
+  /* bingoTable header */
+  #bingoTable th { font-size: 24px !important; }
+  #bingoTable td { font-size: 16px !important; }
+}
+
+/* ── Small phone (≤ 480px) ── */
+@media (max-width: 480px) {
+  .ball2 { width: 4.5rem !important; height: 4.5rem !important; }
+  .num   { font-size: 22px !important; }
+
+  /* nav buttons: 2-column */
+  .em-nav-row { flex-wrap: wrap !important; }
+  .em-nav-btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    font-size: 11px !important;
+    padding:   7px 4px !important;
+  }
+
+  /* Modal: nearly full-width */
+  .modal-dialog { max-width: 100% !important; margin: 0.4rem auto !important; }
+
+  /* Speed label */
+  .slidecontainer p { font-size: 16px !important; }
+}
+
+/* ── Extra small (≤ 360px) ── */
+@media (max-width: 360px) {
+  .ball2 { width: 4rem !important; height: 4rem !important; }
+  .num   { font-size: 18px !important; }
+  .em-nav-btn { font-size: 10px !important; padding: 6px 2px !important; }
+  .btnbingo, .btnshuffle { height: 40px !important; font-size: 11px !important; }
+  .voiceselect  { height: 40px !important; font-size: 11px !important; }
+  .card-input   { height: 40px !important; font-size: 11px !important; }
+}
