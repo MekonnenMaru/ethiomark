@@ -1092,9 +1092,25 @@
 
   <!-- Top-right button column -->
   <div id="buttonContainer"
-       style="position:absolute; top:0; right:2px; z-index:9999;
-              display:flex; flex-direction:column; gap:5px;
-              align-items:flex-end; width:50px;">
+       style="position:absolute; top:0; right:0; z-index:9999;
+              display:flex; flex-direction:row; align-items:flex-start; gap:0;">
+
+    <!-- Collapse/expand arrow tab -->
+    <button id="sideToggle"
+            title="Hide/Show panel"
+            style="width:18px; min-width:18px; padding:6px 2px; margin-top:4px;
+                   background:rgba(30,60,100,0.82); color:#7dd3fc;
+                   border:1px solid rgba(0,198,255,0.35); border-right:none;
+                   border-radius:6px 0 0 6px; cursor:pointer; font-size:11px;
+                   line-height:1; writing-mode:vertical-lr; letter-spacing:2px;
+                   display:flex; align-items:center; justify-content:center;">
+      &#9664;
+    </button>
+
+    <!-- Collapsible button panel -->
+    <div id="sideButtons"
+         style="display:flex; flex-direction:column; gap:5px;
+                align-items:flex-end; width:50px; padding-right:2px; padding-top:0;">
 
     <!-- Theme cycle button -->
     <button id="toggleBTN"
@@ -1161,6 +1177,7 @@
       </div>
     </div>
 
+    </div><!-- /sideButtons -->
   </div><!-- /buttonContainer -->
 
   <!-- ─── Settings panel ─── -->
@@ -1518,6 +1535,23 @@
     document.addEventListener('fullscreenchange', () => updateFsIcon(!!document.fullscreenElement));
 
     document.getElementById('helps').addEventListener('click', () => $('#helpmodal').modal('show'));
+
+    /* ── Side panel hide/show toggle ── */
+    (function () {
+      const toggle  = document.getElementById('sideToggle');
+      const panel   = document.getElementById('sideButtons');
+      const ARROW_SHOW = '&#9654;'; // ▶
+      const ARROW_HIDE = '&#9664;'; // ◀
+      let visible = true;
+
+      toggle.addEventListener('click', function () {
+        visible = !visible;
+        panel.style.display  = visible ? 'flex' : 'none';
+        toggle.innerHTML     = visible ? ARROW_HIDE : ARROW_SHOW;
+        toggle.style.borderRadius = visible ? '6px 0 0 6px' : '6px';
+        toggle.style.borderRight  = visible ? 'none' : '1px solid rgba(0,198,255,0.35)';
+      });
+    })();
   </script>
 
 </div><!-- /user-content -->
