@@ -1731,14 +1731,14 @@
        style="display:none; overflow-y:auto;">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header" style="flex-direction:column; gap:12px;">
-          <div class="em-title-row">
+        <div class="modal-header">
+          <div class="em-header-left">
             <span class="em-brand">ኢትዮ-ማርክ ቢንጎ</span>
             <span class="em-round-badge" id="modal-round-number">Round 1</span>
           </div>
           <div class="em-nav-row">
             <button class="em-nav-btn em-btn-report"   id="report_button">📊 Report</button>
-            <button class="em-nav-btn em-btn-register" id="register_game_button">🎴 Register Card</button>
+            <button class="em-nav-btn em-btn-register" id="register_game_button">🎴 Register</button>
             <button id="pkg-modal-btn" onclick="showPackageOverlay('top-up')" class="em-nav-btn"
                     style="background:rgba(0,198,255,0.1); border-color:rgba(0,198,255,0.35); color:#00c6ff;">
               💳 Package
@@ -1750,36 +1750,35 @@
         <div class="modal-body">
           <div id="amount"
                style="font-size:26px; font-weight:900; text-align:center;
-                      margin-bottom:10px; letter-spacing:0.5px;">
-            ኢትዮ-ማርክ ቢንጎ
+                      margin-bottom:6px; letter-spacing:0.5px; min-height:0;">
           </div>
 
           <!-- Stats grid (shown when cards are registered) -->
-          <div id="modal-game-info" style="display:none; margin-bottom:14px;">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div id="modal-game-info" style="display:none; width:100%; margin-bottom:6px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px;">
               <div style="background:rgba(0,198,255,0.08); border:1px solid rgba(0,198,255,0.25);
-                          border-radius:14px; padding:12px 10px; text-align:center;">
-                <div style="font-size:11px; font-weight:700; letter-spacing:1.2px;
-                            color:rgba(0,198,255,0.7); text-transform:uppercase; margin-bottom:5px;">Pattern</div>
-                <div style="font-size:15px; font-weight:800; color:#00c6ff;" id="mi-pattern">—</div>
+                          border-radius:10px; padding:8px 6px; text-align:center;">
+                <div style="font-size:9px; font-weight:700; letter-spacing:1px;
+                            color:rgba(0,198,255,0.7); text-transform:uppercase; margin-bottom:4px;">Pattern</div>
+                <div style="font-size:13px; font-weight:800; color:#00c6ff;" id="mi-pattern">—</div>
               </div>
               <div style="background:rgba(0,230,118,0.08); border:1px solid rgba(0,230,118,0.25);
-                          border-radius:14px; padding:12px 10px; text-align:center;">
-                <div style="font-size:11px; font-weight:700; letter-spacing:1.2px;
-                            color:rgba(0,230,118,0.7); text-transform:uppercase; margin-bottom:5px;">Cards</div>
-                <div style="font-size:15px; font-weight:800; color:#00e676;" id="mi-cards">0</div>
+                          border-radius:10px; padding:8px 6px; text-align:center;">
+                <div style="font-size:9px; font-weight:700; letter-spacing:1px;
+                            color:rgba(0,230,118,0.7); text-transform:uppercase; margin-bottom:4px;">Cards</div>
+                <div style="font-size:13px; font-weight:800; color:#00e676;" id="mi-cards">0</div>
               </div>
               <div style="background:rgba(255,215,64,0.08); border:1px solid rgba(255,215,64,0.25);
-                          border-radius:14px; padding:12px 10px; text-align:center;">
-                <div style="font-size:11px; font-weight:700; letter-spacing:1.2px;
-                            color:rgba(255,215,64,0.7); text-transform:uppercase; margin-bottom:5px;">Price/Card</div>
-                <div style="font-size:15px; font-weight:800; color:#ffd740;" id="mi-price">0 ብር</div>
+                          border-radius:10px; padding:8px 6px; text-align:center;">
+                <div style="font-size:9px; font-weight:700; letter-spacing:1px;
+                            color:rgba(255,215,64,0.7); text-transform:uppercase; margin-bottom:4px;">Price</div>
+                <div style="font-size:13px; font-weight:800; color:#ffd740;" id="mi-price">0 ብር</div>
               </div>
               <div style="background:rgba(200,120,255,0.08); border:1px solid rgba(200,120,255,0.25);
-                          border-radius:14px; padding:12px 10px; text-align:center;">
-                <div style="font-size:11px; font-weight:700; letter-spacing:1.2px;
-                            color:rgba(200,120,255,0.7); text-transform:uppercase; margin-bottom:5px;">Revenue</div>
-                <div style="font-size:15px; font-weight:800; color:#c878ff;" id="mi-revenue">0 ብር</div>
+                          border-radius:10px; padding:8px 6px; text-align:center;">
+                <div style="font-size:9px; font-weight:700; letter-spacing:1px;
+                            color:rgba(200,120,255,0.7); text-transform:uppercase; margin-bottom:4px;">Revenue</div>
+                <div style="font-size:13px; font-weight:800; color:#c878ff;" id="mi-revenue">0 ብር</div>
               </div>
             </div>
           </div>
