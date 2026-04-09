@@ -1540,16 +1540,21 @@
     (function () {
       const toggle  = document.getElementById('sideToggle');
       const panel   = document.getElementById('sideButtons');
-      const ARROW_SHOW = '&#9654;'; // ▶
-      const ARROW_HIDE = '&#9664;'; // ◀
-      let visible = true;
+      const KEY     = 'em_side_panel_hidden';
+
+      function applyState(hidden) {
+        panel.style.display       = hidden ? 'none' : 'flex';
+        toggle.innerHTML          = hidden ? '&#9654;' : '&#9664;';
+        toggle.style.borderRadius = hidden ? '6px' : '6px 0 0 6px';
+        toggle.style.borderRight  = hidden ? '1px solid rgba(0,198,255,0.35)' : 'none';
+        localStorage.setItem(KEY, hidden ? '1' : '0');
+      }
+
+      /* Restore saved state on load */
+      applyState(localStorage.getItem(KEY) === '1');
 
       toggle.addEventListener('click', function () {
-        visible = !visible;
-        panel.style.display  = visible ? 'flex' : 'none';
-        toggle.innerHTML     = visible ? ARROW_HIDE : ARROW_SHOW;
-        toggle.style.borderRadius = visible ? '6px 0 0 6px' : '6px';
-        toggle.style.borderRight  = visible ? 'none' : '1px solid rgba(0,198,255,0.35)';
+        applyState(panel.style.display !== 'none');
       });
     })();
   </script>
