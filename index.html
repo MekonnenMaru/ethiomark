@@ -496,10 +496,25 @@
         await API.saveGameState(_advancedState);
         window._gameStateCache = _advancedState;
       }
-      /* Step 4: preload selected cards into fast-lookup map */
-      const _gsCards = (window._gameStateCache.cards || []);
-      if (_gsCards.length) {
-        window._loadedCards = await API.getCardsBatch(_gsCards);
+      /* Step 4: preload selected cards into fast-lookup map (category-aware) */
+      const _gsCards  = (window._gameStateCache.cards || []);
+      const _gsCat    = window._gameStateCache.cartela_category || '';
+      window._loadedCards = {};
+      if (_gsCards.length && typeof BINGO_CARDS !== 'undefined') {
+        /* Build lookup from in-memory BINGO_CARDS filtered by category so that
+           duplicate cartela_numbers across categories always resolve correctly */
+        const cardSet = new Set(_gsCards);
+        BINGO_CARDS.forEach(c => {
+          if (cardSet.has(c[0]) && (!_gsCat || c[6] === _gsCat)) {
+            window._loadedCards[c[0]] = c;
+          }
+        });
+        /* Fallback: any registered card still missing → fill from DB */
+        const missing = _gsCards.filter(id => !window._loadedCards[id]);
+        if (missing.length) {
+          const fromDB = await API.getCardsBatch(missing);
+          Object.assign(window._loadedCards, fromDB);
+        }
       }
 
       /* Step 5: normal game startup */
@@ -2932,6 +2947,12 @@
   function lookupCard(cn) {
     if (window._loadedCards && window._loadedCards[cn]) return window._loadedCards[cn];
     const src = (typeof BINGO_CARDS !== 'undefined') ? BINGO_CARDS : [];
+    const cat = (getGameState().cartela_category || '');
+    /* Always filter by category so duplicate cartela_numbers resolve correctly */
+    if (cat) {
+      const match = src.find(c => c[0] === cn && c[6] === cat);
+      if (match) return match;
+    }
     return src.find(c => c[0] === cn) || null;
   }
 
