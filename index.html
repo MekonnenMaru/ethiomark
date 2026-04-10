@@ -658,8 +658,8 @@
       const paid       = (opts.paid    !== undefined) ? opts.paid : 0;
       const bonus      = 0;
       const income_net = total_bet - paid - bonus;
-      /* Track collected revenue against package balance */
-      if (total_bet > 0) API.addRevenue(total_bet);
+      /* Track revenue — skip if already counted when the game started */
+      if (total_bet > 0 && !gs.started_at) API.addRevenue(total_bet);
       API.addHistory({
         round:        gs.round        || 1,
         date:         new Date().toISOString(),
@@ -695,6 +695,7 @@
       }).catch(() => {});
       /* Clear accumulated winners from game state */
       gs.winning_cards = [];
+      gs.started_at    = '';   /* clear so next round's revenue counts fresh */
       saveGameState(gs);
       /* Stamp today so daily-reset knows the last active date */
       API.stampActiveDate();
@@ -1035,6 +1036,32 @@
       document.getElementById('gsb-cards').textContent   = n;
       document.getElementById('gsb-price').textContent   = s;
     }
+
+    /* ── Lock the round immediately on start ──
+       Record it in history right now so a page refresh can't give a free replay.
+       Revenue is counted here; saveGameToHistory will skip it to avoid double-counting. */
+    const gsLock      = getGameState();
+    const startedAt   = new Date().toISOString();
+    gsLock.started_at = startedAt;
+    saveGameState(gsLock);
+    if (dr > 0) API.addRevenue(dr);
+    API.addHistory({
+      round:        gsLock.round   || 1,
+      date:         startedAt,
+      cards:        gsLock.cards,
+      price:        gsLock.price   || 0,
+      pattern:      gsLock.pattern || 1,
+      sound:        gsLock.sound   || 1,
+      randomstring: '',
+      status:       'started',
+      cashier_id:   API.getSession() || '',
+      winners:      [],
+      on_call:      '',
+      total_bet:    dr,
+      paid:         0,
+      bonus:        0,
+      income_net:   dr,
+    }).catch(() => {});
 
     $('#myModal').modal('hide');
     hasBeenCalled = false;
@@ -2840,6 +2867,7 @@
       last_active_date: today,
       winning_cards:   [],
       on_call:         '',
+      started_at:      '',
       last_used_cards: lastUsedCards,
     });
     window._gameStateCache = await API.getGameState(); /* keep cache in sync */
