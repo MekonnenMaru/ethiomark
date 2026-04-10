@@ -12,7 +12,7 @@
    ═══════════════════════════════════════════════ */
 
 const DB_NAME    = 'EthiomarkBingoDB';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 let _db = null;
 
 /* ── open / upgrade ── */
@@ -21,9 +21,20 @@ function openDB() {
     if (_db) { resolve(_db); return; }
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = e => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains('cards'))
-        db.createObjectStore('cards', { keyPath: 'id' });
+      const db         = e.target.result;
+      const oldVersion = e.oldVersion;
+
+      /* v7 — recreate cards store with category index (forces re-seed) */
+      if (oldVersion < 7) {
+        if (db.objectStoreNames.contains('cards')) db.deleteObjectStore('cards');
+        const cs = db.createObjectStore('cards', { keyPath: 'id' });
+        cs.createIndex('by_category', 'category', { unique: false });
+      } else if (!db.objectStoreNames.contains('cards')) {
+        const cs = db.createObjectStore('cards', { keyPath: 'id' });
+        cs.createIndex('by_category', 'category', { unique: false });
+      }
+
+      /* All other stores are idempotent */
       if (!db.objectStoreNames.contains('game_state'))
         db.createObjectStore('game_state');
       if (!db.objectStoreNames.contains('app_settings'))
@@ -34,7 +45,6 @@ function openDB() {
         db.createObjectStore('cashiers', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('license'))
         db.createObjectStore('license');
-      /* v6 — transaction logs */
       if (!db.objectStoreNames.contains('transaction'))
         db.createObjectStore('transaction', { autoIncrement: true });
       if (!db.objectStoreNames.contains('wallettransaction'))
@@ -66,7 +76,7 @@ async function seedCards(progressCb) {
     await new Promise((res, rej) => {
       const tx = db.transaction('cards', 'readwrite');
       const st = tx.objectStore('cards');
-      chunk.forEach(c => st.put({ id: c[0], b: c[1], i: c[2], n: c[3], g: c[4], o: c[5] }));
+      chunk.forEach(c => st.put({ id: c[0], b: c[1], i: c[2], n: c[3], g: c[4], o: c[5], category: c[6] || '' }));
       tx.oncomplete = res;
       tx.onerror    = e => rej(e.target.error);
     });
@@ -267,6 +277,68 @@ async function dbSaveLicense(data) {
   });
 }
 
+/* ── card categories ── */
+
+/* Returns a sorted array of all distinct non-empty category names */
+async function dbGetCardCategories() {
+  const db = await openDB();
+  return new Promise(resolve => {
+    const cats = new Set();
+    const req  = db.transaction('cards','readonly').objectStore('cards').openCursor();
+    req.onsuccess = e => {
+      const c = e.target.result;
+      if (c) { if (c.value.category) cats.add(c.value.category); c.continue(); }
+      else resolve([...cats].sort());
+    };
+    req.onerror = () => resolve([]);
+  });
+}
+
+/* Returns sorted card IDs belonging to a given category.
+   Pass '' or null to return ALL card IDs. */
+async function dbGetCardIdsByCategory(cat) {
+  const db = await openDB();
+  if (!cat) return getAllCardIds();
+  return new Promise(resolve => {
+    const ids = [];
+    const st  = db.transaction('cards','readonly').objectStore('cards');
+    let req;
+    try {
+      req = st.index('by_category').openCursor(IDBKeyRange.only(cat));
+    } catch(_) {
+      req = st.openCursor();   /* fallback: full scan if index missing */
+    }
+    req.onsuccess = e => {
+      const c = e.target.result;
+      if (c) {
+        if (!cat || c.value.category === cat) ids.push(c.value.id);
+        c.continue();
+      } else resolve(ids.sort((a, b) => a - b));
+    };
+    req.onerror = () => resolve([]);
+  });
+}
+
+/* ── cashier helpers ── */
+
+/* Merge `updates` into the cashier record for `id` */
+async function dbUpdateCashier(id, updates) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction('cashiers', 'readwrite');
+    const st  = tx.objectStore('cashiers');
+    const req = st.get(id);
+    req.onsuccess = () => {
+      const existing = req.result;
+      if (!existing) { resolve(false); return; }
+      st.put(Object.assign({}, existing, updates));
+      resolve(true);
+    };
+    req.onerror  = e => reject(e.target.error);
+    tx.onerror   = e => reject(e.target.error);
+  });
+}
+
 /* ── cashiers ── */
 async function seedCashiers(list) {
   const db = await openDB();
@@ -297,6 +369,7 @@ window.EthiomarkDB = {
   dbGetHistory, dbAddHistory, dbUpdateHistoryByRound,
   dbAddTransaction, dbGetTransactions,
   dbAddWalletTransaction, dbGetWalletTransactions,
-  seedCashiers, getCashier,
+  seedCashiers, getCashier, dbUpdateCashier,
+  dbGetCardCategories, dbGetCardIdsByCategory,
   dbGetLicense, dbSaveLicense
 };

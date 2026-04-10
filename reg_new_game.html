@@ -437,6 +437,13 @@ html, body {
     <div class="sidebar-title">⚙ Game Setup</div>
 
     <div class="field">
+      <label>📂 Cartela Category</label>
+      <select id="bp_category" onchange="onCategoryChange(this.value)">
+        <option value="">All Cards</option>
+      </select>
+    </div>
+
+    <div class="field">
       <label>🔍 Search Card Number</label>
       <input type="text" id="searchInput" placeholder="Type to filter..." autocomplete="off">
     </div>
@@ -591,18 +598,79 @@ async function init() {
   if (gs.sound)       document.getElementById('bp_voice').value   = gs.sound;
   if (gs.speed_range) document.getElementById('bp_speed').value   = gs.speed_range;
 
-  /* load all card IDs */
+  /* ── Load categories into dropdown ── */
+  const cashierId    = API.getSession ? (API.getSession() || '') : '';
+  let savedCategory  = gs.cartela_category || '';
+
+  /* Also try to restore from cashier's own saved preference */
+  if (!savedCategory && cashierId) {
+    try {
+      const cashier = await API.getCashier(cashierId);
+      if (cashier) {
+        const cSettings = JSON.parse(cashier.settings_json || '{}');
+        savedCategory   = cSettings.cartela_category || '';
+      }
+    } catch(_) {}
+  }
+
   try {
-    allCardNumbers = await API.getAllCardIds();
+    const cats = await API.getCardCategories();
+    const sel  = document.getElementById('bp_category');
+    cats.forEach(cat => {
+      const opt  = document.createElement('option');
+      opt.value  = cat;
+      opt.textContent = cat;
+      sel.appendChild(opt);
+    });
+    if (savedCategory) sel.value = savedCategory;
+  } catch(_) {}
+
+  /* ── Load card IDs filtered by saved category ── */
+  try {
+    allCardNumbers = await API.getCardIdsByCategory(savedCategory || '');
   } catch(e) {
-    /* fallback to BINGO_CARDS array if IDB not yet seeded */
-    const src = (typeof BINGO_CARDS !== 'undefined') ? BINGO_CARDS : [];
-    const seen = new Set();
-    allCardNumbers = src.map(c => c[0])
-      .filter(n => { if (seen.has(n)) return false; seen.add(n); return true; })
-      .sort((a, b) => a - b);
+    try {
+      allCardNumbers = await API.getAllCardIds();
+    } catch(_) {
+      const src = (typeof BINGO_CARDS !== 'undefined') ? BINGO_CARDS : [];
+      const seen = new Set();
+      allCardNumbers = src.map(c => c[0])
+        .filter(n => { if (seen.has(n)) return false; seen.add(n); return true; })
+        .sort((a, b) => a - b);
+    }
   }
   document.getElementById('totalCards').textContent = allCardNumbers.length;
+
+  renderGrid();
+  updateStats();
+}
+
+/* ── Category change handler ── */
+async function onCategoryChange(cat) {
+  currentPage = 1;
+  try {
+    allCardNumbers = await API.getCardIdsByCategory(cat);
+  } catch(e) {
+    allCardNumbers = await API.getAllCardIds().catch(() => []);
+  }
+  document.getElementById('totalCards').textContent = allCardNumbers.length;
+
+  /* Deselect cards that don't belong to the new category */
+  const inCategory = new Set(allCardNumbers);
+  for (const n of [...selectedCards]) {
+    if (!inCategory.has(n)) selectedCards.delete(n);
+  }
+
+  /* Persist preference to cashier record */
+  const cashierId = API.getSession ? (API.getSession() || '') : '';
+  if (cashierId) {
+    try {
+      const cashier   = await API.getCashier(cashierId);
+      const cSettings = JSON.parse((cashier || {}).settings_json || '{}');
+      cSettings.cartela_category = cat;
+      await API.updateCashier(cashierId, { settings_json: JSON.stringify(cSettings) });
+    } catch(_) {}
+  }
 
   renderGrid();
   updateStats();
@@ -697,16 +765,17 @@ async function saveAndGo() {
   const gs = getGameState();
   const _savedCards = Array.from(selectedCards).sort((a, b) => a - b);
   const newState = {
-    round:          gs.round        || 1,
-    cards:          _savedCards,
-    last_used_cards: _savedCards,   /* preserved for next-round card restore */
-    pattern:        parseInt(document.getElementById('bp_pattern').value) || 1,
-    price:          parseInt(document.getElementById('bp_price').value)   || 10,
-    sound:          parseInt(document.getElementById('bp_voice').value)   || 1,
-    speed_range:    parseInt(document.getElementById('bp_speed').value)   || 3,
-    randomstring:   gs.randomstring  || '',
-    locked_cards:   gs.locked_cards  || [],
-    winning_cards:  gs.winning_cards || [],
+    round:            gs.round        || 1,
+    cards:            _savedCards,
+    last_used_cards:  _savedCards,   /* preserved for next-round card restore */
+    cartela_category: document.getElementById('bp_category').value || '',
+    pattern:          parseInt(document.getElementById('bp_pattern').value) || 1,
+    price:            parseInt(document.getElementById('bp_price').value)   || 10,
+    sound:            parseInt(document.getElementById('bp_voice').value)   || 1,
+    speed_range:      parseInt(document.getElementById('bp_speed').value)   || 3,
+    randomstring:     gs.randomstring  || '',
+    locked_cards:     gs.locked_cards  || [],
+    winning_cards:    gs.winning_cards || [],
   };
 
   try {

@@ -76,6 +76,14 @@ window.API = (() => {
     return EthiomarkDB.dbGetHistory();
   }
 
+  /* ── card categories ── */
+  async function getCardCategories() {
+    return EthiomarkDB.dbGetCardCategories();
+  }
+  async function getCardIdsByCategory(cat) {
+    return EthiomarkDB.dbGetCardIdsByCategory(cat);
+  }
+
   async function addHistory(entry) {
     return EthiomarkDB.dbAddHistory(entry);
   }
@@ -127,6 +135,10 @@ window.API = (() => {
 
   async function getCashier(id) {
     return EthiomarkDB.getCashier(id);
+  }
+  /* Merge fields into a cashier record */
+  async function updateCashier(id, updates) {
+    return EthiomarkDB.dbUpdateCashier(id, updates);
   }
 
   async function verifyCredentials(id, passwordHash) {
@@ -491,10 +503,11 @@ window.API = (() => {
     getCard, getCardsBatch, getAllCardIds,
     getGameState, saveGameState, clearGameState,
     getSettings, saveSettings,
+    getCardCategories, getCardIdsByCategory,
     getHistory, addHistory, updateHistoryByRound,
     addTransaction, getTransactions,
     addWalletTransaction, getWalletTransactions,
-    seedCashiers, getCashier, verifyCredentials,
+    seedCashiers, getCashier, updateCashier, verifyCredentials,
     getSession, setSession, clearSession,
     /* license */
     getMachineId, getLicenseInfo, getBalance,
