@@ -560,7 +560,26 @@ async function init() {
   window._gameStateCache   = await API.getGameState();
   window._appSettingsCache = await API.getSettings();
 
-  const gs = getGameState();
+  let gs = getGameState();
+
+  /* ── Anti-cheat: if the game was STARTED and the cashier navigated here
+     instead of finishing, show the NEXT round and clear cards so they
+     cannot modify the running round. ── */
+  if (gs.started_at) {
+    const _adv = Object.assign({}, gs, {
+      round:        (gs.round || 1) + 1,
+      cards:        [],
+      randomstring: '',
+      started_at:   '',
+      winning_cards:[],
+      locked_cards: [],
+      on_call:      '',
+    });
+    await API.saveGameState(_adv);
+    window._gameStateCache = _adv;
+    gs = _adv;
+  }
+
   document.getElementById('roundDisplay').textContent = gs.round || 1;
 
   // Restore cards: use current round's cards if present, otherwise fall back to last used cards

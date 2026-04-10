@@ -476,10 +476,29 @@
       window._gameStateCache   = await API.getGameState();
       window._appSettingsCache = await API.getSettings();
 
-      /* Step 4: preload selected cards into fast-lookup map */
+      /* ── Anti-cheat refresh guard ──────────────────────────────────────
+         If the game was STARTED but the page was refreshed instead of
+         finishing normally, the cashier would be able to replay the same
+         round. We detect this by checking started_at and force-advance
+         to the next round so that round can never be replayed.            */
       const _gs = window._gameStateCache;
-      if (_gs.cards && _gs.cards.length) {
-        window._loadedCards = await API.getCardsBatch(_gs.cards);
+      if (_gs.started_at) {
+        const _advancedState = Object.assign({}, _gs, {
+          round:        (_gs.round || 1) + 1,
+          cards:        [],
+          randomstring: '',
+          started_at:   '',
+          winning_cards:[],
+          locked_cards: [],
+          on_call:      '',
+        });
+        await API.saveGameState(_advancedState);
+        window._gameStateCache = _advancedState;
+      }
+      /* Step 4: preload selected cards into fast-lookup map */
+      const _gsCards = (window._gameStateCache.cards || []);
+      if (_gsCards.length) {
+        window._loadedCards = await API.getCardsBatch(_gsCards);
       }
 
       /* Step 5: normal game startup */
