@@ -197,13 +197,16 @@ const SECTOR_COLORS = [
   ['#ea80fc','#6a1b9a'], ['#ffab40','#bf360c'], ['#18ffff','#006064'],
 ];
 
-let cards     = [];
-let angle     = 0;          // current rotation (radians)
-let velocity  = 0;          // radians per frame
-let spinning  = false;
-let rafId     = null;
-let winnerIdx = -1;         // sector index of winner
-let cSize     = 300;        // canvas pixel size
+let cards          = [];
+let angle          = 0;       // current rotation (radians)
+let velocity       = 0;       // radians per frame
+let friction       = 0.991;   // set per-spin
+let spinning       = false;
+let rafId          = null;
+let winnerIdx      = -1;
+let cSize          = 300;
+let lastSectorIdx  = -1;      // for tick detection
+let audioCtx       = null;
 
 /* ═══════════════════════════════════════════════════════
    BOOTSTRAP
@@ -353,45 +356,113 @@ function drawWheel() {
 }
 
 /* ═══════════════════════════════════════════════════════
-   SPIN PHYSICS
+   AUDIO  (Web Audio API — no external files)
+═══════════════════════════════════════════════════════ */
+function getAudioCtx() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  return audioCtx;
+}
+
+/* Crisp ratchet click — pitch rises when fast, falls when slow */
+function playTick(fast) {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  try {
+    const bufLen = Math.floor(ctx.sampleRate * 0.018);
+    const buf    = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+    const data   = buf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufLen * 0.12));
+    }
+    const src    = ctx.createBufferSource();
+    src.buffer   = buf;
+
+    const filt   = ctx.createBiquadFilter();
+    filt.type    = 'bandpass';
+    filt.frequency.value = fast ? 2200 : 700;
+    filt.Q.value = 4;
+
+    const gain   = ctx.createGain();
+    gain.gain.value = fast ? 0.25 : 0.55;
+
+    src.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+    src.start();
+  } catch(e) {}
+}
+
+/* Ascending fanfare on winner reveal */
+function playWinSound() {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  try {
+    [523, 659, 784, 1047, 1319].forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type   = 'sine';
+      osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.14;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.32, t + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.5);
+    });
+  } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════════════════
+   SPIN PHYSICS  (exponential friction — natural feel)
 ═══════════════════════════════════════════════════════ */
 function doSpin() {
   if (spinning) return;
-  spinning = true;
-  winnerIdx = -1;
+  spinning      = true;
+  winnerIdx     = -1;
+  lastSectorIdx = -1;
+
+  /* Resume AudioContext if suspended (browser policy) */
+  const ctx = getAudioCtx();
+  if (ctx && ctx.state === 'suspended') ctx.resume();
 
   const btn = document.getElementById('spin-btn');
-  btn.disabled = true;
+  btn.disabled    = true;
   btn.textContent = 'SPINNING…';
 
-  /* random target: at least 5 full rotations + extra random portion */
-  const extraRot  = (Math.random() * Math.PI * 2);
-  const totalRot  = Math.PI * 2 * (5 + Math.floor(Math.random() * 4)) + extraRot;
+  /* Friction 0.990-0.993 → ~8-12 full rotations, ~9-13 seconds */
+  friction = 0.990 + Math.random() * 0.003;
+  /* Initial velocity: ~0.38-0.50 rad/frame */
+  velocity = 0.38 + Math.random() * 0.12;
 
-  /* we animate with constant deceleration from initialVelocity to 0 */
-  const frames    = 220 + Math.floor(Math.random() * 80);  /* ~3.7–5s at 60fps */
-  const initV     = totalRot / (frames * (frames + 1) / 2 / frames);
-
-  velocity = initV;
-  spin(frames, initV);
+  spinFrame();
 }
 
-function spin(framesLeft, initV) {
-  if (framesLeft <= 0) {
+function spinFrame() {
+  /* Exponential deceleration */
+  velocity *= friction;
+  angle    += velocity;
+
+  /* ── Tick sound: fire when pointer crosses a sector boundary ── */
+  if (cards.length > 0) {
+    const arc  = (Math.PI * 2) / cards.length;
+    const norm = ((-angle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+    const sec  = Math.floor(norm / arc) % cards.length;
+    if (sec !== lastSectorIdx) {
+      playTick(velocity > 0.12);
+      lastSectorIdx = sec;
+    }
+  }
+
+  drawWheel();
+
+  /* Stop threshold: ~0.0006 rad/frame feels like it truly crawls to a halt */
+  if (velocity > 0.0006) {
+    rafId = requestAnimationFrame(spinFrame);
+  } else {
+    velocity = 0;
     spinning = false;
     revealWinner();
-    return;
   }
-  /* ease-out: linear deceleration */
-  const progress = 1 - framesLeft / (framesLeft + 1);
-  velocity = initV * (framesLeft / (framesLeft + initV * 10)); /* natural friction */
-
-  const elapsed = (220 + 80) - framesLeft;
-  velocity = initV * Math.pow(0.985, elapsed);
-
-  angle += velocity;
-  drawWheel();
-  rafId = requestAnimationFrame(() => spin(framesLeft - 1, initV));
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -411,7 +482,8 @@ function revealWinner() {
   const winCard = cards[winnerIdx];
   document.getElementById('winner-number').textContent = winCard;
 
-  /* confetti burst */
+  /* fanfare + confetti burst */
+  playWinSound();
   startConfetti();
 
   setTimeout(() => {
