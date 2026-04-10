@@ -80,6 +80,13 @@ window.API = (() => {
     return EthiomarkDB.dbAddHistory(entry);
   }
 
+  /* Update the most-recent history record for `round` whose status === fromStatus.
+     Merges `updates` into it. Falls back to addHistory if no match found. */
+  async function updateHistoryByRound(round, fromStatus, updates) {
+    const found = await EthiomarkDB.dbUpdateHistoryByRound(round, fromStatus, updates);
+    return found;
+  }
+
   /* ────────────────────────────────────────────────────────────
      GAME TRANSACTION LOG
      One record per completed game round — mirrors SQL `transaction`.
@@ -484,7 +491,7 @@ window.API = (() => {
     getCard, getCardsBatch, getAllCardIds,
     getGameState, saveGameState, clearGameState,
     getSettings, saveSettings,
-    getHistory, addHistory,
+    getHistory, addHistory, updateHistoryByRound,
     addTransaction, getTransactions,
     addWalletTransaction, getWalletTransactions,
     seedCashiers, getCashier, verifyCredentials,

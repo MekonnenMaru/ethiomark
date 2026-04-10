@@ -182,6 +182,31 @@ async function dbAddHistory(entry) {
   });
 }
 
+/* Find the most-recent record for `round` with status === fromStatus
+   and merge `updates` into it. Returns true if a record was found. */
+async function dbUpdateHistoryByRound(round, fromStatus, updates) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction('game_history', 'readwrite');
+    const store = tx.objectStore('game_history');
+    /* open cursor newest-first (prev) so we hit the most recent match */
+    const req = store.openCursor(null, 'prev');
+    let found = false;
+    req.onsuccess = e => {
+      const cursor = e.target.result;
+      if (!cursor) { resolve(found); return; }
+      if (!found && cursor.value.round == round && cursor.value.status === fromStatus) {
+        found = true;
+        cursor.update({ ...cursor.value, ...updates });
+        resolve(true);
+        return; /* don't continue — we only update the newest match */
+      }
+      cursor.continue();
+    };
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
 /* ── game transaction log ── */
 async function dbAddTransaction(entry) {
   const db = await openDB();
@@ -269,7 +294,7 @@ window.EthiomarkDB = {
   getCard, getCardsBatch, getAllCardIds,
   dbGetGameState, dbSaveGameState, dbClearGameState,
   dbGetAppSettings, dbSaveAppSettings,
-  dbGetHistory, dbAddHistory,
+  dbGetHistory, dbAddHistory, dbUpdateHistoryByRound,
   dbAddTransaction, dbGetTransactions,
   dbAddWalletTransaction, dbGetWalletTransactions,
   seedCashiers, getCashier,

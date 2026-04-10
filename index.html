@@ -660,15 +660,17 @@
       const income_net = total_bet - paid - bonus;
       /* Track revenue — skip if already counted when the game started */
       if (total_bet > 0 && !gs.started_at) API.addRevenue(total_bet);
-      API.addHistory({
+      const completedAt  = new Date().toISOString();
+      const finalStatus  = 'completed';
+      const historyEntry = {
         round:        gs.round        || 1,
-        date:         new Date().toISOString(),
+        date:         completedAt,
         cards:        gs.cards,
         price:        gs.price        || 0,
         pattern:      gs.pattern      || 1,
         sound:        gs.sound        || 1,
         randomstring: gs.randomstring || '',
-        status:       status          || 'played',
+        status:       finalStatus,
         cashier_id:   cashierId,
         winners:      winners,
         on_call:      on_call,
@@ -676,7 +678,11 @@
         paid:         paid,
         bonus:        bonus,
         income_net:   income_net,
-      });
+      };
+      /* STARTED → COMPLETED transition; fall back to new record if none found */
+      API.updateHistoryByRound(gs.round || 1, 'started', historyEntry)
+        .then(found => { if (!found) API.addHistory(historyEntry).catch(() => {}); })
+        .catch(() => { API.addHistory(historyEntry).catch(() => {}); });
       /* Save game transaction record */
       API.addTransaction({
         cashier_id:     cashierId,
@@ -687,11 +693,11 @@
         paid:           paid,
         income_net:     income_net,
         bonus:          bonus,
-        date:           new Date().toISOString(),
+        date:           completedAt,
         result:         gs.randomstring || '',
         checked_number: winners.join(','),
         on_call:        on_call,
-        status:         status || 'played',
+        status:         finalStatus,
       }).catch(() => {});
       /* Clear accumulated winners from game state */
       gs.winning_cards = [];
@@ -1037,31 +1043,43 @@
       document.getElementById('gsb-price').textContent   = s;
     }
 
-    /* ── Lock the round immediately on start ──
-       Record it in history right now so a page refresh can't give a free replay.
-       Revenue is counted here; saveGameToHistory will skip it to avoid double-counting. */
+    /* ── PENDING → STARTED: lock round when ▶ ጀምር is clicked ──
+       Transitions the pending record to 'started' (or adds 'started' if none found).
+       Revenue counted now so a page refresh can't give a free replay. */
     const gsLock      = getGameState();
     const startedAt   = new Date().toISOString();
     gsLock.started_at = startedAt;
     saveGameState(gsLock);
     if (dr > 0) API.addRevenue(dr);
-    API.addHistory({
-      round:        gsLock.round   || 1,
-      date:         startedAt,
-      cards:        gsLock.cards,
-      price:        gsLock.price   || 0,
-      pattern:      gsLock.pattern || 1,
-      sound:        gsLock.sound   || 1,
-      randomstring: '',
+    const startedEntry = {
       status:       'started',
-      cashier_id:   API.getSession() || '',
+      date:         startedAt,
+      randomstring: '',
       winners:      [],
       on_call:      '',
-      total_bet:    dr,
       paid:         0,
-      bonus:        0,
       income_net:   dr,
-    }).catch(() => {});
+    };
+    API.updateHistoryByRound(gsLock.round || 1, 'pending', startedEntry)
+      .then(found => {
+        if (!found) API.addHistory({
+          round:      gsLock.round   || 1,
+          date:       startedAt,
+          cards:      gsLock.cards,
+          price:      gsLock.price   || 0,
+          pattern:    gsLock.pattern || 1,
+          sound:      gsLock.sound   || 1,
+          randomstring: '',
+          status:     'started',
+          cashier_id: API.getSession() || '',
+          winners:    [],
+          on_call:    '',
+          total_bet:  dr,
+          paid:       0,
+          bonus:      0,
+          income_net: dr,
+        }).catch(() => {});
+      }).catch(() => {});
 
     $('#myModal').modal('hide');
     hasBeenCalled = false;
@@ -2849,7 +2867,7 @@
         if (house_profit < 10) house_profit = 10;
         paid = total_bet - house_profit;
       }
-      saveGameToHistory('win', { winners, on_call, paid });
+      saveGameToHistory('completed', { winners, on_call, paid });
     } else {
       saveGameToHistory('completed');
     }

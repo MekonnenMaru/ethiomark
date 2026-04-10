@@ -691,9 +691,32 @@ async function saveAndGo() {
     await API.saveGameState(newState);
     window._gameStateCache = newState;
   } catch(e) {
-    /* fallback: sync path still works */
     window._gameStateCache = newState;
   }
+
+  /* ── Save PENDING status immediately when cards are registered ──
+     Update existing pending record for this round, or add a new one. */
+  const pendingEntry = {
+    round:        newState.round,
+    date:         new Date().toISOString(),
+    cards:        newState.cards,
+    price:        newState.price   || 0,
+    pattern:      newState.pattern || 1,
+    sound:        newState.sound   || 1,
+    randomstring: '',
+    status:       'pending',
+    cashier_id:   API.getSession ? (API.getSession() || '') : '',
+    winners:      [],
+    on_call:      '',
+    total_bet:    newState.cards.length * (newState.price || 0),
+    paid:         0,
+    bonus:        0,
+    income_net:   newState.cards.length * (newState.price || 0),
+  };
+  try {
+    const updated = await API.updateHistoryByRound(newState.round, 'pending', pendingEntry);
+    if (!updated) await API.addHistory(pendingEntry);
+  } catch(e) {}
 
   window.location.href = 'index.html';
 }
