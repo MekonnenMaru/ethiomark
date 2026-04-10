@@ -472,23 +472,6 @@ html, body {
     </div>
 
     <div class="field">
-      <label>🎙 Voice</label>
-      <select id="bp_voice">
-        <option value="11">New voice</option>
-        <option value="10">Addis</option>
-        <option value="1">Bereket</option>
-        <option value="2">Nigus</option>
-        <option value="3">Amharic Arada</option>
-        <option value="4">Amharic Formal</option>
-        <option value="5">Yordi</option>
-        <option value="6">Beti</option>
-        <option value="7">Oromifa Female</option>
-        <option value="8">Tigrigna Female</option>
-        <option value="9">Tigrigna Male</option>
-      </select>
-    </div>
-
-    <div class="field">
       <label>⚡ Draw Speed (seconds)</label>
       <input type="number" id="bp_speed" value="3" min="1" max="15">
     </div>
@@ -556,6 +539,17 @@ function saveGameState(s) {
   API.saveGameState(s);
 }
 
+/* ── In-memory category filter (instant, no DB needed) ── */
+function _getCardIdsByCategory(cat) {
+  const src = (typeof BINGO_CARDS !== 'undefined') ? BINGO_CARDS : [];
+  const seen = new Set();
+  return src
+    .filter(c => !cat || c[6] === cat)
+    .map(c => c[0])
+    .filter(n => { if (seen.has(n)) return false; seen.add(n); return true; })
+    .sort((a, b) => a - b);
+}
+
 async function init() {
   /* migrate localStorage → IDB on first run */
   const lsState    = localStorage.getItem('game_state');
@@ -595,14 +589,13 @@ async function init() {
   cardsToRestore.forEach(n => selectedCards.add(n));
   if (gs.pattern)     document.getElementById('bp_pattern').value = gs.pattern;
   if (gs.price)       document.getElementById('bp_price').value   = gs.price;
-  if (gs.sound)       document.getElementById('bp_voice').value   = gs.sound;
   if (gs.speed_range) document.getElementById('bp_speed').value   = gs.speed_range;
 
-  /* ── Load categories into dropdown ── */
+  /* ── Load categories directly from in-memory BINGO_CARDS (instant, no DB wait) ── */
   const cashierId    = API.getSession ? (API.getSession() || '') : '';
   let savedCategory  = gs.cartela_category || '';
 
-  /* Also try to restore from cashier's own saved preference */
+  /* Also try to restore from cashier's saved preference */
   if (!savedCategory && cashierId) {
     try {
       const cashier = await API.getCashier(cashierId);
@@ -613,32 +606,36 @@ async function init() {
     } catch(_) {}
   }
 
-  try {
-    const cats = await API.getCardCategories();
-    const sel  = document.getElementById('bp_category');
-    cats.forEach(cat => {
-      const opt  = document.createElement('option');
-      opt.value  = cat;
+  /* Default category = "default" */
+  if (!savedCategory) savedCategory = 'default';
+
+  /* Build category list from BINGO_CARDS in-memory data */
+  const sel = document.getElementById('bp_category');
+  if (typeof BINGO_CARDS !== 'undefined' && BINGO_CARDS.length) {
+    const catSet = new Set();
+    BINGO_CARDS.forEach(c => { if (c[6]) catSet.add(c[6]); });
+    [...catSet].sort().forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat;
       opt.textContent = cat;
       sel.appendChild(opt);
     });
-    if (savedCategory) sel.value = savedCategory;
-  } catch(_) {}
+  } else {
+    /* Fallback: query DB */
+    try {
+      const cats = await API.getCardCategories();
+      cats.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        sel.appendChild(opt);
+      });
+    } catch(_) {}
+  }
+  sel.value = savedCategory;
 
   /* ── Load card IDs filtered by saved category ── */
-  try {
-    allCardNumbers = await API.getCardIdsByCategory(savedCategory || '');
-  } catch(e) {
-    try {
-      allCardNumbers = await API.getAllCardIds();
-    } catch(_) {
-      const src = (typeof BINGO_CARDS !== 'undefined') ? BINGO_CARDS : [];
-      const seen = new Set();
-      allCardNumbers = src.map(c => c[0])
-        .filter(n => { if (seen.has(n)) return false; seen.add(n); return true; })
-        .sort((a, b) => a - b);
-    }
-  }
+  allCardNumbers = _getCardIdsByCategory(savedCategory);
   document.getElementById('totalCards').textContent = allCardNumbers.length;
 
   renderGrid();
@@ -648,11 +645,7 @@ async function init() {
 /* ── Category change handler ── */
 async function onCategoryChange(cat) {
   currentPage = 1;
-  try {
-    allCardNumbers = await API.getCardIdsByCategory(cat);
-  } catch(e) {
-    allCardNumbers = await API.getAllCardIds().catch(() => []);
-  }
+  allCardNumbers = _getCardIdsByCategory(cat);
   document.getElementById('totalCards').textContent = allCardNumbers.length;
 
   /* Deselect cards that don't belong to the new category */
@@ -661,7 +654,11 @@ async function onCategoryChange(cat) {
     if (!inCategory.has(n)) selectedCards.delete(n);
   }
 
-  /* Persist preference to cashier record */
+  /* Persist preference to game state (fast) and cashier record */
+  const gs2 = getGameState();
+  gs2.cartela_category = cat;
+  saveGameState(gs2);
+
   const cashierId = API.getSession ? (API.getSession() || '') : '';
   if (cashierId) {
     try {
@@ -771,7 +768,7 @@ async function saveAndGo() {
     cartela_category: document.getElementById('bp_category').value || '',
     pattern:          parseInt(document.getElementById('bp_pattern').value) || 1,
     price:            parseInt(document.getElementById('bp_price').value)   || 10,
-    sound:            parseInt(document.getElementById('bp_voice').value)   || 1,
+    sound:            gs.sound || 1,
     speed_range:      parseInt(document.getElementById('bp_speed').value)   || 3,
     randomstring:     gs.randomstring  || '',
     locked_cards:     gs.locked_cards  || [],
