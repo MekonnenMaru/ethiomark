@@ -1831,8 +1831,20 @@
                     animation:blink 2s infinite; margin:0; width:100%;">
           </p>
 
-          <!-- ④ Start button -->
-          <button type="submit" id="mybtn" onclick="return startbingo();">▶ ጀምር</button>
+          <!-- ④ Start button + Spin shortcut -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;">
+            <button type="submit" id="mybtn" onclick="return startbingo();">▶ ጀምር</button>
+            <a href="spin.html"
+               style="display:inline-flex;align-items:center;gap:8px;padding:9px 28px;
+                      border-radius:50px;font-size:14px;font-weight:800;letter-spacing:1px;
+                      background:linear-gradient(135deg,rgba(123,97,255,0.18),rgba(176,64,255,0.18));
+                      border:1px solid rgba(123,97,255,0.45);color:#b390ff;
+                      text-decoration:none;cursor:pointer;transition:.18s;"
+               onmouseover="this.style.background='linear-gradient(135deg,#7c4dff,#b040ff)';this.style.color='#fff';"
+               onmouseout="this.style.background='linear-gradient(135deg,rgba(123,97,255,0.18),rgba(176,64,255,0.18))';this.style.color='#b390ff';">
+              🎡 Spin to Win
+            </a>
+          </div>
 
         </div>
       </div>
