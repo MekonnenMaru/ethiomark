@@ -484,13 +484,14 @@
       const _gs = window._gameStateCache;
       if (_gs.started_at) {
         const _advancedState = Object.assign({}, _gs, {
-          round:        (_gs.round || 1) + 1,
-          cards:        [],
-          randomstring: '',
-          started_at:   '',
-          winning_cards:[],
-          locked_cards: [],
-          on_call:      '',
+          round:           (_gs.round || 1) + 1,
+          cards:           [],
+          last_used_cards: _gs.cards || _gs.last_used_cards || [], /* preserve for reuse */
+          randomstring:    '',
+          started_at:      '',
+          winning_cards:   [],
+          locked_cards:    [],
+          on_call:         '',
         });
         await API.saveGameState(_advancedState);
         window._gameStateCache = _advancedState;

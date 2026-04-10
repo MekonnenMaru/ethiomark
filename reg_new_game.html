@@ -567,13 +567,14 @@ async function init() {
      cannot modify the running round. ── */
   if (gs.started_at) {
     const _adv = Object.assign({}, gs, {
-      round:        (gs.round || 1) + 1,
-      cards:        [],
-      randomstring: '',
-      started_at:   '',
-      winning_cards:[],
-      locked_cards: [],
-      on_call:      '',
+      round:           (gs.round || 1) + 1,
+      cards:           [],
+      last_used_cards: gs.cards || gs.last_used_cards || [], /* preserve for reuse */
+      randomstring:    '',
+      started_at:      '',
+      winning_cards:   [],
+      locked_cards:    [],
+      on_call:         '',
     });
     await API.saveGameState(_adv);
     window._gameStateCache = _adv;
@@ -694,16 +695,18 @@ async function saveAndGo() {
   btn.innerHTML = '<span style="display:inline-block;animation:spin 0.8s linear infinite;">⏳</span> Saving…';
 
   const gs = getGameState();
+  const _savedCards = Array.from(selectedCards).sort((a, b) => a - b);
   const newState = {
-    round:        gs.round        || 1,
-    cards:        Array.from(selectedCards).sort((a, b) => a - b),
-    pattern:      parseInt(document.getElementById('bp_pattern').value) || 1,
-    price:        parseInt(document.getElementById('bp_price').value)   || 10,
-    sound:        parseInt(document.getElementById('bp_voice').value)   || 1,
-    speed_range:  parseInt(document.getElementById('bp_speed').value)   || 3,
-    randomstring: gs.randomstring  || '',
-    locked_cards: gs.locked_cards  || [],
-    winning_cards: gs.winning_cards || [],
+    round:          gs.round        || 1,
+    cards:          _savedCards,
+    last_used_cards: _savedCards,   /* preserved for next-round card restore */
+    pattern:        parseInt(document.getElementById('bp_pattern').value) || 1,
+    price:          parseInt(document.getElementById('bp_price').value)   || 10,
+    sound:          parseInt(document.getElementById('bp_voice').value)   || 1,
+    speed_range:    parseInt(document.getElementById('bp_speed').value)   || 3,
+    randomstring:   gs.randomstring  || '',
+    locked_cards:   gs.locked_cards  || [],
+    winning_cards:  gs.winning_cards || [],
   };
 
   try {
