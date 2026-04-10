@@ -471,11 +471,6 @@ html, body {
       <input type="number" id="bp_price" value="10" min="1" max="999">
     </div>
 
-    <div class="field">
-      <label>⚡ Draw Speed (seconds)</label>
-      <input type="number" id="bp_speed" value="3" min="1" max="15">
-    </div>
-
     <button class="panel-btn btn-range" onclick="selectRange()">📐 Range Select</button>
 
     <div class="stats-box">
@@ -589,7 +584,6 @@ async function init() {
   cardsToRestore.forEach(n => selectedCards.add(n));
   if (gs.pattern)     document.getElementById('bp_pattern').value = gs.pattern;
   if (gs.price)       document.getElementById('bp_price').value   = gs.price;
-  if (gs.speed_range) document.getElementById('bp_speed').value   = gs.speed_range;
 
   /* ── Load categories directly from in-memory BINGO_CARDS (instant, no DB wait) ── */
   const cashierId    = API.getSession ? (API.getSession() || '') : '';
@@ -769,7 +763,7 @@ async function saveAndGo() {
     pattern:          parseInt(document.getElementById('bp_pattern').value) || 1,
     price:            parseInt(document.getElementById('bp_price').value)   || 10,
     sound:            gs.sound || 1,
-    speed_range:      parseInt(document.getElementById('bp_speed').value)   || 3,
+    speed_range:      gs.speed_range || 3,
     randomstring:     gs.randomstring  || '',
     locked_cards:     gs.locked_cards  || [],
     winning_cards:    gs.winning_cards || [],
