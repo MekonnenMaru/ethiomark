@@ -1802,7 +1802,9 @@
 
   <!-- ─── Start / Register Modal ─── -->
   <div id="myModal" class="modal fade" data-keyboard="false" data-backdrop="static"
-       style="display:none; overflow-y:auto;">
+      data-bs-keyboard="false"
+      data-bs-backdrop="static"
+      style="display:none; overflow-y:auto;">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <!-- ── Header: Round badge left | Nav buttons right ── -->
@@ -2058,13 +2060,13 @@
     };
 
     document.getElementById('pkg-close-btn').addEventListener('click', () => {
-      if (_pkgOverlayMode === 'locked') {
-        /* Balance is zero — must activate before closing */
-        const e = document.getElementById('pkg-key-error');
-        e.textContent  = 'You must activate a package before you can continue.';
-        e.style.display = 'block';
-        return;
-      }
+      // if (_pkgOverlayMode === 'locked') {
+      //   /* Balance is zero — must activate before closing */
+      //   const e = document.getElementById('pkg-key-error');
+      //   e.textContent  = 'You must activate a package before you can continue.';
+      //   e.style.display = 'block';
+      //   return;
+      // }
       hidePackageOverlay();
     });
 
@@ -2956,36 +2958,95 @@
     return src.find(c => c[0] === cn) || null;
   }
 
+
+
+
   /* Returns { count_winning_line, expected_pattern } */
+  // function checkCardWin(card, drawn, pattern) {
+  //   const b = card[1], ic = card[2], n = card[3], g = card[4], o = card[5];
+  //   const drawnSet = new Set(drawn);
+  //   const FREE     = n[2];
+
+  //   function hit(v)     { return drawnSet.has(v) || v === FREE; }
+  //   function allHit(arr){ return arr.every(v => hit(v)); }
+
+  //   const rows    = [
+  //     [b[0],ic[0],n[0],g[0],o[0]], [b[1],ic[1],n[1],g[1],o[1]],
+  //     [b[2],ic[2],n[2],g[2],o[2]], [b[3],ic[3],n[3],g[3],o[3]],
+  //     [b[4],ic[4],n[4],g[4],o[4]]
+  //   ];
+  //   const cols    = [b, ic, n, g, o];
+  //   const diag1   = [b[0],ic[1],n[2],g[3],o[4]];
+  //   const diag2   = [b[4],ic[3],n[2],g[1],o[0]];
+  //   const corners  = [b[0],o[0],b[4],o[4]];
+  //   const cCorners = [ic[1],g[1],ic[3],g[3]];
+  //   const meskel   = [ic[2],n[1],n[3],g[2]];
+
+  //   function rowHit(i) { return rows[i].filter(v => hit(v)).length >= (i === 2 ? 4 : 5); }
+  //   function colHit(c) { return c.filter(v => hit(v)).length >= (c === n ? 4 : 5); }
+  //   function diagHit(d){ return d.filter(v => hit(v)).length >= 4; }
+
+  //   function countLines() {
+  //     let cnt = 0;
+  //     if (allHit(corners))  cnt++;
+  //     if (allHit(cCorners)) cnt++;
+  //     if (allHit(meskel))   cnt++;
+  //     for (let i = 0; i < 5; i++) if (rowHit(i)) cnt++;
+  //     cols.forEach(c => { if (colHit(c)) cnt++; });
+  //     if (diagHit(diag1)) cnt++;
+  //     if (diagHit(diag2)) cnt++;
+  //     return cnt;
+  //   }
+
+  //   let win = false;
+  //   switch (pattern) {
+  //     case 1:  win = countLines() >= 1; break;
+  //     case 2:  win = countLines() >= 2; break;
+  //     case 3:  win = rows.some((_, i) => rowHit(i)); break;
+  //     case 4:  win = cols.some(c => colHit(c)); break;
+  //     case 5:  win = diagHit(diag1) && diagHit(diag2); break;
+  //     case 6:  win = allHit(corners); break;
+  //     case 7:  win = allHit(cCorners); break;
+  //     case 8:  win = allHit(meskel); break;
+  //     case 9:  win = rowHit(0) && colHit(n); break;
+  //     case 10: win = rowHit(4) && colHit(n); break;
+  //     case 11: win = colHit(b) && rowHit(4); break;
+  //     case 12: win = [b,ic,n,g,o].every(c => c.every(v => hit(v))); break;
+  //     default: win = false;
+  //   }
+  //   return { count_winning_line: win ? 1 : 0, expected_pattern: 1 };
+  // }
   function checkCardWin(card, drawn, pattern) {
     const b = card[1], ic = card[2], n = card[3], g = card[4], o = card[5];
     const drawnSet = new Set(drawn);
     const FREE     = n[2];
 
-    function hit(v)     { return drawnSet.has(v) || v === FREE; }
+    function hit(v)     { return v === FREE || drawnSet.has(v); }
     function allHit(arr){ return arr.every(v => hit(v)); }
 
-    const rows    = [
-      [b[0],ic[0],n[0],g[0],o[0]], [b[1],ic[1],n[1],g[1],o[1]],
-      [b[2],ic[2],n[2],g[2],o[2]], [b[3],ic[3],n[3],g[3],o[3]],
+    const rows  = [
+      [b[0],ic[0],n[0],g[0],o[0]],
+      [b[1],ic[1],n[1],g[1],o[1]],
+      [b[2],ic[2],n[2],g[2],o[2]],
+      [b[3],ic[3],n[3],g[3],o[3]],
       [b[4],ic[4],n[4],g[4],o[4]]
     ];
-    const cols    = [b, ic, n, g, o];
-    const diag1   = [b[0],ic[1],n[2],g[3],o[4]];
-    const diag2   = [b[4],ic[3],n[2],g[1],o[0]];
+
+    const cols  = [b, ic, n, g, o];
+    const diag1 = [b[0],ic[1],n[2],g[3],o[4]];
+    const diag2 = [b[4],ic[3],n[2],g[1],o[0]];
+
     const corners  = [b[0],o[0],b[4],o[4]];
     const cCorners = [ic[1],g[1],ic[3],g[3]];
     const meskel   = [ic[2],n[1],n[3],g[2]];
 
-    function rowHit(i) { return rows[i].filter(v => hit(v)).length >= (i === 2 ? 4 : 5); }
-    function colHit(c) { return c.filter(v => hit(v)).length >= (c === n ? 4 : 5); }
-    function diagHit(d){ return d.filter(v => hit(v)).length >= 4; }
+    function rowHit(i) { return allHit(rows[i]); }
+    function colHit(c) { return allHit(c); }
+    function diagHit(d){ return allHit(d); }
 
+    // ✅ FIXED: only real lines
     function countLines() {
       let cnt = 0;
-      if (allHit(corners))  cnt++;
-      if (allHit(cCorners)) cnt++;
-      if (allHit(meskel))   cnt++;
       for (let i = 0; i < 5; i++) if (rowHit(i)) cnt++;
       cols.forEach(c => { if (colHit(c)) cnt++; });
       if (diagHit(diag1)) cnt++;
@@ -2994,6 +3055,7 @@
     }
 
     let win = false;
+
     switch (pattern) {
       case 1:  win = countLines() >= 1; break;
       case 2:  win = countLines() >= 2; break;
@@ -3003,64 +3065,185 @@
       case 6:  win = allHit(corners); break;
       case 7:  win = allHit(cCorners); break;
       case 8:  win = allHit(meskel); break;
-      case 9:  win = rowHit(0) && colHit(n); break;
-      case 10: win = rowHit(4) && colHit(n); break;
-      case 11: win = colHit(b) && rowHit(4); break;
-      case 12: win = [b,ic,n,g,o].every(c => c.every(v => hit(v))); break;
-      default: win = false;
+
+      // ✅ FIXED T Shape (Top)
+      case 9: {
+        const T_top = [...rows[0], n[1], n[2], n[3], n[4]];
+        win = allHit(T_top);
+        break;
+      }
+
+      // ✅ FIXED Reverse T (Bottom)
+      case 10: {
+        const T_bottom = [...rows[4], n[0], n[1], n[2], n[3]];
+        win = allHit(T_bottom);
+        break;
+      }
+
+      // ✅ FIXED L Shape (left + bottom)
+      case 11: {
+        const L_shape = [
+          b[0], b[1], b[2], b[3], b[4],
+          ic[4], n[4], g[4], o[4]
+        ];
+        win = allHit(L_shape);
+        break;
+      }
+
+      case 12:
+        win = [b,ic,n,g,o].every(c => c.every(v => hit(v)));
+        break;
+
+      default:
+        win = false;
     }
+
     return { count_winning_line: win ? 1 : 0, expected_pattern: 1 };
   }
 
+
+
+
   /* Returns a Set of cell values that form winning lines */
+  // function getWinningCells(card, drawn, pattern) {
+  //   const b = card[1], ic = card[2], n = card[3], g = card[4], o = card[5];
+  //   const drawnSet = new Set(drawn);
+  //   const FREE     = n[2];
+
+  //   function hit(v)     { return drawnSet.has(v) || v === FREE; }
+  //   function allHit(arr){ return arr.every(v => hit(v)); }
+
+  //   const rows    = [
+  //     [b[0],ic[0],n[0],g[0],o[0]], [b[1],ic[1],n[1],g[1],o[1]],
+  //     [b[2],ic[2],n[2],g[2],o[2]], [b[3],ic[3],n[3],g[3],o[3]],
+  //     [b[4],ic[4],n[4],g[4],o[4]]
+  //   ];
+  //   const cols    = [b, ic, n, g, o];
+  //   const diag1   = [b[0],ic[1],n[2],g[3],o[4]];
+  //   const diag2   = [b[4],ic[3],n[2],g[1],o[0]];
+  //   const corners  = [b[0],o[0],b[4],o[4]];
+  //   const cCorners = [ic[1],g[1],ic[3],g[3]];
+  //   const meskel   = [ic[2],n[1],n[3],g[2]];
+
+  //   function rowHit(i) { return rows[i].filter(v => hit(v)).length >= (i === 2 ? 4 : 5); }
+  //   function colHit(c) { return c.filter(v => hit(v)).length >= (c === n ? 4 : 5); }
+  //   function diagHit(d){ return d.filter(v => hit(v)).length >= 4; }
+
+  //   const W   = new Set();
+  //   function add(arr) { arr.forEach(v => W.add(v)); }
+
+  //   switch (pattern) {
+  //     case 1: case 2:
+  //       if (allHit(corners))  add(corners);
+  //       if (allHit(cCorners)) add(cCorners);
+  //       if (allHit(meskel))   add(meskel);
+  //       rows.forEach((r, i) => { if (rowHit(i)) add(r); });
+  //       cols.forEach(c       => { if (colHit(c)) add(c); });
+  //       if (diagHit(diag1)) add(diag1);
+  //       if (diagHit(diag2)) add(diag2);
+  //       break;
+  //     case 3:  rows.forEach((r, i) => { if (rowHit(i)) add(r); }); break;
+  //     case 4:  cols.forEach(c      => { if (colHit(c)) add(c); }); break;
+  //     case 5:  if (diagHit(diag1) && diagHit(diag2)) { add(diag1); add(diag2); } break;
+  //     case 6:  if (allHit(corners))  add(corners);  break;
+  //     case 7:  if (allHit(cCorners)) add(cCorners); break;
+  //     case 8:  if (allHit(meskel))   add(meskel);   break;
+  //     case 9:  if (rowHit(0) && colHit(n)) { add(rows[0]); add(n); } break;
+  //     case 10: if (rowHit(4) && colHit(n)) { add(rows[4]); add(n); } break;
+  //     case 11: if (colHit(b) && rowHit(4)) { add(b); add(rows[4]); } break;
+  //     case 12: [b,ic,n,g,o].forEach(c => add(c)); break;
+  //   }
+  //   return W;
+  // }
+
   function getWinningCells(card, drawn, pattern) {
     const b = card[1], ic = card[2], n = card[3], g = card[4], o = card[5];
     const drawnSet = new Set(drawn);
     const FREE     = n[2];
 
-    function hit(v)     { return drawnSet.has(v) || v === FREE; }
+    function hit(v)     { return v === FREE || drawnSet.has(v); }
     function allHit(arr){ return arr.every(v => hit(v)); }
 
-    const rows    = [
-      [b[0],ic[0],n[0],g[0],o[0]], [b[1],ic[1],n[1],g[1],o[1]],
-      [b[2],ic[2],n[2],g[2],o[2]], [b[3],ic[3],n[3],g[3],o[3]],
+    const rows  = [
+      [b[0],ic[0],n[0],g[0],o[0]],
+      [b[1],ic[1],n[1],g[1],o[1]],
+      [b[2],ic[2],n[2],g[2],o[2]],
+      [b[3],ic[3],n[3],g[3],o[3]],
       [b[4],ic[4],n[4],g[4],o[4]]
     ];
-    const cols    = [b, ic, n, g, o];
-    const diag1   = [b[0],ic[1],n[2],g[3],o[4]];
-    const diag2   = [b[4],ic[3],n[2],g[1],o[0]];
+
+    const cols  = [b, ic, n, g, o];
+    const diag1 = [b[0],ic[1],n[2],g[3],o[4]];
+    const diag2 = [b[4],ic[3],n[2],g[1],o[0]];
+
     const corners  = [b[0],o[0],b[4],o[4]];
     const cCorners = [ic[1],g[1],ic[3],g[3]];
     const meskel   = [ic[2],n[1],n[3],g[2]];
 
-    function rowHit(i) { return rows[i].filter(v => hit(v)).length >= (i === 2 ? 4 : 5); }
-    function colHit(c) { return c.filter(v => hit(v)).length >= (c === n ? 4 : 5); }
-    function diagHit(d){ return d.filter(v => hit(v)).length >= 4; }
-
-    const W   = new Set();
+    const W = new Set();
     function add(arr) { arr.forEach(v => W.add(v)); }
 
     switch (pattern) {
-      case 1: case 2:
-        if (allHit(corners))  add(corners);
-        if (allHit(cCorners)) add(cCorners);
-        if (allHit(meskel))   add(meskel);
-        rows.forEach((r, i) => { if (rowHit(i)) add(r); });
-        cols.forEach(c       => { if (colHit(c)) add(c); });
-        if (diagHit(diag1)) add(diag1);
-        if (diagHit(diag2)) add(diag2);
+      case 1:
+      case 2:
+        rows.forEach((r, i) => { if (allHit(r)) add(r); });
+        cols.forEach(c       => { if (allHit(c)) add(c); });
+        if (allHit(diag1)) add(diag1);
+        if (allHit(diag2)) add(diag2);
         break;
-      case 3:  rows.forEach((r, i) => { if (rowHit(i)) add(r); }); break;
-      case 4:  cols.forEach(c      => { if (colHit(c)) add(c); }); break;
-      case 5:  if (diagHit(diag1) && diagHit(diag2)) { add(diag1); add(diag2); } break;
-      case 6:  if (allHit(corners))  add(corners);  break;
-      case 7:  if (allHit(cCorners)) add(cCorners); break;
-      case 8:  if (allHit(meskel))   add(meskel);   break;
-      case 9:  if (rowHit(0) && colHit(n)) { add(rows[0]); add(n); } break;
-      case 10: if (rowHit(4) && colHit(n)) { add(rows[4]); add(n); } break;
-      case 11: if (colHit(b) && rowHit(4)) { add(b); add(rows[4]); } break;
-      case 12: [b,ic,n,g,o].forEach(c => add(c)); break;
+
+      case 3:
+        rows.forEach(r => { if (allHit(r)) add(r); });
+        break;
+
+      case 4:
+        cols.forEach(c => { if (allHit(c)) add(c); });
+        break;
+
+      case 5:
+        if (allHit(diag1) && allHit(diag2)) {
+          add(diag1); add(diag2);
+        }
+        break;
+
+      case 6:
+        if (allHit(corners)) add(corners);
+        break;
+
+      case 7:
+        if (allHit(cCorners)) add(cCorners);
+        break;
+
+      case 8:
+        if (allHit(meskel)) add(meskel);
+        break;
+
+      case 9: {
+        const T_top = [...rows[0], n[1], n[2], n[3], n[4]];
+        if (allHit(T_top)) add(T_top);
+        break;
+      }
+
+      case 10: {
+        const T_bottom = [...rows[4], n[0], n[1], n[2], n[3]];
+        if (allHit(T_bottom)) add(T_bottom);
+        break;
+      }
+
+      case 11: {
+        const L_shape = [
+          b[0], b[1], b[2], b[3], b[4],
+          ic[4], n[4], g[4], o[4]
+        ];
+        if (allHit(L_shape)) add(L_shape);
+        break;
+      }
+
+      case 12:
+        [b,ic,n,g,o].forEach(c => add(c));
+        break;
     }
+
     return W;
   }
 
@@ -3199,10 +3382,10 @@
     }
 
     /* Prevent same card being added as winner twice */
-    if ((gs.winning_cards || []).includes(cn)) {
-      showAlert('Card #' + cn + ' is already marked as a winner.', 'warning');
-      resetBtn(); return;
-    }
+    // if ((gs.winning_cards || []).includes(cn)) {
+    //   showAlert('Card #' + cn + ' is already marked as a winner.', 'warning');
+    //   resetBtn(); return;
+    // }
 
     const card = lookupCard(cn);
     if (!card) {
@@ -3259,7 +3442,7 @@
       setTimeout(() => celebrate(), 300);
       setTimeout(() => celebrate(), 600);
       setTimeout(() => { el.style.display = 'none'; }, 3000);
-      setTimeout(() => { $('#myModalcard').modal('hide'); }, 3000);
+      // setTimeout(() => { $('#myModalcard').modal('hide'); }, 3000);
     }
 
     if (auto === 'auto') {
@@ -3268,7 +3451,7 @@
         _celebrateWin(cn);
       } else {
         voices('notgood.wav');
-        setTimeout(() => { $('#myModalcard').modal('hide'); }, 1200);
+        // setTimeout(() => { $('#myModalcard').modal('hide'); }, 1200);
       }
     } else {
       /* ── Manual mode: cashier decides with buttons ── */
