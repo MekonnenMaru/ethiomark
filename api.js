@@ -91,6 +91,8 @@ window.API = (() => {
   /* Update the most-recent history record for `round` whose status === fromStatus.
      Merges `updates` into it. Falls back to addHistory if no match found. */
   async function updateHistoryByRound(round, fromStatus, updates) {
+    console.log("xxxxxxxx", round, fromStatus, updates);
+    
     const found = await EthiomarkDB.dbUpdateHistoryByRound(round, fromStatus, updates);
     return found;
   }
@@ -203,16 +205,30 @@ window.API = (() => {
   /** Get this machine's unique 8-char hex ID (creates on first run). */
   async function getMachineId() {
     const lic = await EthiomarkDB.dbGetLicense();
+
+    console.log("get license", lic);
+    
     if (lic && lic.machine_id) return lic.machine_id;
     const uuid = crypto.randomUUID();
     const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(uuid));
     const mid  = Array.from(new Uint8Array(buf))
       .map(b => b.toString(16).padStart(2,'0')).join('')
       .substring(0, 8).toUpperCase();
+
+    // get main machin id
+    const res = await fetch('logic/machine.php');
+    const data = await res.json(); // its dynamic
+    const static_machine_id=data.machine_id?data.machine_id: "";
+
     await EthiomarkDB.dbSaveLicense({
-      machine_id: mid, packages: [], total_deposited: 0, total_revenue: 0,
-      activation_attempts: 0, activation_locked: false, activation_locked_at: null,
+      machine_id: mid, 
+      packages: [], 
+      total_deposited: 0, 
+      total_revenue: 0,
+      activation_attempts: 0, 
+      activation_locked: false, activation_locked_at: null,
       unlock_nonce: 0,
+      static_machine_id: static_machine_id,
     });
     return mid;
   }
@@ -221,9 +237,15 @@ window.API = (() => {
   async function getLicenseInfo() {
     const lic = await EthiomarkDB.dbGetLicense();
     return lic || {
-      machine_id: null, packages: [], total_deposited: 0, total_revenue: 0,
-      activation_attempts: 0, activation_locked: false, activation_locked_at: null,
+      machine_id: null, 
+      packages: [], 
+      total_deposited: 0, 
+      total_revenue: 0,
+      activation_attempts: 0, 
+      activation_locked: false, 
+      activation_locked_at: null,
       unlock_nonce: 0,
+      static_machine_id: '',
     };
   }
 
@@ -356,6 +378,22 @@ window.API = (() => {
     const packages        = [...(lic.packages || []), { sn, amount: amt, activated_at: new Date().toISOString() }];
     const total_deposited = (lic.total_deposited || 0) + amt;
 
+    // we must save the new package checkpoint after checking the machin 
+    // =================================================================
+    // =================================================================
+    // =================================================================
+    const ok = await checkLicenseSecurity();
+
+    if (!ok) {
+      console.error("❌ SYSTEM BLOCKED");
+      return;
+    }
+    console.log("✅ SAFE BEFORE DEPOSIT TO CONTINUE");
+    // =================================================================
+    // =================================================================
+    // =================================================================
+    
+
     await EthiomarkDB.dbSaveLicense({
       ...lic,
       packages,
@@ -364,6 +402,23 @@ window.API = (() => {
       activation_locked    : false,
       activation_locked_at : null,
     });
+
+
+    // we must save the new package checkpoint after checking the machin 
+    // =================================================================
+    // =================================================================
+    // =================================================================
+    const update_new_checkpoint = await updateCheckPoint();
+
+    if (!update_new_checkpoint) {
+      console.error("❌ SYSTEM BLOCKED TO UPDATE CHECKPOINT AFTER DEPOSIT");
+      return;
+    }
+    console.log("✅ SAFE AFTER DEPOSIT TO CONTINUE");
+    // =================================================================
+    // =================================================================
+    // =================================================================
+    
 
     /* log successful wallet transaction */
     await EthiomarkDB.dbAddWalletTransaction({
@@ -496,6 +551,125 @@ window.API = (() => {
     }
   }
 
+
+
+
+
+
+
+  
+  // ===== GET LICENSE FROM IndexedDB =====
+  async function getLicense() {
+    const db = await new Promise((resolve, reject) => {
+      const req = indexedDB.open("EthiomarkBingoDB");
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject();
+    });
+
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("license", "readonly");
+      const store = tx.objectStore("license");
+      const req = store.getAll();
+
+      req.onsuccess = () => resolve(req.result[0] || null);
+      req.onerror = () => reject();
+    });
+  }
+
+
+  // ===== MAIN CHECK =====
+  async function checkLicenseSecurity() {
+      const getstaticmachinid = await fetch('logic/machine.php');
+      const getstaticmachiniddata = await getstaticmachinid.json();
+      const staticMachineId = getstaticmachiniddata.static_machine_id;  // get machine id from php its live checked
+      const license = await getLicense();  // get license from indexeddb its from indexeddb
+      console.log("static_machine_id: ", staticMachineId);
+      console.log("license: ", license);
+      
+      if (!license) {
+        console.warn("No license found, we will create skeletal checkpoint. Please make a deposit to initialize license.");
+        data={
+            total_deposited: 0,
+            total_revenue: 0,
+            static_machine_id: staticMachineId,
+        };
+        await fetch('logic/machine.php?action=saveCheckpoint', {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+        console.log("🆕 Skeletal checkpoint created succesfully");
+        return true;
+      }
+
+
+      // get checkpoint from file system (php) its from local storage
+      const res_fromcheckpointFile = await fetch('logic/machine.php?action=load_checkpoint');
+      const checkpoint_res = await res_fromcheckpointFile.json();
+
+      // 👉 FIRST RUN → CREATE CHECKPOINT
+      if (!checkpoint_res) {
+        console.log("🆕 Creating checkpoint...");
+        data={
+            total_deposited: 0,
+            total_revenue: 0,
+            static_machine_id: staticMachineId,
+        };
+        await fetch('logic/machine.php?action=saveCheckpoint', {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+        return true;
+      }
+
+      // 🚨 CHECKS
+      if (checkpoint_res.static_machine_id !== staticMachineId) {
+        alert("🚨 Copied system detected (machine mismatch)");
+        return false;
+      }
+
+      if (checkpoint_res.total_deposited !== license.total_deposited) {
+        alert("🚨 Deposit tampering detected");
+        return false;
+      }
+
+      if (license.total_revenue < checkpoint_res.total_revenue) {
+        alert("🚨 Rollback detected (database replaced)");
+        return false;
+      }
+
+      console.log("✅ License secure");
+      return true;
+  }
+
+  // ==== UPDATE CHECKPOINT AFTER CHECKING ====
+  async function updateCheckPoint()
+  {
+      const getstaticmachinid = await fetch('logic/machine.php');
+      const getstaticmachiniddata = await getstaticmachinid.json();
+      const staticMachineId = getstaticmachiniddata.static_machine_id;  // get machine id from php its live checked
+
+      const license = await getLicense();  // get license from indexeddb its from indexeddb
+
+       
+      // ✅ UPDATE CHECKPOINT (important)
+        data={
+            total_deposited: license.total_deposited,
+            total_revenue: license.total_revenue,
+            static_machine_id: staticMachineId,
+        };
+        await fetch('logic/machine.php?action=saveCheckpoint', {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+
+        console.log(`✅ Update checkpoint 
+        total_deposited: ${license.total_deposited}
+        total_revenue: ${license.total_revenue}
+        machine: ${staticMachineId}`);
+
+        return true;
+  }
+
   /* ── public interface ── */
   return {
     init,
@@ -516,6 +690,10 @@ window.API = (() => {
     getActivationLockStatus, unlockActivation, generateUnlockCode, getUnlockNonce,
     /* daily reset */
     checkAndResetDailyRound, stampActiveDate,
+
+    // check sequirty 
+    checkLicenseSecurity, getLicense,
+
   };
 
 })();

@@ -206,25 +206,30 @@
       flex-direction: row;
       align-items: center;
       width: 100%;
-      height: clamp(100px, 14vh, 150px);
+      height: clamp(100px, 22vh, 200px);
       box-sizing: border-box;
-      padding: 6px clamp(8px, 4vw, 58px) 6px 4px;
+      /* padding: 6px clamp(8px, 4vw, 58px) 6px 4px; */
       gap: clamp(6px, 1.5vw, 12px);
       overflow: hidden;
+
+      /* border: 5px solid red; */
+      margin-bottom: 5px;
     }
 
     .info-ball-col {
       flex: 0 0 auto;
-      width: clamp(90px, 14vw, 160px);
-      height: clamp(80px, 12vh, 138px);
+      width: clamp(90px, 20vw, 200px);
+      /* height: clamp(80px, 12vh, 138px);
+       */
+      height: 100%;
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     .info-ball-col .ball2 {
-      width: clamp(4.5rem, 9.5vw, 9rem) !important;
-      height: clamp(4.5rem, 9.5vw, 9rem) !important;
+      width: clamp(4.5rem, 11vw, 16rem) !important;
+      height: clamp(4.5rem, 11vw, 16rem) !important;
     }
 
     .info-results-col {
@@ -233,7 +238,8 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      height: clamp(80px, 12vh, 138px);
+      /* height: clamp(80px, 12vh, 138px); */
+      height: 100%;
       overflow: hidden;
     }
     .info-results-col .lastcall {
@@ -260,7 +266,8 @@
 
     .info-derash-col {
       flex: 0 0 clamp(130px, 16vw, 200px);
-      height: clamp(80px, 12vh, 138px);
+      /* height: clamp(80px, 12vh, 138px); */
+      height: 100%;
       overflow: hidden;
       display: flex;
       align-items: center;
@@ -1004,7 +1011,7 @@
 
     const n           = parseInt(document.getElementById('sew').innerText)               || 0;
     const s           = parseInt(document.getElementById('birr').innerText)              || 0;
-    const b           = parseInt(document.getElementById('bala').innerText)              || 9999;
+    const b           = parseInt(document.getElementById('bala').innerText)              || 0;
     const profit      = parseInt(document.getElementById('profit').innerText)            || 0;
     const round_number = document.getElementById('round').innerText;
     const lock_d      = parseInt(document.getElementById('lock_round_up_last_digit').innerText) || 0;
@@ -1822,16 +1829,7 @@
         </div>
 
         <div class="modal-body">
-
-          <!-- ① Image: ALWAYS visible -->
-          <div class="em-ad-strip" id="modal-media-area">
-            <img id="selected-numbers-container-img" src="assets/images/card1.png"
-                 onerror="this.style.display='none'">
-            <img id="bonus-modal-img" src="assets/images/bonus-removebg.png"
-                 style="display:none;" onerror="this.style.display='none'">
-          </div>
-
-          <!-- ② NO-CARDS STATE: big brand title only -->
+            <!-- ② NO-CARDS STATE: big brand title only -->
           <div id="modal-no-cards-view" class="em-modal-title">ኢትዮ-ማርክ ቢንጎ</div>
 
           <!-- ③ CARDS-REGISTERED STATE: ደራሽ revenue display only -->
@@ -1843,20 +1841,28 @@
             </div>
           </div>
 
+
+          <!-- ① Image: ALWAYS visible -->
+          <div class="em-ad-strip" id="modal-media-area">
+            <img id="selected-numbers-container-img" src="assets/images/card1.png"
+                 onerror="this.style.display='none'">
+            <img id="bonus-modal-img" src="assets/images/bonus-removebg.png"
+                 style="display:none;" onerror="this.style.display='none'">
+          </div>
+
+          
+
+          
+
           <p id="bala_alert"
              style="color:#ff5252; font-size:14px; min-height:0; text-align:center;
                     animation:blink 2s infinite; margin:0; width:100%;">
           </p>
 
           <!-- ④ Start button + Spin shortcut -->
-          <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;">
+          <div style="display:flex;flex-direction:row;align-items:center;gap:10px;width:100%;">
             <button type="submit" id="mybtn" onclick="return startbingo();">▶ ጀምር</button>
-            <a href="spin.html"
-               style="display:inline-flex;align-items:center;gap:8px;padding:9px 28px;
-                      border-radius:50px;font-size:14px;font-weight:800;letter-spacing:1px;
-                      background:linear-gradient(135deg,rgba(123,97,255,0.18),rgba(176,64,255,0.18));
-                      border:1px solid rgba(123,97,255,0.45);color:#b390ff;
-                      text-decoration:none;cursor:pointer;transition:.18s;"
+            <a href="spin.html" class="modal-spin-btn"
                onmouseover="this.style.background='linear-gradient(135deg,#7c4dff,#b040ff)';this.style.color='#fff';"
                onmouseout="this.style.background='linear-gradient(135deg,rgba(123,97,255,0.18),rgba(176,64,255,0.18))';this.style.color='#b390ff';">
               🎡 Spin to Win
@@ -1975,6 +1981,8 @@
     let _pkgModalWasOpen = false;
 
     function showPackageOverlay(mode) {
+      console.log("✅ Inside showPackageOverlay(mode)");
+      
       const overlay       = document.getElementById('pkg-overlay');
       const balBanner     = document.getElementById('pkg-locked-banner');
       const trialBanner   = document.getElementById('pkg-trial-banner');
@@ -3248,75 +3256,77 @@
   }
 
   /* Build the HTML for a card result view */
-  function buildCardHTML(card, drawn, pattern, cardNo) {
-    const b = card[1], ic = card[2], n = card[3], g = card[4], o = card[5];
-    const drawnSet   = new Set(drawn);
-    const lastCalled = drawn[drawn.length - 1];
-    const FREE       = n[2];
-    function hit(v)  { return drawnSet.has(v) || v === FREE; }
+  // Build the HTML for a card result view
+function buildCardHTML(card, drawn, pattern, cardNo) {
+  const b = card[1], ic = card[2], n = card[3], g = card[4], o = card[5];
+  const drawnSet   = new Set(drawn);
+  const lastCalled = drawn[drawn.length - 1];
+  const FREE       = n[2];
+  function hit(v)  { return drawnSet.has(v) || v === FREE; }
 
-    const patternNames = {
-      1: 'Any 1 Line',   2: 'Any 2 Lines', 3: 'Any Horizontal', 4: 'Any Vertical',
-      5: 'X Pattern',    6: 'Four Corners', 7: 'Center Corners', 8: 'Meskel',
-      9: 'T Shape',     10: 'Reverse T',  11: 'L Shape',       12: 'Full Card'
-    };
-    const pName    = patternNames[pattern] || ('Pattern ' + pattern);
-    const isWinner = checkCardWin(card, drawn, pattern).count_winning_line >= 1;
-    const winCells = isWinner ? getWinningCells(card, drawn, pattern) : new Set();
-    const colorMode = document.getElementById('settings_color_mode')?.value
-                   || document.getElementById('color')?.innerText?.trim()
-                   || 'two';
-    const colData = [b, ic, n, g, o];
+  const patternNames = {
+    1: 'Any 1 Line',   2: 'Any 2 Lines', 3: 'Any Horizontal', 4: 'Any Vertical',
+    5: 'X Pattern',    6: 'Four Corners', 7: 'Center Corners', 8: 'Meskel',
+    9: 'T Shape',     10: 'Reverse T',  11: 'L Shape',       12: 'Full Card'
+  };
+  const pName    = patternNames[pattern] || ('Pattern ' + pattern);
+  const isWinner = checkCardWin(card, drawn, pattern).count_winning_line >= 1;
+  const winCells = isWinner ? getWinningCells(card, drawn, pattern) : new Set();
+  const colorMode = document.getElementById('settings_color_mode')?.value
+                 || document.getElementById('color')?.innerText?.trim()
+                 || 'two';
+  const colData = [b, ic, n, g, o];
 
-    let html = `<div style='font-size:26px; font-weight:bolder; background-color:white; color:black;
-        padding:6px 10px; margin-bottom:5px; display:flex; justify-content:space-between;
-        align-items:center; border-radius:4px;'>
-      <span>Card No: <b style='color:#00478B;'>${cardNo}</b></span>
-      <span style='color:green; font-size:18px;'>${pName}</span>
-    </div>`;
+  let html = `<div style='font-size:26px; font-weight:bolder; background-color:white; color:black;
+      padding:6px 10px; margin-bottom:5px; display:flex; justify-content:space-between;
+      align-items:center; border-radius:4px;'>
+    <span>Card No: <b style='color:#00478B;'>${cardNo}</b></span>
+    <span style='color:green; font-size:18px;'>${pName}</span>
+  </div>`;
 
-    html += `<table id='tablefetch' style='width:90%; margin:0 auto; text-align:center; border-collapse:collapse;'>
-      <thead>
-        <tr style='line-height:2.5;'>
-          <th style='background-color:#00478B; color:white;'>B</th>
-          <th style='background-color:#00478B; color:white;'>I</th>
-          <th style='background-color:#00478B; color:white;'>N</th>
-          <th style='background-color:#00478B; color:white;'>G</th>
-          <th style='background-color:#00478B; color:white;'>O</th>
-        </tr>
-      </thead>
-      <tbody>`;
+  html += `<table id='tablefetch' style='width:100%; border-collapse:collapse;'>
+    <thead>
+      <tr>
+        <th style='background-color:#00478B; color:white; width:60px; height:60px; text-align:center; font-size:28px;'>B</th>
+        <th style='background-color:#00478B; color:white; width:60px; height:60px; text-align:center; font-size:28px;'>I</th>
+        <th style='background-color:#00478B; color:white; width:60px; height:60px; text-align:center; font-size:28px;'>N</th>
+        <th style='background-color:#00478B; color:white; width:60px; height:60px; text-align:center; font-size:28px;'>G</th>
+        <th style='background-color:#00478B; color:white; width:60px; height:60px; text-align:center; font-size:28px;'>O</th>
+      </tr>
+    </thead>
+    <tbody>`;
 
-    for (let row = 0; row < 5; row++) {
-      html += '<tr>';
-      for (let col = 0; col < 5; col++) {
-        const num    = colData[col][row];
-        const isFree = (col === 2 && row === 2);
-        const isHit  = hit(num);
-        let bg = 'white', fg = 'black';
+  for (let row = 0; row < 5; row++) {
+    html += '<tr>';
+    for (let col = 0; col < 5; col++) {
+      const num    = colData[col][row];
+      const isFree = (col === 2 && row === 2);
+      const isHit  = hit(num);
+      let bg = 'white', fg = 'black';
 
-        if (isFree) {
-          bg = isWinner ? 'green' : '#1a6b1a';
-          fg = 'white';
-        } else if (isHit) {
-          if (isWinner && winCells.has(num)) {
-            if      (num === lastCalled)  { bg = 'blue';    fg = 'white'; }
-            else if (colorMode === 'two') { bg = 'green';   fg = 'white'; }
-            else                          { bg = '#bca106'; fg = 'white'; }
-          } else {
-            bg = 'red'; fg = 'white';
-          }
+      if (isFree) {
+        bg = isWinner ? 'green' : '#1a6b1a';
+        fg = 'white';
+      } else if (isHit) {
+        if (isWinner && winCells.has(num)) {
+          if      (num === lastCalled)  { bg = 'blue';    fg = 'white'; }
+          else if (colorMode === 'two') { bg = 'green';   fg = 'white'; }
+          else                          { bg = '#bca106'; fg = 'white'; }
+        } else {
+          bg = 'red'; fg = 'white';
         }
-        html += `<td style='background-color:${bg}; color:${fg}; font-size:24px;
-            padding:8px; border:1px solid #ccc; min-width:40px;'>
-          ${isFree ? '★' : num}
-        </td>`;
       }
-      html += '</tr>';
+      html += `<td style='background-color:${bg}; color:${fg}; font-size:32px; font-weight:bold;
+          width:70px; height:70px; text-align:center; vertical-align:middle;
+          border:2px solid #ccc; padding:0;'>
+        ${isFree ? '★' : num}
+       </td>`;
     }
-    html += '</tbody></table>';
-    return html;
+    html += '</tr>';
   }
+  html += '</tbody></table>';
+  return html;
+}
 
   /* Confetti celebration */
   function celebrate() {
@@ -3526,6 +3536,32 @@
     saveGameState(gs);
   }
 </script>
+
+
+
+
+<script src="logic/wallet.js"></script>
+
+<script>
+(async function () {
+  console.log("\n\n XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX ")
+  console.log("🧪 Running security check...");
+
+  const ok = await checkLicenseSecurity();
+
+  if (!ok) {
+    console.error("❌ SYSTEM BLOCKED");
+    return;
+  }
+
+  console.log("✅ SAFE TO CONTINUE");
+  console.log("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \n\n")
+
+})();
+</script>
+
+
+
 
 </body>
 </html>
