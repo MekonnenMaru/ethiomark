@@ -1,0 +1,143 @@
+function _doStartBingo() {
+    const startButton = document.getElementById('mybtn');
+    startButton.disabled = true;
+
+    const totalCardsSelected = parseInt(document.getElementById('sew').innerText) || 0;
+    const betAmountPerCard   = parseInt(document.getElementById('birr').innerText) || 0;
+    const balanceAmount      = parseInt(document.getElementById('bala').innerText) || 0;
+    const profitPercent      = parseInt(document.getElementById('profit').innerText) || 0;
+    const roundNumber        = document.getElementById('round').innerText;
+    const lockRoundDigitRule = parseInt(document.getElementById('lock_round_up_last_digit').innerText) || 0;
+    const startMoneyFrom     = parseInt(document.getElementById('start_get_mony_from').innerText) || 0;
+    const bonusStartFrom     = parseInt(document.getElementById('bonus_eligiblity_starts_from').innerText) || 0;
+
+    document.getElementById('round_number_bellow_5').innerHTML = 'Round ' + roundNumber;
+
+    /* Show/hide bonus button based on settings */
+    const bonusEnabled = document.getElementById('settings_set_bonus').value;
+    if (bonusEnabled === 'on') {
+      const bonusBtn = document.getElementById('bonus');
+      const bonusContainer = document.getElementById('bonusContainer');
+      if (bonusBtn) bonusBtn.disabled = false;
+      if (bonusContainer) bonusContainer.style.display = 'block';
+    } else {
+      const bonusBtn = document.getElementById('bonus');
+      if (bonusBtn) bonusBtn.style.display = 'none';
+    }
+
+    /* Calculate total bet */
+    const totalBet = totalCardsSelected * betAmountPerCard;
+    let roundedProfit = 0;
+    let roundeDerash = 0;
+
+    if (totalBet >= 11) {
+      let profitAmountTEMP = 0;
+      // default
+      if (profitPercent == 0) {
+        if      (totalBet >= 11  && totalBet < 120)  profitAmountTEMP = totalBet * 0.15;
+        else if (totalBet > 120  && totalBet < 320)  profitAmountTEMP = totalBet * 0.20;
+        else if (totalBet >= 320 && totalBet < 800)  profitAmountTEMP = totalBet * 0.25;
+        else if (totalBet >= 800 && totalBet < 1000) profitAmountTEMP = totalBet * 0.30;
+        else if (totalBet >= 1000)                   profitAmountTEMP = totalBet * 0.35;
+        else                                         profitAmountTEMP = totalBet * 0.40;
+      } else { 
+        // user defined
+        profitAmountTEMP = totalBet * profitPercent / 100;
+      }
+
+      if (lockRoundDigitRule == 0) {
+        const lastDigit = profitAmountTEMP % 10;
+        roundedProfit = profitAmountTEMP - lastDigit + (lastDigit > 5 ? 10 : 0);
+      } else {
+        roundedProfit = profitAmountTEMP;
+      }
+
+      if (roundedProfit < 10) roundedProfit = 10;
+    }
+
+    
+    if (totalCardsSelected != 0 && betAmountPerCard != 0 && balanceAmount > 0) {
+      if (totalBet < startMoneyFrom) {
+        document.getElementById('amount').innerText  = totalBet + ' ብር ወሳጅ';
+        document.getElementById('amount1').innerText = totalBet;
+      } else {
+        document.getElementById('amount').innerText  = (totalBet - roundedProfit) + ' ብር ወሳጅ';
+        document.getElementById('amount1').innerText = (totalBet - roundedProfit);
+      }
+    }
+
+    /* Update game status bar */
+    const patternNames = {
+      1: 'Any 1 Line', 2: 'Any 2 Lines', 3: 'Any Horizontal', 4: 'Any Vertical',
+      5: 'X Pattern', 6: 'Four Corners', 7: 'Center Corners', 8: 'Meskel',
+      9: 'T Shape', 10: 'Reverse T', 11: 'L Shape', 12: 'Full Card'
+    };
+
+    const gameStatusBar = document.getElementById('game-status-bar');
+    if (gameStatusBar) {
+      gameStatusBar.style.display = 'flex';
+
+      const gameState = getGameState();
+
+      document.getElementById('gsb-round').textContent   = 'Round ' + roundNumber;
+      document.getElementById('gsb-pattern').textContent = patternNames[gameState.pattern || 1] || 'Pattern ' + (gameState.pattern || 1);
+      document.getElementById('gsb-cards').textContent   = totalCardsSelected;
+      document.getElementById('gsb-price').textContent   = betAmountPerCard;
+    }
+
+    /* ── PENDING → STARTED ── */
+    const gameStateLock = getGameState();
+    const startedAt = new Date().toISOString();
+
+    gameStateLock.started_at = startedAt;
+    saveGameState(gameStateLock);
+
+    // ============================
+    roundeDerash = totalBet - roundedProfit ;
+
+    if (roundedProfit > 0) API.addRevenue(roundedProfit);
+
+    console.log("\n\n", 
+    "totalBet",totalBet," ",
+    "roundeDerash",roundeDerash," ",
+    "roundedProfit",roundedProfit," ",
+    "gameStateLock",gameStateLock," ",
+      "\n\n ");
+    
+
+    const startedEntry = {
+      status: 'started',
+      date: startedAt,
+      randomstring: '',
+      winners: [],
+      on_call: '',
+      paid: roundeDerash,
+      income_net: roundedProfit,
+    };
+
+    API.updateHistoryByRound(gameStateLock.round || 1, 'pending', startedEntry)
+      .then(found => {
+        if (!found) API.addHistory({
+          round: gameStateLock.round || 1,
+          date: startedAt,
+          cards: gameStateLock.cards,
+          price: gameStateLock.price || 0,
+          pattern: gameStateLock.pattern || 1,
+          sound: gameStateLock.sound || 1,
+          randomstring: '',
+          status: 'started',
+          cashier_id: API.getSession() || '',
+          winners: [],
+          on_call: '',
+          total_bet: totalBet,
+          paid: roundeDerash,
+          bonus: 0,
+          income_net: roundedProfit,
+        }).catch(() => {});
+      }).catch(() => {});
+
+    $('#myModal').modal('hide');
+
+    hasBeenCalled = false;
+    startButton.disabled = false;
+}

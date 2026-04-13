@@ -679,21 +679,25 @@
       }
     }
 
-    function saveGameToHistory(status, opts) {
+    /* ── STARTED → COMPLETED transition ──
+       Uses the financial snapshot stored in game state at start time so
+       profit is never recalculated and is always consistent. */
+    function saveGameToHistory(opts) {
       opts = opts || {};
-      const gs        = getGameState();
+      const gs         = getGameState();
       if (!gs.cards || !gs.cards.length) return;
-      const total_bet  = gs.cards.length * (gs.price || 0);
+
       const cashierId  = API.getSession() || '';
       const winners    = opts.winners  || gs.winning_cards || [];
-      const on_call    = opts.on_call  || '';
-      const paid       = (opts.paid    !== undefined) ? opts.paid : 0;
-      const bonus      = 0;
-      const income_net = total_bet - paid - bonus;
+      const on_call    = opts.on_call  || gs.on_call || '';
 
+      /* Financial data comes from the snapshot saved at _doStartBingo time */
+      const total_bet  = gs.round_total  || (gs.cards.length * (gs.price || 0));
+      const paid       = gs.round_paid   !== undefined ? gs.round_paid   : total_bet;
+      const income_net = gs.round_profit !== undefined ? gs.round_profit : 0;
+      const bonus      = 0;
 
       const completedAt  = new Date().toISOString();
-      const finalStatus  = 'completed';
       const historyEntry = {
         round:        gs.round        || 1,
         date:         completedAt,
@@ -702,7 +706,7 @@
         pattern:      gs.pattern      || 1,
         sound:        gs.sound        || 1,
         randomstring: gs.randomstring || '',
-        status:       finalStatus,
+        status:       'completed',
         cashier_id:   cashierId,
         winners:      winners,
         on_call:      on_call,
@@ -711,13 +715,13 @@
         bonus:        bonus,
         income_net:   income_net,
       };
-      
-      /* STARTED → COMPLETED transition; fall back to new record if none found */
+
+      /* STARTED → COMPLETED; fall back to adding new record if none found */
       API.updateHistoryByRound(gs.round || 1, 'started', historyEntry)
         .then(found => { if (!found) API.addHistory(historyEntry).catch(() => {}); })
         .catch(() => { API.addHistory(historyEntry).catch(() => {}); });
 
-      /* Save game transaction record */
+      /* Save final transaction record (randomstring + winners now known) */
       API.addTransaction({
         cashier_id:     cashierId,
         game_round:     gs.round    || 1,
@@ -731,12 +735,9 @@
         result:         gs.randomstring || '',
         checked_number: winners.join(','),
         on_call:        on_call,
-        status:         finalStatus,
+        status:         'completed',
       }).catch(() => {});
-      /* Clear accumulated winners from game state */
-      gs.winning_cards = [];
-      gs.started_at    = '';   /* clear so next round's revenue counts fresh */
-      saveGameState(gs);
+
       /* Stamp today so daily-reset knows the last active date */
       API.stampActiveDate();
     }
@@ -1088,11 +1089,14 @@
     const gameStateLock = getGameState();
     const startedAt = new Date().toISOString();
 
-    gameStateLock.started_at = startedAt;
-    saveGameState(gameStateLock);
+    roundeDerash = totalBet - roundedProfit;
 
-    // ============================
-    roundeDerash = totalBet - roundedProfit ;
+    /* Store financial snapshot in game state so finish/refresh can read it */
+    gameStateLock.started_at   = startedAt;
+    gameStateLock.round_total  = totalBet;
+    gameStateLock.round_paid   = roundeDerash;
+    gameStateLock.round_profit = roundedProfit;
+    saveGameState(gameStateLock);
 
     if (roundedProfit > 0) API.addRevenue(roundedProfit);
 
@@ -2948,46 +2952,38 @@
   /* Finish game button */
   document.getElementById('finsh_game').addEventListener('click', async function () {
     if (!confirm('ጨዋታውን ጨርሰዋል? (Finish this game?)')) return;
-    const gs      = getGameState();
-    const winners = gs.winning_cards || [];
-    if (winners.length) {
-      /* Use on_call saved when the winner was confirmed, not last drawn at finish */
-      const on_call   = gs.on_call || '';
-      const total_bet  = (gs.cards || []).length * (gs.price || 0);
-      const profit_pct = parseInt(document.getElementById('profit')?.innerText) || 0;
+    const gs = getGameState();
 
-      let   paid       = total_bet; /* default: 100% when bet <= 10 */
-      if (total_bet >= 11) {
-        let house_profit = total_bet * profit_pct / 100;
-        const ld = house_profit % 10;
-        house_profit = house_profit - ld + (ld > 5 ? 10 : 0);
-        if (house_profit < 10) house_profit = 10;
-        paid = total_bet - house_profit;
-      }
-      saveGameToHistory('completed', { winners, on_call, paid });
-    } else {
-      saveGameToHistory('completed');
-    }
+    /* Complete the game — financial data already saved at _doStartBingo time */
+    saveGameToHistory({
+      winners: gs.winning_cards || [],
+      on_call: gs.on_call       || '',
+    });
+
+    /* Advance to next round, preserving settings */
     const newRound      = (gs.round || 1) + 1;
     const today         = new Date().toISOString().split('T')[0];
-    const lastUsedCards = (gs.cards || []).slice(); /* keep for next-round pre-fill */
+    const lastUsedCards = (gs.cards || []).slice();
     await API.saveGameState({
-      round:           newRound,
-      cards:           [],
-      pattern:         gs.pattern     || 1,
-      price:           gs.price       || 0,
-      sound:           gs.sound       || 1,
-      speed_range:     gs.speed_range || 3,
-      randomstring:    '',
+      round:            newRound,
+      cards:            [],
+      pattern:          gs.pattern      || 1,
+      price:            gs.price        || 0,
+      sound:            gs.sound        || 1,
+      speed_range:      gs.speed_range  || 3,
+      randomstring:     '',
       last_active_date: today,
-      winning_cards:   [],
-      on_call:         '',
-      started_at:      '',
-      last_used_cards: lastUsedCards,
+      winning_cards:    [],
+      on_call:          '',
+      started_at:       '',
+      round_total:      0,
+      round_paid:       0,
+      round_profit:     0,
+      last_used_cards:  lastUsedCards,
+      cartela_category: gs.cartela_category || '',
     });
-    window._gameStateCache = await API.getGameState(); /* keep cache in sync */
+    window._gameStateCache = await API.getGameState();
     showAlert('Round ተጠናቋል! → ወደ ምዝገባ...', 'success');
-    //setTimeout(() => { window.location.href = 'reg_new_game.html'; }, 400);
   });
 </script>
 
@@ -3474,6 +3470,11 @@ function buildCardHTML(card, drawn, pattern, cardNo) {
         /* Save on_call at the exact moment of win confirmation */
         if (_currentOnCall && !gs2.on_call) gs2.on_call = _currentOnCall;
         saveGameState(gs2);
+        /* Immediately persist winners to the in-progress history record */
+        API.updateHistoryByRound(gs2.round || 1, 'started', {
+          winners: gs2.winning_cards,
+          on_call: gs2.on_call || '',
+        }).catch(() => {});
       }
       _updateWinnersUI();
       const el = document.getElementById('canvas');
@@ -3524,6 +3525,11 @@ function buildCardHTML(card, drawn, pattern, cardNo) {
         /* Save on_call at the exact moment of win confirmation */
         if (_currentOnCall && !gs2.on_call) gs2.on_call = _currentOnCall;
         saveGameState(gs2);
+        /* Immediately persist winners to the in-progress history record */
+        API.updateHistoryByRound(gs2.round || 1, 'started', {
+          winners: gs2.winning_cards,
+          on_call: gs2.on_call || '',
+        }).catch(() => {});
       }
       _updateWinnersUI();
       const el = document.getElementById('canvas');
