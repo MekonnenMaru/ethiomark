@@ -277,6 +277,20 @@ async function dbSaveLicense(data) {
   });
 }
 
+async function dbDeleteLicense() {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('license', 'readwrite');
+    const store = tx.objectStore('license');
+
+    const req = store.delete('data'); // ✅ correct key delete
+
+    req.onsuccess = () => resolve(true);
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
 /* ── card categories ── */
 
 /* Returns a sorted array of all distinct non-empty category names */
@@ -371,5 +385,5 @@ window.EthiomarkDB = {
   dbAddWalletTransaction, dbGetWalletTransactions,
   seedCashiers, getCashier, dbUpdateCashier,
   dbGetCardCategories, dbGetCardIdsByCategory,
-  dbGetLicense, dbSaveLicense
+  dbGetLicense, dbSaveLicense, dbDeleteLicense
 };

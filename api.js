@@ -249,6 +249,11 @@ window.API = (() => {
     };
   }
 
+  /** Delete license */
+  async function deleteLicense() {
+    return EthiomarkDB.dbDeleteLicense();
+  }
+
   /** Balance breakdown (all amounts in ብር). */
   async function getBalance() {
     const lic = await getLicenseInfo();
@@ -499,7 +504,18 @@ window.API = (() => {
   /** Record collected revenue (called when a game finishes). */
   async function addRevenue(amount) {
     const lic = await getLicenseInfo();
+    // we must save the new package checkpoint after TRANSACTION PERFORMED
+    // =================================================================
+      const update_new_checkpoint = await updateCheckPoint(lic.total_deposited, (lic.total_revenue || 0) + Number(amount));
+
+      if (!update_new_checkpoint) {
+        console.error("❌ SYSTEM BLOCKED TO UPDATE CHECKPOINT AFTER BET PLACED");
+        return;
+      }
+      console.log("✅ SAFE AFTER BET PLACED TO CONTINUE");
+      // =================================================================
     await EthiomarkDB.dbSaveLicense({ ...lic, total_revenue: (lic.total_revenue || 0) + Number(amount) });
+
   }
 
   /**
@@ -557,6 +573,11 @@ window.API = (() => {
 
 
 
+  // =====================================================================
+  // =====================================================================
+  // =====================================================================
+  // =====================================================================
+  // =====================================================================
   
   // ===== GET LICENSE FROM IndexedDB =====
   async function getLicense() {
@@ -577,98 +598,257 @@ window.API = (() => {
   }
 
 
-  // ===== MAIN CHECK =====
+  // ===== LICENSE SECURITY CHECK =====
+  // This function ensures that:
+  // 1. The system is running on the correct machine
+  // 2. IndexedDB (license) and server checkpoint are in sync
+  // 3. No rollback, tampering, or copying has occurred
   async function checkLicenseSecurity() {
-      const getstaticmachinid = await fetch('logic/machine.php');
-      const getstaticmachiniddata = await getstaticmachinid.json();
-      const staticMachineId = getstaticmachiniddata.static_machine_id;  // get machine id from php its live checked
-      const license = await getLicense();  // get license from indexeddb its from indexeddb
-      console.log("static_machine_id: ", staticMachineId);
-      console.log("license: ", license);
-      
-      if (!license) {
-        console.warn("No license found, we will create skeletal checkpoint. Please make a deposit to initialize license.");
-        data={
-            total_deposited: 0,
-            total_revenue: 0,
-            static_machine_id: staticMachineId,
-        };
-        await fetch('logic/machine.php?action=saveCheckpoint', {
-          method: 'POST',
-          body: JSON.stringify(data)
-        });
-        console.log("🆕 Skeletal checkpoint created succesfully");
-        return true;
-      }
+    // 🔹 Get machine ID from server (trusted source)
+    const resMachine = await fetch('logic/machine.php');
+    const machineData = await resMachine.json();
+    const staticMachineId = machineData.static_machine_id;
 
+    // 🔹 Get local license from IndexedDB (client-side)
+    const license = await getLicense();
 
-      // get checkpoint from file system (php) its from local storage
-      const res_fromcheckpointFile = await fetch('logic/machine.php?action=load_checkpoint');
-      const checkpoint_res = await res_fromcheckpointFile.json();
+    console.log("static_machine_id:", staticMachineId);
+    console.log("license:", license);
 
-      // 👉 FIRST RUN → CREATE CHECKPOINT
-      if (!checkpoint_res) {
-        console.log("🆕 Creating checkpoint...");
-        data={
-            total_deposited: 0,
-            total_revenue: 0,
-            static_machine_id: staticMachineId,
-        };
-        await fetch('logic/machine.php?action=saveCheckpoint', {
-          method: 'POST',
-          body: JSON.stringify(data)
-        });
-        return true;
-      }
+    // =========================================================
+    // 🆕 CASE 1: FIRST RUN (NO LICENSE AT ALL)
+    // =========================================================
+    if (!license) {
+      console.warn("No license found → creating initial checkpoint");
 
-      // 🚨 CHECKS
-      if (checkpoint_res.static_machine_id !== staticMachineId) {
-        alert("🚨 Copied system detected (machine mismatch)");
-        return false;
-      }
+      const data = {
+        total_deposited: 0,
+        total_revenue: 0,
+        static_machine_id: staticMachineId,
+      };
 
-      if (checkpoint_res.total_deposited !== license.total_deposited) {
-        alert("🚨 Deposit tampering detected");
-        return false;
-      }
+      // Create initial checkpoint on server
+      await fetch('logic/machine.php?action=saveCheckpoint', {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
 
-      if (license.total_revenue < checkpoint_res.total_revenue) {
-        alert("🚨 Rollback detected (database replaced)");
-        return false;
-      }
-
-      console.log("✅ License secure");
+      console.log("🆕 Skeletal checkpoint created");
       return true;
+    }
+
+    // =========================================================
+    // 🔹 Load checkpoint from server (trusted storage)
+    // =========================================================
+    const resCheckpoint = await fetch('logic/machine.php?action=load_checkpoint');
+    const checkpoint = await resCheckpoint.json();
+
+    // =========================================================
+    // ⚠️ CASE 2: CHECKPOINT MISSING
+    // =========================================================
+    if (!checkpoint || Object.keys(checkpoint).length === 0) {
+
+      // Allow only if this is truly a clean system (no money yet)
+      if (license.total_deposited === 0 && license.total_revenue === 0) {
+        console.log("🆕 Creating checkpoint (clean first run)");
+
+        const data = {
+          total_deposited: 0,
+          total_revenue: 0,
+          static_machine_id: staticMachineId,
+        };
+
+        await fetch('logic/machine.php?action=saveCheckpoint', {
+          method: 'POST',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        return true;
+      } else {
+        // ❌ License exists but checkpoint missing → likely copied system
+        console.error("🚨 Missing checkpoint but license has data → possible copy detected");
+        return false;
+      }
+    }
+
+    console.log("Checkpoint:", checkpoint);
+    console.log("License:", license);
+
+    // =========================================================
+    // 🚨 CASE 3: MACHINE VALIDATION
+    // Prevent running copied data on another machine
+    // =========================================================
+    if (checkpoint.static_machine_id !== staticMachineId) {
+      console.error("🚨 Copied system detected (machine mismatch)");
+      return false;
+    }
+
+    // =========================================================
+    // 🚨 CASE 4: DATA CONSISTENCY CHECK
+    // Ensure both sources (IndexedDB + server) match exactly
+    // =========================================================
+    if (
+      license.total_revenue !== checkpoint.total_revenue ||
+      license.total_deposited !== checkpoint.total_deposited
+    ) {
+      console.error("🚨 Data mismatch detected (tampering or corruption)");
+
+      console.error("Mismatch details:", {
+        license,
+        checkpoint
+      });
+
+      return false;
+    }
+
+    // =========================================================
+    // ✅ ALL CHECKS PASSED
+    // =========================================================
+    console.log("✅ License is secure and consistent");
+    return true;
+  }
+
+
+  async function showSecurityResetModal() {
+    return new Promise((resolve) => {
+
+      const modal = document.getElementById("securityModal");
+      const msg = document.getElementById("securityMsg");
+
+      modal.style.display = "flex";
+
+      const yesBtn = document.getElementById("resetYes");
+      const noBtn  = document.getElementById("resetNo");
+
+      // reset message each time
+      msg.innerHTML = `
+        System data is inconsistent.<br>
+        This may be due to copying or corruption.<br><br>
+        Do you want to reset data and continue?
+      `;
+
+      yesBtn.onclick = async () => {
+        console.warn("⚠ Resetting system...");
+
+        const res = await fetch('logic/machine.php');
+        const { static_machine_id } = await res.json();
+
+        await EthiomarkDB.dbDeleteLicense();
+
+        await fetch('logic/machine.php?action=saveCheckpoint', {
+          method: 'POST',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            total_deposited: 0,
+            total_revenue: 0,
+            static_machine_id
+          })
+        });
+
+        modal.style.display = "none";
+        resolve(true);
+      };
+
+      noBtn.onclick = () => {
+        // 🚨 show contact info instead of alert
+        msg.innerHTML = `
+          🚫 Access denied.<br><br>
+          Please contact your system provider:<br><br>
+          📞 <a href="tel:0918101037" style="color:#00c6ff; text-decoration:none; font-weight:700;">
+          0918101037
+          </a><br><br>
+          Or click YES to continue self maintenance.
+        `;
+
+        yesBtn.disabled = true;
+        noBtn.disabled = true;
+
+        resolve(false);
+      };
+
+    });
   }
 
   // ==== UPDATE CHECKPOINT AFTER CHECKING ====
-  async function updateCheckPoint()
-  {
-      const getstaticmachinid = await fetch('logic/machine.php');
-      const getstaticmachiniddata = await getstaticmachinid.json();
-      const staticMachineId = getstaticmachiniddata.static_machine_id;  // get machine id from php its live checked
+  async function updateCheckPoint(total_deposited, total_revenue) {
+    const res = await fetch('logic/machine.php');
+    const data = await res.json();
+    const staticMachineId = data.static_machine_id;
 
-      const license = await getLicense();  // get license from indexeddb its from indexeddb
+    const license = await getLicense();
 
-       
-      // ✅ UPDATE CHECKPOINT (important)
-        data={
-            total_deposited: license.total_deposited,
-            total_revenue: license.total_revenue,
-            static_machine_id: staticMachineId,
-        };
-        await fetch('logic/machine.php?action=saveCheckpoint', {
-          method: 'POST',
-          body: JSON.stringify(data)
-        });
+    if (!license) {
+      console.error("❌ No license found");
+      return false;
+    }
 
-        console.log(`✅ Update checkpoint 
-        total_deposited: ${license.total_deposited}
-        total_revenue: ${license.total_revenue}
-        machine: ${staticMachineId}`);
+    // ✅ only override if value is provided
+    const finalDeposited =
+      total_deposited !== undefined && total_deposited !== null
+        ? total_deposited
+        : license.total_deposited;
 
-        return true;
+    const finalRevenue =
+      total_revenue !== undefined && total_revenue !== null
+        ? total_revenue
+        : license.total_revenue;
+
+    await fetch('logic/machine.php?action=saveCheckpoint', {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        total_deposited: finalDeposited,
+        total_revenue: finalRevenue,
+        static_machine_id: staticMachineId
+      })
+    });
+
+    console.log("✅ checkpoint updated", {
+      finalDeposited,
+      finalRevenue,
+      staticMachineId
+    });
+
+    return true;
   }
+  // async function updateCheckPoint(total_deposited = 0, total_revenue = 0)
+  // {
+  //     const getstaticmachinid = await fetch('logic/machine.php');
+  //     const getstaticmachiniddata = await getstaticmachinid.json();
+  //     const staticMachineId = getstaticmachiniddata.static_machine_id;  // get machine id from php its live checked
+
+  //     const license = await getLicense();  // get license from indexeddb its from indexeddb
+
+  //     const total_deposited_1 = total_deposited ? total_deposited >0 : license.total_deposited
+  //     const total_revenue_1 = total_revenue ? total_revenue >0 : license.total_revenue
+  //     // ✅ UPDATE CHECKPOINT (important)
+  //       data={
+  //           total_deposited: total_deposited_1,
+  //           total_revenue: total_revenue_1,
+  //           static_machine_id: staticMachineId,
+  //       };
+  //       await fetch('logic/machine.php?action=saveCheckpoint', {
+  //         method: 'POST',
+  //         body: JSON.stringify(data)
+  //       });
+
+  //       console.log(`✅ Update checkpoint 
+  //       total_deposited: ${total_deposited_1}
+  //       total_revenue: ${total_revenue_1}
+  //       machine: ${staticMachineId}`);
+
+  //       return true;
+  // }
+
+  // =====================================================================
+  // =====================================================================
+  // =====================================================================
+  // =====================================================================
+  // =====================================================================
+
+
 
   /* ── public interface ── */
   return {
@@ -683,16 +863,19 @@ window.API = (() => {
     addWalletTransaction, getWalletTransactions,
     seedCashiers, getCashier, updateCashier, verifyCredentials,
     getSession, setSession, clearSession,
+    
     /* license */
     getMachineId, getLicenseInfo, getBalance,
     isLicensed, activatePackage, addRevenue,
     generateLicenseKey,
     getActivationLockStatus, unlockActivation, generateUnlockCode, getUnlockNonce,
+    deleteLicense,
+
     /* daily reset */
     checkAndResetDailyRound, stampActiveDate,
 
     // check sequirty 
-    checkLicenseSecurity, getLicense,
+    getLicense, checkLicenseSecurity, showSecurityResetModal, updateCheckPoint, 
 
   };
 

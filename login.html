@@ -120,6 +120,14 @@ body::before{
   border-top-color:#fff;border-radius:50%;
   animation:spin .6s linear infinite;vertical-align:middle;margin-right:8px;
 }
+
+#securityModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99999; /* higher */
+  pointer-events: auto;
+}
 </style>
 </head>
 <body>
@@ -155,6 +163,8 @@ body::before{
 
   <div class="login-note">Ethiomark Bingo Management System</div>
 </div>
+
+
 
 <script>
 /* ── tiny MD5 (RFC 1321) ── */
@@ -264,6 +274,28 @@ ensureCashiers();
 
 
 
+
+<div id="securityModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:#111; padding:24px; border-radius:12px; max-width:360px; width:90%; text-align:center; color:#fff;">
+    
+    <h3 style="margin-bottom:12px;">⚠ Security Issue</h3>
+    
+
+    <p id="securityMsg" style="font-size:14px; color:#ccc; margin-bottom:20px;"></p>
+
+    <div style="display:flex; gap:10px; justify-content:center;">
+      
+      <button id="resetYes" style="flex:1; padding:10px; background:#ff5252; border:none; border-radius:8px; color:#fff; font-weight:700; cursor:pointer;">
+        YES
+      </button>
+
+      <button id="resetNo" style="flex:1; padding:10px; background:#333; border:none; border-radius:8px; color:#fff; cursor:pointer;">
+        NO
+      </button>
+    </div>
+
+</div>
+
 <script src="logic/wallet.js"></script>
 
 <script>
@@ -274,11 +306,22 @@ ensureCashiers();
 
   if (!ok) {
     console.error("❌ SYSTEM BLOCKED");
+
+    const reset = await showSecurityResetModal();
+
+    if (reset) {
+      location.reload();
+    }
+
     return;
   }
 
   console.log("✅ SAFE TO CONTINUE");
 })();
+
+
 </script>
+
+</div>
 </body>
 </html>

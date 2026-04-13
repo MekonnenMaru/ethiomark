@@ -278,17 +278,7 @@
     .info-derash-col .total-calls { font-size: clamp(13px, 2.2vw, 24px) !important; }
     .info-derash-col .total-card  { font-size: clamp(10px, 1.4vw, 14px) !important; }
 
-    /* ── Tablet (≤ 1024px) ── */
-    @media screen and (max-width: 1024px) {
-      .setting_box {
-        flex-wrap: wrap !important;
-        gap: 8px !important;
-        width: 96% !important;
-        margin: 10px auto !important;
-        justify-content: center !important;
-      }
-    }
-
+ 
     /* ── Mobile (≤ 768px) ── */
     @media screen and (max-width: 768px) {
       /* Info bar: stack vertically */
@@ -989,7 +979,7 @@
 
     /* Check package balance before allowing game to start */
     API.getBalance().then(bal => {
-      if (bal.available <= 0) {
+      if (bal.available <= 100) {
         hasBeenCalled = false;
         if (typeof showPackageOverlay === 'function') showPackageOverlay('locked');
         return;
@@ -1006,127 +996,148 @@
   }
 
   function _doStartBingo() {
-    const btn         = document.getElementById('mybtn');
-    btn.disabled      = true;
+    const startButton = document.getElementById('mybtn');
+    startButton.disabled = true;
 
-    const n           = parseInt(document.getElementById('sew').innerText)               || 0;
-    const s           = parseInt(document.getElementById('birr').innerText)              || 0;
-    const b           = parseInt(document.getElementById('bala').innerText)              || 0;
-    const profit      = parseInt(document.getElementById('profit').innerText)            || 0;
-    const round_number = document.getElementById('round').innerText;
-    const lock_d      = parseInt(document.getElementById('lock_round_up_last_digit').innerText) || 0;
-    const sgmf        = parseInt(document.getElementById('start_get_mony_from').innerText)      || 0;
-    const bels        = parseInt(document.getElementById('bonus_eligiblity_starts_from').innerText) || 0;
+    const totalCardsSelected = parseInt(document.getElementById('sew').innerText) || 0;
+    const betAmountPerCard   = parseInt(document.getElementById('birr').innerText) || 0;
+    const balanceAmount      = parseInt(document.getElementById('bala').innerText) || 0;
+    const profitPercent      = parseInt(document.getElementById('profit').innerText) || 0;
+    const roundNumber        = document.getElementById('round').innerText;
+    const lockRoundDigitRule = parseInt(document.getElementById('lock_round_up_last_digit').innerText) || 0;
+    const startMoneyFrom     = parseInt(document.getElementById('start_get_mony_from').innerText) || 0;
+    const bonusStartFrom     = parseInt(document.getElementById('bonus_eligiblity_starts_from').innerText) || 0;
 
-    document.getElementById('round_number_bellow_5').innerHTML = 'Round ' + round_number;
+    document.getElementById('round_number_bellow_5').innerHTML = 'Round ' + roundNumber;
 
     /* Show/hide bonus button based on settings */
-    const nbs = document.getElementById('settings_set_bonus').value;
-    if (nbs === 'on') {
-      const bb = document.getElementById('bonus');
-      const bc = document.getElementById('bonusContainer');
-      if (bb) bb.disabled = false;
-      if (bc) bc.style.display = 'block';
+    const bonusEnabled = document.getElementById('settings_set_bonus').value;
+    if (bonusEnabled === 'on') {
+      const bonusBtn = document.getElementById('bonus');
+      const bonusContainer = document.getElementById('bonusContainer');
+      if (bonusBtn) bonusBtn.disabled = false;
+      if (bonusContainer) bonusContainer.style.display = 'block';
     } else {
-      const bb = document.getElementById('bonus');
-      if (bb) bb.style.display = 'none';
+      const bonusBtn = document.getElementById('bonus');
+      if (bonusBtn) bonusBtn.style.display = 'none';
     }
 
-    /* Calculate prize amount (ደራሽ = total_bet − house_profit) */
-    const dr = n * s;
-    let roundedTotal = 0;
-    if (dr >= 11) {
-      /* Only take profit when total bet is 11 ብር or more */
-      let total = 0;
-      if (profit == 0) {
-        if      (dr >  120 && dr < 320)  total = dr * 0.20;
-        else if (dr >= 320 && dr < 800)  total = dr * 0.22;
-        else if (dr >= 800 && dr < 1000) total = dr * 0.25;
-        else if (dr >= 1000)             total = dr * 0.30;
-        else                             total = dr * 0.20;
-      } else {
-        total = dr * profit / 100;
-      }
-      if (lock_d == 0) {
-        const ld = total % 10;
-        roundedTotal = total - ld + (ld > 5 ? 10 : 0);
-      } else {
-        roundedTotal = total;
-      }
-      /* Minimum 10 ብር profit when bet is large enough */
-      if (roundedTotal < 10) roundedTotal = 10;
-    }
-    /* If dr <= 10: roundedTotal stays 0 → ደራሽ = 100% of total bet */
+    /* Calculate total bet */
+    const totalBet = totalCardsSelected * betAmountPerCard;
+    let roundedProfit = 0;
+    let roundeDerash = 0;
 
-    const income = dr;
-    if (n != 0 && s != 0 && b > 0) {
-      if (income < sgmf) {
-        document.getElementById('amount').innerText  = income + ' ብር ወሳጅ';
-        document.getElementById('amount1').innerText = income;
+    if (totalBet >= 11) {
+      let profitAmountTEMP = 0;
+      // default
+      if (profitPercent == 0) {
+        if      (totalBet >= 11  && totalBet < 120)  profitAmountTEMP = totalBet * 0.15;
+        else if (totalBet > 120  && totalBet < 320)  profitAmountTEMP = totalBet * 0.20;
+        else if (totalBet >= 320 && totalBet < 800)  profitAmountTEMP = totalBet * 0.25;
+        else if (totalBet >= 800 && totalBet < 1000) profitAmountTEMP = totalBet * 0.30;
+        else if (totalBet >= 1000)                   profitAmountTEMP = totalBet * 0.35;
+        else                                         profitAmountTEMP = totalBet * 0.40;
+      } else { 
+        // user defined
+        profitAmountTEMP = totalBet * profitPercent / 100;
+      }
+
+      if (lockRoundDigitRule == 0) {
+        const lastDigit = profitAmountTEMP % 10;
+        roundedProfit = profitAmountTEMP - lastDigit + (lastDigit > 5 ? 10 : 0);
       } else {
-        document.getElementById('amount').innerText  = (income - roundedTotal) + ' ብር ወሳጅ';
-        document.getElementById('amount1').innerText = (income - roundedTotal);
+        roundedProfit = profitAmountTEMP;
+      }
+
+      if (roundedProfit < 10) roundedProfit = 10;
+    }
+
+    
+    if (totalCardsSelected != 0 && betAmountPerCard != 0 && balanceAmount > 0) {
+      if (totalBet < startMoneyFrom) {
+        document.getElementById('amount').innerText  = totalBet + ' ብር ወሳጅ';
+        document.getElementById('amount1').innerText = totalBet;
+      } else {
+        document.getElementById('amount').innerText  = (totalBet - roundedProfit) + ' ብር ወሳጅ';
+        document.getElementById('amount1').innerText = (totalBet - roundedProfit);
       }
     }
 
     /* Update game status bar */
-    const patNamesGSB = {
-      1: 'Any 1 Line',   2: 'Any 2 Lines', 3: 'Any Horizontal', 4: 'Any Vertical',
-      5: 'X Pattern',    6: 'Four Corners', 7: 'Center Corners', 8: 'Meskel',
-      9: 'T Shape',     10: 'Reverse T',  11: 'L Shape',       12: 'Full Card'
+    const patternNames = {
+      1: 'Any 1 Line', 2: 'Any 2 Lines', 3: 'Any Horizontal', 4: 'Any Vertical',
+      5: 'X Pattern', 6: 'Four Corners', 7: 'Center Corners', 8: 'Meskel',
+      9: 'T Shape', 10: 'Reverse T', 11: 'L Shape', 12: 'Full Card'
     };
-    const gsBar = document.getElementById('game-status-bar');
-    if (gsBar) {
-      gsBar.style.display = 'flex';
-      const gsGs = getGameState();
-      document.getElementById('gsb-round').textContent   = 'Round ' + round_number;
-      document.getElementById('gsb-pattern').textContent = patNamesGSB[gsGs.pattern || 1] || 'Pattern ' + (gsGs.pattern || 1);
-      document.getElementById('gsb-cards').textContent   = n;
-      document.getElementById('gsb-price').textContent   = s;
+
+    const gameStatusBar = document.getElementById('game-status-bar');
+    if (gameStatusBar) {
+      gameStatusBar.style.display = 'flex';
+
+      const gameState = getGameState();
+
+      document.getElementById('gsb-round').textContent   = 'Round ' + roundNumber;
+      document.getElementById('gsb-pattern').textContent = patternNames[gameState.pattern || 1] || 'Pattern ' + (gameState.pattern || 1);
+      document.getElementById('gsb-cards').textContent   = totalCardsSelected;
+      document.getElementById('gsb-price').textContent   = betAmountPerCard;
     }
 
-    /* ── PENDING → STARTED: lock round when ▶ ጀምር is clicked ──
-       Transitions the pending record to 'started' (or adds 'started' if none found).
-       Revenue counted now so a page refresh can't give a free replay. */
-    const gsLock      = getGameState();
-    const startedAt   = new Date().toISOString();
-    gsLock.started_at = startedAt;
-    saveGameState(gsLock);
-    if (dr > 0) API.addRevenue(dr);
+    /* ── PENDING → STARTED ── */
+    const gameStateLock = getGameState();
+    const startedAt = new Date().toISOString();
+
+    gameStateLock.started_at = startedAt;
+    saveGameState(gameStateLock);
+
+    // ============================
+    roundeDerash = totalBet - roundedProfit ;
+
+    if (roundedProfit > 0) API.addRevenue(roundedProfit);
+
+    console.log("\n\n", 
+    "totalBet",totalBet," ",
+    "roundeDerash",roundeDerash," ",
+    "roundedProfit",roundedProfit," ",
+    "gameStateLock",gameStateLock," ",
+      "\n\n ");
+    
+
     const startedEntry = {
-      status:       'started',
-      date:         startedAt,
+      status: 'started',
+      date: startedAt,
       randomstring: '',
-      winners:      [],
-      on_call:      '',
-      paid:         0,
-      income_net:   dr,
+      winners: [],
+      on_call: '',
+      paid: roundeDerash,
+      income_net: roundedProfit,
     };
-    API.updateHistoryByRound(gsLock.round || 1, 'pending', startedEntry)
+
+    API.updateHistoryByRound(gameStateLock.round || 1, 'pending', startedEntry)
       .then(found => {
         if (!found) API.addHistory({
-          round:      gsLock.round   || 1,
-          date:       startedAt,
-          cards:      gsLock.cards,
-          price:      gsLock.price   || 0,
-          pattern:    gsLock.pattern || 1,
-          sound:      gsLock.sound   || 1,
+          round: gameStateLock.round || 1,
+          date: startedAt,
+          cards: gameStateLock.cards,
+          price: gameStateLock.price || 0,
+          pattern: gameStateLock.pattern || 1,
+          sound: gameStateLock.sound || 1,
           randomstring: '',
-          status:     'started',
+          status: 'started',
           cashier_id: API.getSession() || '',
-          winners:    [],
-          on_call:    '',
-          total_bet:  dr,
-          paid:       0,
-          bonus:      0,
-          income_net: dr,
+          winners: [],
+          on_call: '',
+          total_bet: totalBet,
+          paid: roundeDerash,
+          bonus: 0,
+          income_net: roundedProfit,
         }).catch(() => {});
       }).catch(() => {});
 
     $('#myModal').modal('hide');
+
     hasBeenCalled = false;
-    btn.disabled  = false;
-  }
+    startButton.disabled = false;
+}
 </script>
 
 <!-- ─── Package overlay (license key input) ─── -->
@@ -1191,6 +1202,35 @@
       </div>
     </div>
 
+
+    <script>
+      document.getElementById("pkg-machine-id").onclick = async function () {
+        const text = this.innerText.trim();
+
+        try {
+          await navigator.clipboard.writeText(text);
+
+          // optional feedback
+          const old = this.innerText;
+          this.innerText = "COPIED ✓";
+
+          setTimeout(() => {
+            this.innerText = old;
+          }, 1000);
+
+        } catch (err) {
+          console.error("Copy failed:", err);
+
+          // fallback
+          const range = document.createRange();
+          range.selectNodeContents(this);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      };
+    </script>
+
     <!-- Step 2: Admin generates key -->
     <div style="background:rgba(249,115,22,0.05); border:1px solid rgba(249,115,22,0.2);
                 border-radius:14px; padding:14px 16px; margin-bottom:12px;
@@ -1198,9 +1238,7 @@
       <strong style="font-size:11px; letter-spacing:1.2px; text-transform:uppercase; display:block; margin-bottom:6px;">
         🔑 Step 2 — Admin generates &amp; sends you a key
       </strong>
-      The admin opens <strong style="color:#f97316;">/keygen.html</strong> in a browser,
-      enters your Machine ID and the package amount, clicks <em>Generate</em>, and sends you
-      the key (starts with <code style="background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:4px;">EM-eyJ…</code>).
+       then the system provider will send you the code .
     </div>
 
     <!-- Balance status grid -->
@@ -2398,7 +2436,7 @@
       <div class="col-12">
         <div class="setting_box"
              style="display:flex; justify-content:center; align-items:center;
-                    width:80%; margin:20px auto;">
+                    width:80%; margin:8px auto;">
           <button style="border:5px solid white; max-width:150px;"
                   onclick="change()" id="bingoo" class="btnbingo">Bingo</button>
           <button style="border:5px solid white; max-width:150px;"
@@ -2916,6 +2954,7 @@
       const on_call   = gs.on_call || '';
       const total_bet  = (gs.cards || []).length * (gs.price || 0);
       const profit_pct = parseInt(document.getElementById('profit')?.innerText) || 0;
+
       let   paid       = total_bet; /* default: 100% when bet <= 10 */
       if (total_bet >= 11) {
         let house_profit = total_bet * profit_pct / 100;
@@ -3538,26 +3577,51 @@ function buildCardHTML(card, drawn, pattern, cardNo) {
 </script>
 
 
+<div id="securityModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:#111; padding:24px; border-radius:12px; max-width:360px; width:90%; text-align:center; color:#fff;">
+    
+    <h3 style="margin-bottom:12px;">⚠ Security Issue</h3>
+    
 
+    <p id="securityMsg" style="font-size:14px; color:#ccc; margin-bottom:20px;"></p>
+
+    <div style="display:flex; gap:10px; justify-content:center;">
+      
+      <button id="resetYes" style="flex:1; padding:10px; background:#ff5252; border:none; border-radius:8px; color:#fff; font-weight:700; cursor:pointer;">
+        YES
+      </button>
+
+      <button id="resetNo" style="flex:1; padding:10px; background:#333; border:none; border-radius:8px; color:#fff; cursor:pointer;">
+        NO
+      </button>
+    </div>
+
+</div>
 
 <script src="logic/wallet.js"></script>
 
 <script>
 (async function () {
-  console.log("\n\n XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX ")
   console.log("🧪 Running security check...");
 
   const ok = await checkLicenseSecurity();
 
   if (!ok) {
     console.error("❌ SYSTEM BLOCKED");
+
+    const reset = await showSecurityResetModal();
+
+    if (reset) {
+      location.reload();
+    }
+
     return;
   }
 
   console.log("✅ SAFE TO CONTINUE");
-  console.log("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \n\n")
-
 })();
+
+
 </script>
 
 

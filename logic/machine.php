@@ -40,12 +40,21 @@ if ($action === "saveCheckpoint") {
 
 // ---------- LOAD CHECKPOINT ----------
 if ($action === "load_checkpoint") {
-    if (!file_exists($file)) {
-        echo json_encode(null);
+
+    if (!file_exists($file) || filesize($file) === 0) {
+        echo json_encode(null); // always return valid JSON
         exit;
     }
 
-    echo file_get_contents($file);
+    $content = file_get_contents($file);
+
+    // extra safety: if somehow still empty
+    if (!$content) {
+        echo json_encode(null);
+    } else {
+        echo $content;
+    }
+
     exit;
 }
 

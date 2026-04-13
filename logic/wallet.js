@@ -18,109 +18,195 @@ async function getLicense() {
 }
 
 
-// ===== MAIN CHECK =====
+// ===== LICENSE SECURITY CHECK =====
+// This function ensures that:
+// 1. The system is running on the correct machine
+// 2. IndexedDB (license) and server checkpoint are in sync
+// 3. No rollback, tampering, or copying has occurred
 async function checkLicenseSecurity() {
-    const getstaticmachinid = await fetch('logic/machine.php');
-    const getstaticmachiniddata = await getstaticmachinid.json();
-    const staticMachineId = getstaticmachiniddata.static_machine_id;  // get machine id from php its live checked
-    const license = await getLicense();  // get license from indexeddb its from indexeddb
-    console.log("static_machine_id: ", staticMachineId);
-    console.log("license: ", license);
-    
-    if (!license) {
-      console.warn("No license found, we will create skeletal checkpoint. Please make a deposit to initialize license.");
-      data={
-          total_deposited: 0,
-          total_revenue: 0,
-          static_machine_id: staticMachineId,
+  // 🔹 Get machine ID from server (trusted source)
+  const resMachine = await fetch('logic/machine.php');
+  const machineData = await resMachine.json();
+  const staticMachineId = machineData.static_machine_id;
+
+  // 🔹 Get local license from IndexedDB (client-side)
+  const license = await getLicense();
+
+  console.log("static_machine_id:", staticMachineId);
+  console.log("license:", license);
+
+  // =========================================================
+  // 🆕 CASE 1: FIRST RUN (NO LICENSE AT ALL)
+  // =========================================================
+  if (!license) {
+    console.warn("No license found → creating initial checkpoint");
+
+    const data = {
+      total_deposited: 0,
+      total_revenue: 0,
+      static_machine_id: staticMachineId,
+    };
+
+    // Create initial checkpoint on server
+    await fetch('logic/machine.php?action=saveCheckpoint', {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    console.log("🆕 Skeletal checkpoint created");
+    return true;
+  }
+
+  // =========================================================
+  // 🔹 Load checkpoint from server (trusted storage)
+  // =========================================================
+  const resCheckpoint = await fetch('logic/machine.php?action=load_checkpoint');
+  const checkpoint = await resCheckpoint.json();
+
+  // =========================================================
+  // ⚠️ CASE 2: CHECKPOINT MISSING
+  // =========================================================
+  if (!checkpoint || Object.keys(checkpoint).length === 0) {
+
+    // Allow only if this is truly a clean system (no money yet)
+    if (license.total_deposited === 0 && license.total_revenue === 0) {
+      console.log("🆕 Creating checkpoint (clean first run)");
+
+      const data = {
+        total_deposited: 0,
+        total_revenue: 0,
+        static_machine_id: staticMachineId,
       };
+
       await fetch('logic/machine.php?action=saveCheckpoint', {
         method: 'POST',
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
       });
-      console.log("🆕 Skeletal checkpoint created succesfully");
+
       return true;
+    } else {
+      // ❌ License exists but checkpoint missing → likely copied system
+      console.error("🚨 Missing checkpoint but license has data → possible copy detected");
+      return false;
     }
+  }
 
+  console.log("Checkpoint:", checkpoint);
+  console.log("License:", license);
 
+  // =========================================================
+  // 🚨 CASE 3: MACHINE VALIDATION
+  // Prevent running copied data on another machine
+  // =========================================================
+  if (checkpoint.static_machine_id !== staticMachineId) {
+    console.error("🚨 Copied system detected (machine mismatch)");
+    return false;
+  }
 
+  // =========================================================
+  // 🚨 CASE 4: DATA CONSISTENCY CHECK
+  // Ensure both sources (IndexedDB + server) match exactly
+  // =========================================================
+  if (
+    license.total_revenue !== checkpoint.total_revenue ||
+    license.total_deposited !== checkpoint.total_deposited
+  ) {
+    console.error("🚨 Data mismatch detected (tampering or corruption)");
 
+    console.error("Mismatch details:", {
+      license,
+      checkpoint
+    });
 
-    // get checkpoint from file system (php) its from local storage
-    const res_fromcheckpointFile = await fetch('logic/machine.php?action=load_checkpoint');
-    const checkpoint_res = await res_fromcheckpointFile.json();
+    return false;
+  }
 
-    // 👉 FIRST RUN → CREATE CHECKPOINT
-    if (!checkpoint_res) {
-      console.log("🆕 Creating checkpoint...");
-      data={
-          total_deposited: 0,
-          total_revenue: 0,
-          static_machine_id: staticMachineId,
-      };
-      await fetch('logic/machine.php?action=saveCheckpoint', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
-      return true;
-    }
-
-    console.log("FROM DB",
-      "checkpoint_res: ", checkpoint_res,
-      "license: ", license
-    );
-
-    /*
-    licence
-      {
-          "machine_id": "06248F93",
-          "packages": [
-              {
-                  "sn": "1",
-                  "amount": 3000,
-                  "activated_at": "2026-04-12T05:05:37.635Z"
-              },
-              {
-                  "sn": "7",
-                  "amount": 5000,
-                  "activated_at": "2026-04-12T05:15:31.749Z"
-              }
-          ],
-          "total_deposited": 8000,
-          "total_revenue": 1100,
-          "activation_attempts": 0,
-          "activation_locked": false,
-          "activation_locked_at": null,
-          "unlock_nonce": 0,
-          "static_machine_id": ""
-      }
-
-checkpoint_res
-{
-    "static_machine_id": "c0f4e2d71359b471d4408509765d88e04e1fb44f86fc6356ea3a0932e765a169",
-    "total_deposited": 8000,
-    "total_revenue": 0
+  // =========================================================
+  // ✅ ALL CHECKS PASSED
+  // =========================================================
+  console.log("✅ License is secure and consistent");
+  return true;
 }
 
-    */
-    
 
-    // 🚨 CHECKS
-    if (checkpoint_res.static_machine_id !== staticMachineId) {
-      alert("🚨 Copied system detected (machine mismatch)");
-      return false;
-    }
+async function showSecurityResetModal() {
+  return new Promise((resolve) => {
 
-    if (checkpoint_res.total_deposited !== license.total_deposited) {
-      alert("🚨 Deposit tampering detected");
-      return false;
-    }
+    const modal = document.getElementById("securityModal");
+    const msg = document.getElementById("securityMsg");
 
-    if (license.total_revenue < checkpoint_res.total_revenue) {
-      alert("🚨 Rollback detected (database replaced)");
-      return false;
-    }
+    const yesBtn = document.getElementById("resetYes");
+    const noBtn  = document.getElementById("resetNo");
 
-    console.log("✅ License secure");
-    return true;
+    modal.style.display = "flex";
+
+    // reset state every time
+    yesBtn.disabled = false;
+    noBtn.disabled = false;
+
+    msg.innerHTML = `
+      System data is inconsistent.<br>
+      This may be due to copying or corruption.<br><br>
+      Do you want to reset data and continue?
+    `;
+
+    yesBtn.onclick = async () => {
+      yesBtn.disabled = true;
+      noBtn.disabled = true;
+
+      msg.innerHTML = `⚠ Resetting system...<br>Please wait...`;
+
+      try {
+        const res = await fetch('logic/machine.php');
+        const { static_machine_id } = await res.json();
+
+        // delete local license
+        await API.deleteLicense();
+
+        // reset server checkpoint
+        await fetch('logic/machine.php?action=saveCheckpoint', {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            total_deposited: 0,
+            total_revenue: 0,
+            static_machine_id
+          })
+        });
+
+        msg.innerHTML = `✅ Reset successful.<br>Reloading...`;
+
+        setTimeout(() => {
+          modal.style.display = "none";
+          resolve(true);
+          location.reload();
+        }, 5000);
+
+      } catch (err) {
+        console.error(err);
+
+        msg.innerHTML = `❌ Reset failed.<br>Please try again.`;
+
+        yesBtn.disabled = false;
+        noBtn.disabled = false;
+
+        resolve(false);
+      }
+    };
+
+    noBtn.onclick = () => {
+      msg.innerHTML = `
+        🚫 Access denied.<br><br>
+        Please contact your system provider:<br><br>
+        📞 <a href="tel:0918101037"
+           style="color:#00c6ff; text-decoration:none; font-weight:700;">
+           0918101037
+        </a><br><br>
+        Or click YES to reset system.
+      `;
+    };
+
+  });
 }
