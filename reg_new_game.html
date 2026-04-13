@@ -468,7 +468,7 @@ html, body {
 
     <div class="field">
       <label>💵 Card Price (ብር)</label>
-      <input type="number" id="bp_price" value="10" min="1" max="999">
+      <input type="number" id="bp_price" value="10" min="10" step="5">
     </div>
 
     <button class="panel-btn btn-range" onclick="selectRange()">📐 Range Select</button>
@@ -768,6 +768,68 @@ async function saveAndGo() {
     locked_cards:     gs.locked_cards  || [],
     winning_cards:    gs.winning_cards || [],
   };
+
+  if (parseInt(document.getElementById('bp_price').value) < 10) {
+
+  // create overlay
+  const overlay = document.createElement('div');
+    overlay.style = `
+      position:fixed;
+      top:0;left:0;
+      width:100%;height:100%;
+      background:rgba(0,0,0,0.6);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+    `;
+
+    // create modal box
+    const modal = document.createElement('div');
+    modal.style = `
+      background:#1e1e1e;
+      color:#fff;
+      padding:20px;
+      border-radius:12px;
+      text-align:center;
+      max-width:320px;
+      width:90%;
+      box-shadow:0 0 20px rgba(0,0,0,0.6);
+    `;
+
+    // message
+    const msg = document.createElement('div');
+    msg.innerHTML = "⚠ Card price must be at least <b> 10 Birr.</b>";
+    msg.style = "margin-bottom:15px;font-weight:800;font-size:22px; color:#ff6e40;";
+
+    // button
+    const btnClose = document.createElement('button');
+    btnClose.innerText = "OK";
+    btnClose.style = `
+      padding:8px 16px;
+      border:none;
+      border-radius:8px;
+      background:#00c6ff;
+      color:#fff;
+      font-weight:700;
+      cursor:pointer;
+    `;
+
+    // close action
+    btnClose.onclick = () => document.body.removeChild(overlay);
+
+    // assemble
+    modal.appendChild(msg);
+    modal.appendChild(btnClose);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // reset button
+    btn.disabled = false;
+    btn.innerHTML = '✔ Register & Play';
+
+    return;
+  }
 
   try {
     await API.saveGameState(newState);

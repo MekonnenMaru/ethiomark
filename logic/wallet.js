@@ -132,81 +132,76 @@ async function checkLicenseSecurity() {
 
 
 async function showSecurityResetModal() {
-  return new Promise((resolve) => {
+    return new Promise((resolve) => {
 
-    const modal = document.getElementById("securityModal");
-    const msg = document.getElementById("securityMsg");
+      const modal = document.getElementById("securityModal");
+      const msg = document.getElementById("securityMsg");
 
-    const yesBtn = document.getElementById("resetYes");
-    const noBtn  = document.getElementById("resetNo");
+      modal.style.display = "flex";
 
-    modal.style.display = "flex";
+      const yesBtn = document.getElementById("resetYes");
+      const noBtn  = document.getElementById("resetNo");
 
-    // reset state every time
-    yesBtn.disabled = false;
-    noBtn.disabled = false;
+      // reset message each time
+      msg.innerHTML = `
+        System data is inconsistent.<br>
+        This may be due to copying or corruption.<br><br>
+        Do you want to reset data and continue?
+      `;
 
-    msg.innerHTML = `
-      System data is inconsistent.<br>
-      This may be due to copying or corruption.<br><br>
-      Do you want to reset data and continue?
-    `;
+      yesBtn.onclick = async () => {
+        console.warn("⚠ Fixing system (syncing values)...");
 
-    yesBtn.onclick = async () => {
-      yesBtn.disabled = true;
-      noBtn.disabled = true;
-
-      msg.innerHTML = `⚠ Resetting system...<br>Please wait...`;
-
-      try {
         const res = await fetch('logic/machine.php');
         const { static_machine_id } = await res.json();
 
-        // delete local license
-        await API.deleteLicense();
+        const lic = await getLicense();
 
-        // reset server checkpoint
+        if (!lic) {
+          modal.style.display = "none";
+          resolve(false);
+          return;
+        }
+
+        // ✅ FIX instead of delete
+        const fixedLicense = {
+          ...lic,
+          total_revenue: lic.total_deposited
+        };
+
+        await EthiomarkDB.dbSaveLicense(fixedLicense);
+
+        // ✅ update checkpoint correctly
         await fetch('logic/machine.php?action=saveCheckpoint', {
-          method: "POST",
+          method: 'POST',
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            total_deposited: 0,
-            total_revenue: 0,
+            total_deposited: fixedLicense.total_deposited,
+            total_revenue: fixedLicense.total_revenue,
             static_machine_id
           })
         });
 
-        msg.innerHTML = `✅ Reset successful.<br>Reloading...`;
+        modal.style.display = "none";
+        resolve(true);
+      };
 
-        setTimeout(() => {
-          modal.style.display = "none";
-          resolve(true);
-          location.reload();
-        }, 5000);
+      noBtn.onclick = () => {
+        // 🚨 show contact info instead of alert
+        msg.innerHTML = `
+          🚫 Access denied.<br><br>
+          Please contact your system provider:<br><br>
+          📞 <a href="tel:0918101037" style="color:#00c6ff; text-decoration:none; font-weight:700;">
+          0918101037
+          </a><br><br>
+          Or click YES to continue self maintenance.
+        `;
 
-      } catch (err) {
-        console.error(err);
-
-        msg.innerHTML = `❌ Reset failed.<br>Please try again.`;
-
-        yesBtn.disabled = false;
-        noBtn.disabled = false;
+        yesBtn.disabled = true;
+        noBtn.disabled = true;
 
         resolve(false);
-      }
-    };
+      };
 
-    noBtn.onclick = () => {
-      msg.innerHTML = `
-        🚫 Access denied.<br><br>
-        Please contact your system provider:<br><br>
-        📞 <a href="tel:0918101037"
-           style="color:#00c6ff; text-decoration:none; font-weight:700;">
-           0918101037
-        </a><br><br>
-        Or click YES to reset system.
-      `;
-    };
-
-  });
-}
+    });
+  }

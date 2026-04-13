@@ -268,26 +268,18 @@ async function dbGetLicense() {
 }
 
 async function dbSaveLicense(data) {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('license','readwrite');
-    tx.objectStore('license').put(data, 'data');
-    tx.oncomplete = resolve;
-    tx.onerror    = e => reject(e.target.error);
-  });
-}
+  if (!data) throw new Error("No license data");
 
-async function dbDeleteLicense() {
   const db = await openDB();
 
   return new Promise((resolve, reject) => {
     const tx = db.transaction('license', 'readwrite');
     const store = tx.objectStore('license');
 
-    const req = store.delete('data'); // ✅ correct key delete
+    store.put(data, 'data'); // fixed key
 
-    req.onsuccess = () => resolve(true);
-    req.onerror = (e) => reject(e.target.error);
+    tx.oncomplete = () => resolve(data);
+    tx.onerror    = (e) => reject(e.target.error);
   });
 }
 
@@ -385,5 +377,5 @@ window.EthiomarkDB = {
   dbAddWalletTransaction, dbGetWalletTransactions,
   seedCashiers, getCashier, dbUpdateCashier,
   dbGetCardCategories, dbGetCardIdsByCategory,
-  dbGetLicense, dbSaveLicense, dbDeleteLicense
+  dbGetLicense, dbSaveLicense
 };

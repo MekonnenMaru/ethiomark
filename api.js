@@ -91,7 +91,7 @@ window.API = (() => {
   /* Update the most-recent history record for `round` whose status === fromStatus.
      Merges `updates` into it. Falls back to addHistory if no match found. */
   async function updateHistoryByRound(round, fromStatus, updates) {
-    console.log("xxxxxxxx", round, fromStatus, updates);
+    console.log("updateHistoryByRound", round, fromStatus, updates);
     
     const found = await EthiomarkDB.dbUpdateHistoryByRound(round, fromStatus, updates);
     return found;
@@ -248,11 +248,7 @@ window.API = (() => {
       static_machine_id: '',
     };
   }
-
-  /** Delete license */
-  async function deleteLicense() {
-    return EthiomarkDB.dbDeleteLicense();
-  }
+  
 
   /** Balance breakdown (all amounts in ብር). */
   async function getBalance() {
@@ -730,19 +726,34 @@ window.API = (() => {
       `;
 
       yesBtn.onclick = async () => {
-        console.warn("⚠ Resetting system...");
+        console.warn("⚠ Fixing system (syncing values)...");
 
         const res = await fetch('logic/machine.php');
         const { static_machine_id } = await res.json();
 
-        await EthiomarkDB.dbDeleteLicense();
+        const lic = await getLicense();
 
+        if (!lic) {
+          modal.style.display = "none";
+          resolve(false);
+          return;
+        }
+
+        // ✅ FIX instead of delete
+        const fixedLicense = {
+          ...lic,
+          total_revenue: lic.total_deposited
+        };
+
+        await EthiomarkDB.dbSaveLicense(fixedLicense);
+
+        // ✅ update checkpoint correctly
         await fetch('logic/machine.php?action=saveCheckpoint', {
           method: 'POST',
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            total_deposited: 0,
-            total_revenue: 0,
+            total_deposited: fixedLicense.total_deposited,
+            total_revenue: fixedLicense.total_revenue,
             static_machine_id
           })
         });
@@ -869,7 +880,6 @@ window.API = (() => {
     isLicensed, activatePackage, addRevenue,
     generateLicenseKey,
     getActivationLockStatus, unlockActivation, generateUnlockCode, getUnlockNonce,
-    deleteLicense,
 
     /* daily reset */
     checkAndResetDailyRound, stampActiveDate,

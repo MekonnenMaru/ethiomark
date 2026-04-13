@@ -690,8 +690,8 @@
       const paid       = (opts.paid    !== undefined) ? opts.paid : 0;
       const bonus      = 0;
       const income_net = total_bet - paid - bonus;
-      /* Track revenue — skip if already counted when the game started */
-      if (total_bet > 0 && !gs.started_at) API.addRevenue(total_bet);
+
+
       const completedAt  = new Date().toISOString();
       const finalStatus  = 'completed';
       const historyEntry = {
@@ -711,10 +711,12 @@
         bonus:        bonus,
         income_net:   income_net,
       };
+      
       /* STARTED → COMPLETED transition; fall back to new record if none found */
       API.updateHistoryByRound(gs.round || 1, 'started', historyEntry)
         .then(found => { if (!found) API.addHistory(historyEntry).catch(() => {}); })
         .catch(() => { API.addHistory(historyEntry).catch(() => {}); });
+
       /* Save game transaction record */
       API.addTransaction({
         cashier_id:     cashierId,
@@ -1845,723 +1847,722 @@
 <!-- ─── Main content ─── -->
 <div id="main-content" class="main-content">
 
-  <!-- ─── Start / Register Modal ─── -->
-  <div id="myModal" class="modal fade" data-keyboard="false" data-backdrop="static"
-      data-bs-keyboard="false"
-      data-bs-backdrop="static"
-      style="display:none; overflow-y:auto;">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <!-- ── Header: Round badge left | Nav buttons right ── -->
-        <div class="modal-header">
-          <span class="em-round-badge" id="modal-round-number">Round 1</span>
-          <div class="em-nav-row">
-            <button class="em-nav-btn em-btn-report"   id="report_button">📊 Report</button>
-            <button class="em-nav-btn em-btn-register" id="register_game_button">🎴 Register</button>
-            <button id="pkg-modal-btn" onclick="showPackageOverlay('top-up')" class="em-nav-btn"
-                    style="background:rgba(0,198,255,0.1); border-color:rgba(0,198,255,0.35); color:#00c6ff;">
-              💳 Package
-            </button>
-            <button class="em-nav-btn em-btn-logout" id="logoutbtn">↩ Logout</button>
-          </div>
-        </div>
-
-        <div class="modal-body">
-            <!-- ② NO-CARDS STATE: big brand title only -->
-          <div id="modal-no-cards-view" class="em-modal-title">ኢትዮ-ማርክ ቢንጎ</div>
-
-          <!-- ③ CARDS-REGISTERED STATE: ደራሽ revenue display only -->
-          <div id="modal-game-info" style="display:none; width:100%; text-align:center;">
-            <div id="amount"></div>
-            <div class="em-derash-revenue-wrap">
-              <span class="em-derash-tag">ደራሽ</span>
-              <span class="em-derash-amount" id="mi-revenue">0 ብር</span>
+    <!-- ─── Start / Register Modal ─── -->
+    <div id="myModal" class="modal fade" data-keyboard="false" data-backdrop="static"
+        data-bs-keyboard="false"
+        data-bs-backdrop="static"
+        style="display:none; overflow-y:auto;">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <!-- ── Header: Round badge left | Nav buttons right ── -->
+          <div class="modal-header">
+            <span class="em-round-badge" id="modal-round-number">Round 1</span>
+            <div class="em-nav-row">
+              <button class="em-nav-btn em-btn-report"   id="report_button">📊 Report</button>
+              <button class="em-nav-btn em-btn-register" id="register_game_button">🎴 Register</button>
+              <button id="pkg-modal-btn" onclick="showPackageOverlay('top-up')" class="em-nav-btn"
+                      style="background:rgba(0,198,255,0.1); border-color:rgba(0,198,255,0.35); color:#00c6ff;">
+                💳 Package
+              </button>
+              <button class="em-nav-btn em-btn-logout" id="logoutbtn">↩ Logout</button>
             </div>
           </div>
 
+          <div class="modal-body">
+              <!-- ② NO-CARDS STATE: big brand title only -->
+            <div id="modal-no-cards-view" class="em-modal-title">ኢትዮ-ማርክ ቢንጎ</div>
 
-          <!-- ① Image: ALWAYS visible -->
-          <div class="em-ad-strip" id="modal-media-area">
-            <img id="selected-numbers-container-img" src="assets/images/card1.png"
-                 onerror="this.style.display='none'">
-            <img id="bonus-modal-img" src="assets/images/bonus-removebg.png"
-                 style="display:none;" onerror="this.style.display='none'">
+            <!-- ③ CARDS-REGISTERED STATE: ደራሽ revenue display only -->
+            <div id="modal-game-info" style="display:none; width:100%; text-align:center;">
+              <div id="amount"></div>
+              <div class="em-derash-revenue-wrap">
+                <span class="em-derash-tag">ደራሽ</span>
+                <span class="em-derash-amount" id="mi-revenue">0 ብር</span>
+              </div>
+            </div>
+
+
+            <!-- ① Image: ALWAYS visible -->
+            <div class="em-ad-strip" id="modal-media-area">
+              <img id="selected-numbers-container-img" src="assets/images/card1.png"
+                  onerror="this.style.display='none'">
+              <img id="bonus-modal-img" src="assets/images/bonus-removebg.png"
+                  style="display:none;" onerror="this.style.display='none'">
+            </div>
+
+            
+
+            
+
+            <p id="bala_alert"
+              style="color:#ff5252; font-size:14px; min-height:0; text-align:center;
+                      animation:blink 2s infinite; margin:0; width:100%;">
+            </p>
+
+            <!-- ④ Start button + Spin shortcut -->
+            <div style="display:flex;flex-direction:row;align-items:center;gap:10px;width:100%;">
+              <button type="submit" id="mybtn" onclick="return startbingo();">▶ ጀምር</button>
+              <a href="spin.html" class="modal-spin-btn"
+                onmouseover="this.style.background='linear-gradient(135deg,#7c4dff,#b040ff)';this.style.color='#fff';"
+                onmouseout="this.style.background='linear-gradient(135deg,rgba(123,97,255,0.18),rgba(176,64,255,0.18))';this.style.color='#b390ff';">
+                🎡 Spin to Win
+              </a>
+            </div>
+
           </div>
-
-          
-
-          
-
-          <p id="bala_alert"
-             style="color:#ff5252; font-size:14px; min-height:0; text-align:center;
-                    animation:blink 2s infinite; margin:0; width:100%;">
-          </p>
-
-          <!-- ④ Start button + Spin shortcut -->
-          <div style="display:flex;flex-direction:row;align-items:center;gap:10px;width:100%;">
-            <button type="submit" id="mybtn" onclick="return startbingo();">▶ ጀምር</button>
-            <a href="spin.html" class="modal-spin-btn"
-               onmouseover="this.style.background='linear-gradient(135deg,#7c4dff,#b040ff)';this.style.color='#fff';"
-               onmouseout="this.style.background='linear-gradient(135deg,rgba(123,97,255,0.18),rgba(176,64,255,0.18))';this.style.color='#b390ff';">
-              🎡 Spin to Win
-            </a>
-          </div>
-
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- ─── Register Card Modal ─── -->
-  <div id="registerCardModal" class="modal fade" data-keyboard="false" data-backdrop="static"
-       style="display:none; overflow-y:auto;">
-    <div class="modal-dialog">
-      <div class="modal-content" style="padding:20px;">
-        <div class="modal-header">
-          <h2>Register New Game</h2>
-          <button class="modal-button" onclick="$('#registerCardModal').modal('hide');">Close</button>
-        </div>
-        <div class="modal-body">
-          <div style="margin-bottom:10px;">
-            <label style="font-size:20px;">Card Numbers (comma separated):</label><br>
-            <textarea id="reg_card_numbers" rows="4"
-                      style="width:100%; font-size:18px; padding:5px;"
-                      placeholder="e.g. 1,2,3,100,500">
-            </textarea>
+    <!-- ─── Register Card Modal ─── -->
+    <div id="registerCardModal" class="modal fade" data-keyboard="false" data-backdrop="static"
+        style="display:none; overflow-y:auto;">
+      <div class="modal-dialog">
+        <div class="modal-content" style="padding:20px;">
+          <div class="modal-header">
+            <h2>Register New Game</h2>
+            <button class="modal-button" onclick="$('#registerCardModal').modal('hide');">Close</button>
           </div>
-          <div style="margin-bottom:10px;">
-            <label style="font-size:20px;">Pattern:</label><br>
-            <select id="reg_pattern" style="font-size:20px; width:100%; padding:5px;">
-              <option value="1">Any 1 line</option>
-              <option value="2">Any 2 lines</option>
-              <option value="3">Any Horizontal</option>
-              <option value="4">Any Vertical</option>
-              <option value="5">X Pattern</option>
-              <option value="6">Four Corners</option>
-              <option value="7">Center Corners</option>
-              <option value="8">Meskel</option>
-              <option value="9">T</option>
-              <option value="10">Reverse T</option>
-              <option value="11">L</option>
-              <option value="12">Full Card</option>
-            </select>
+          <div class="modal-body">
+            <div style="margin-bottom:10px;">
+              <label style="font-size:20px;">Card Numbers (comma separated):</label><br>
+              <textarea id="reg_card_numbers" rows="4"
+                        style="width:100%; font-size:18px; padding:5px;"
+                        placeholder="e.g. 1,2,3,100,500">
+              </textarea>
+            </div>
+            <div style="margin-bottom:10px;">
+              <label style="font-size:20px;">Pattern:</label><br>
+              <select id="reg_pattern" style="font-size:20px; width:100%; padding:5px;">
+                <option value="1">Any 1 line</option>
+                <option value="2">Any 2 lines</option>
+                <option value="3">Any Horizontal</option>
+                <option value="4">Any Vertical</option>
+                <option value="5">X Pattern</option>
+                <option value="6">Four Corners</option>
+                <option value="7">Center Corners</option>
+                <option value="8">Meskel</option>
+                <option value="9">T</option>
+                <option value="10">Reverse T</option>
+                <option value="11">L</option>
+                <option value="12">Full Card</option>
+              </select>
+            </div>
+            <div style="margin-bottom:10px;">
+              <label style="font-size:20px;">Price per card (ብር):</label><br>
+              <input type="number" id="reg_price"
+                    style="font-size:20px; width:100%; padding:5px;"
+                    value="10" min="1">
+            </div>
+            <div style="margin-bottom:10px;">
+              <label style="font-size:20px;">Voice:</label><br>
+              <select id="reg_voice" style="font-size:20px; width:100%; padding:5px;">
+                <option value="11">New voice</option>
+                <option value="10">Addis</option>
+                <option value="1">Bereket</option>
+                <option value="2">Nigus</option>
+                <option value="3">Amharic Arada</option>
+                <option value="4">Amharic formal</option>
+                <option value="5">Amharic yordi</option>
+                <option value="6">Amharic Beti</option>
+                <option value="7">Oromifa Female</option>
+                <option value="8">Tigrigna Female</option>
+                <option value="9">Tigrigna Male</option>
+              </select>
+            </div>
+            <button onclick="saveRegistration()"
+                    style="background:green; color:white; font-size:24px;
+                          padding:10px 30px; border:none; border-radius:5px; cursor:pointer;">
+              Save &amp; Start
+            </button>
+            <button onclick="clearRegistration()"
+                    style="background:red; color:white; font-size:24px;
+                          padding:10px 20px; border:none; border-radius:5px;
+                          cursor:pointer; margin-left:10px;">
+              Clear Game
+            </button>
           </div>
-          <div style="margin-bottom:10px;">
-            <label style="font-size:20px;">Price per card (ብር):</label><br>
-            <input type="number" id="reg_price"
-                   style="font-size:20px; width:100%; padding:5px;"
-                   value="10" min="1">
-          </div>
-          <div style="margin-bottom:10px;">
-            <label style="font-size:20px;">Voice:</label><br>
-            <select id="reg_voice" style="font-size:20px; width:100%; padding:5px;">
-              <option value="11">New voice</option>
-              <option value="10">Addis</option>
-              <option value="1">Bereket</option>
-              <option value="2">Nigus</option>
-              <option value="3">Amharic Arada</option>
-              <option value="4">Amharic formal</option>
-              <option value="5">Amharic yordi</option>
-              <option value="6">Amharic Beti</option>
-              <option value="7">Oromifa Female</option>
-              <option value="8">Tigrigna Female</option>
-              <option value="9">Tigrigna Male</option>
-            </select>
-          </div>
-          <button onclick="saveRegistration()"
-                  style="background:green; color:white; font-size:24px;
-                         padding:10px 30px; border:none; border-radius:5px; cursor:pointer;">
-            Save &amp; Start
-          </button>
-          <button onclick="clearRegistration()"
-                  style="background:red; color:white; font-size:24px;
-                         padding:10px 20px; border:none; border-radius:5px;
-                         cursor:pointer; margin-left:10px;">
-            Clear Game
-          </button>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- ─── Modal button handlers + Package overlay controller ─── -->
-  <script>
-    document.getElementById('report_button').onclick = function () {
-      window.location.href = 'report.html';
-    };
-    document.getElementById('logoutbtn').onclick = function () {
-      if (confirm('Logout? Game state will be preserved.')) {
-        API.clearSession();
-        location.replace('login.html');
-      }
-    };
-    document.getElementById('register_game_button').onclick = function () {
-      window.location.href = 'reg_new_game.html';
-    };
-
-    /* ── Package overlay controller ── */
-    async function refreshBalanceDisplay() {
-      const bal = await API.getBalance();
-      const mid = await API.getMachineId();
-
-      document.getElementById('pkg-machine-id').textContent = mid.match(/.{1,4}/g).join('-');
-      document.getElementById('pkg-deposited').textContent  = bal.deposited.toLocaleString() + ' ብር';
-      document.getElementById('pkg-used').textContent       = bal.used.toLocaleString()      + ' ብር';
-
-      const availEl       = document.getElementById('pkg-available');
-      availEl.textContent = bal.available.toLocaleString() + ' ብር';
-      availEl.style.color = bal.available <= 0
-        ? '#ff5252'
-        : (bal.available < 1000 ? '#ffd740' : '#00e676');
-    }
-
-    /* Track whether the game modal was open when overlay appeared */
-    let _pkgModalWasOpen = false;
-
-    function showPackageOverlay(mode) {
-      console.log("✅ Inside showPackageOverlay(mode)");
-      
-      const overlay       = document.getElementById('pkg-overlay');
-      const balBanner     = document.getElementById('pkg-locked-banner');
-      const trialBanner   = document.getElementById('pkg-trial-banner');
-      const activateSec   = document.getElementById('pkg-activate-section');
-      const unlockSec     = document.getElementById('pkg-unlock-section');
-      const errEl         = document.getElementById('pkg-key-error');
-      const sucEl         = document.getElementById('pkg-key-success');
-      const unlockErrEl   = document.getElementById('pkg-unlock-error');
-      const unlockSucEl   = document.getElementById('pkg-unlock-success');
-
-      /* Reset messages */
-      if (errEl)       errEl.style.display      = 'none';
-      if (sucEl)       sucEl.style.display      = 'none';
-      if (unlockErrEl) unlockErrEl.style.display = 'none';
-      if (unlockSucEl) unlockSucEl.style.display = 'none';
-      document.getElementById('pkg-key-input').value = '';
-
-      balBanner.style.display = (mode === 'locked') ? 'block' : 'none';
-
-      /* Close Bootstrap modal first — its backdrop blocks all input */
-      _pkgModalWasOpen = ($('#myModal').data('bs.modal') || {})._isShown
-                      || $('#myModal').hasClass('show')
-                      || ($('#myModal').css('display') !== 'none');
-      if (_pkgModalWasOpen) $('#myModal').modal('hide');
-
-      /* Show overlay after modal has finished closing (~300 ms) */
-      setTimeout(async () => {
-        overlay.style.display = 'flex';
-        refreshBalanceDisplay();
-
-        /* Check trial-lock state and switch UI sections */
-        try {
-          const lockStatus = await API.getActivationLockStatus();
-          if (lockStatus.locked) {
-            trialBanner.style.display  = 'block';
-            activateSec.style.display  = 'none';
-            unlockSec.style.display    = 'block';
-            API.getUnlockNonce().then(n => {
-              const el = document.getElementById('pkg-unlock-nonce');
-              if (el) el.textContent = n;
-            }).catch(() => {});
-            const inp = document.getElementById('pkg-unlock-input');
-            if (inp) { inp.value = ''; inp.focus(); }
-          } else {
-            trialBanner.style.display  = 'none';
-            activateSec.style.display  = 'block';
-            unlockSec.style.display    = 'none';
-            const inp = document.getElementById('pkg-key-input');
-            if (inp) inp.focus();
-          }
-        } catch (_) {
-          trialBanner.style.display = 'none';
-          activateSec.style.display = 'block';
-          unlockSec.style.display   = 'none';
+    <!-- ─── Modal button handlers + Package overlay controller ─── -->
+    <script>
+      document.getElementById('report_button').onclick = function () {
+        window.location.href = 'report.html';
+      };
+      document.getElementById('logoutbtn').onclick = function () {
+        if (confirm('Logout? Game state will be preserved.')) {
+          API.clearSession();
+          location.replace('login.html');
         }
-      }, _pkgModalWasOpen ? 320 : 0);
-    }
-
-    function hidePackageOverlay() {
-      document.getElementById('pkg-overlay').style.display = 'none';
-      /* Reopen the game modal if it was open before */
-      if (_pkgModalWasOpen) {
-        setTimeout(() => { if (typeof initGameState === 'function') initGameState(); }, 150);
-      }
-    }
-
-    function showBalanceWarning(avail) {
-      if (avail >= 1000) return;
-      const msg  = '⚠ Your wallet is going to finish — remaining package: ' + avail.toLocaleString() + ' ብር';
-      const bala = document.getElementById('bala_alert');
-      if (bala) {
-        bala.textContent = msg;
-        setTimeout(() => { if (bala.textContent === msg) bala.textContent = ''; }, 10000);
-      }
-    }
-
-    /* Override showPackageOverlay to track mode for Close button logic */
-    let _pkgOverlayMode  = 'top-up';
-    const _origShow      = showPackageOverlay;
-    showPackageOverlay   = function (mode) {
-      _pkgOverlayMode = mode || 'top-up';
-      _origShow(mode);
-    };
-
-    document.getElementById('pkg-close-btn').addEventListener('click', () => {
-      // if (_pkgOverlayMode === 'locked') {
-      //   /* Balance is zero — must activate before closing */
-      //   const e = document.getElementById('pkg-key-error');
-      //   e.textContent  = 'You must activate a package before you can continue.';
-      //   e.style.display = 'block';
-      //   return;
-      // }
-      hidePackageOverlay();
-    });
-
-    /* ── Unlock code button ── */
-    document.getElementById('pkg-unlock-btn').addEventListener('click', async () => {
-      const code      = document.getElementById('pkg-unlock-input').value.trim();
-      const errEl     = document.getElementById('pkg-unlock-error');
-      const sucEl     = document.getElementById('pkg-unlock-success');
-      const btn       = document.getElementById('pkg-unlock-btn');
-
-      errEl.style.display = 'none';
-      sucEl.style.display = 'none';
-
-      if (!code) {
-        errEl.textContent   = 'Please enter the unlock code from your admin.';
-        errEl.style.display = 'block';
-        return;
-      }
-
-      btn.disabled    = true;
-      btn.textContent = 'Verifying…';
-
-      try {
-        await API.unlockActivation(code);
-        sucEl.textContent   = '✓ Lock cleared! You can now activate a package.';
-        sucEl.style.display = 'block';
-        /* After 1.5s switch back to the key input UI */
-        setTimeout(() => {
-          document.getElementById('pkg-trial-banner').style.display  = 'none';
-          document.getElementById('pkg-unlock-section').style.display = 'none';
-          document.getElementById('pkg-activate-section').style.display = 'block';
-          document.getElementById('pkg-key-input').focus();
-        }, 1500);
-      } catch (e) {
-        errEl.textContent   = '❌ ' + e.message;
-        errEl.style.display = 'block';
-      }
-
-      btn.disabled    = false;
-      btn.textContent = '🔓 Unlock';
-    });
-
-    /* Close button inside unlock section */
-    document.getElementById('pkg-close-btn2').addEventListener('click', () => {
-      if (_pkgOverlayMode === 'locked') {
-        const e = document.getElementById('pkg-unlock-error');
-        e.textContent   = 'You must activate a package before you can continue.';
-        e.style.display = 'block';
-        return;
-      }
-      hidePackageOverlay();
-    });
-
-    /* ── Activate package button ── */
-    document.getElementById('pkg-activate-btn').addEventListener('click', async () => {
-      const keyStr = document.getElementById('pkg-key-input').value.trim();
-      const errEl  = document.getElementById('pkg-key-error');
-      const sucEl  = document.getElementById('pkg-key-success');
-      const btn    = document.getElementById('pkg-activate-btn');
-
-      errEl.style.display = 'none';
-      sucEl.style.display = 'none';
-
-      if (!keyStr) {
-        errEl.textContent   = 'Please paste the license key first.';
-        errEl.style.display = 'block';
-        return;
-      }
-
-      btn.disabled    = true;
-      btn.textContent = 'Activating…';
-
-      try {
-        const result = await API.activatePackage(keyStr);
-        sucEl.innerHTML = '✓ Package activated! <strong>' + result.amount.toLocaleString()
-          + ' ብር</strong> added.<br>New balance: <strong>'
-          + result.new_balance.toLocaleString() + ' ብር</strong>';
-        sucEl.style.display = 'block';
-        document.getElementById('pkg-key-input').value = '';
-        await refreshBalanceDisplay();
-        setTimeout(() => hidePackageOverlay(), 2500);
-      } catch (e) {
-        errEl.textContent   = '❌ ' + e.message;
-        errEl.style.display = 'block';
-        /* If now locked, flip UI to unlock section */
-        if (e.message.startsWith('🔒 Activation locked after')) {
-          setTimeout(() => {
-            document.getElementById('pkg-trial-banner').style.display     = 'block';
-            document.getElementById('pkg-activate-section').style.display = 'none';
-            document.getElementById('pkg-unlock-section').style.display   = 'block';
-            document.getElementById('pkg-key-error').style.display        = 'none';
-            document.getElementById('pkg-unlock-input').value             = '';
-            document.getElementById('pkg-unlock-input').focus();
-            API.getUnlockNonce().then(n => {
-              const el = document.getElementById('pkg-unlock-nonce');
-              if (el) el.textContent = n;
-            }).catch(() => {});
-          }, 1200);
-        }
-      }
-
-      btn.disabled    = false;
-      btn.textContent = '✓ Activate Package';
-    });
-
-    /* ── Quick in-modal card registration ── */
-    function saveRegistration() {
-      const raw   = document.getElementById('reg_card_numbers').value;
-      const cards = raw.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
-      if (!cards.length) { alert('Please enter at least one card number.'); return; }
-
-      const pattern = parseInt(document.getElementById('reg_pattern').value) || 1;
-      const price   = parseInt(document.getElementById('reg_price').value)   || 10;
-      const sound   = parseInt(document.getElementById('reg_voice').value)   || 1;
-      const gs      = getGameState();
-      const newGs   = {
-        round: gs.round || 1, cards, pattern, price, sound,
-        speed_range: gs.speed_range || 3, randomstring: gs.randomstring || ''
+      };
+      document.getElementById('register_game_button').onclick = function () {
+        window.location.href = 'reg_new_game.html';
       };
 
-      saveGameState(newGs);
-      document.getElementById('sew').innerText  = cards.length;
-      document.getElementById('birr').innerText = price;
-      document.getElementById('patt').innerText = pattern;
-      document.getElementById('voiceselect').value = sound;
-      document.getElementById('cardCounter').innerHTML = 'ብዛት : ' + cards.length;
-      renderRegisteredCards(cards, price, newGs.round);
-      $('#registerCardModal').modal('hide');
-      showAlert('ካርዶቹ ተመዝግበዋል! (' + cards.length + ' cards)', 'success');
-    }
+      /* ── Package overlay controller ── */
+      async function refreshBalanceDisplay() {
+        const bal = await API.getBalance();
+        const mid = await API.getMachineId();
 
-    function clearRegistration() {
-      if (!confirm('Clear game and start new round?')) return;
-      const gs = getGameState();
-      saveGameState({ round: (gs.round || 1) + 1, cards: [], pattern: 1, price: 0, sound: 1, speed_range: 3, randomstring: '' });
-      location.reload();
-    }
-  </script>
+        document.getElementById('pkg-machine-id').textContent = mid.match(/.{1,4}/g).join('-');
+        document.getElementById('pkg-deposited').textContent  = bal.deposited.toLocaleString() + ' ብር';
+        document.getElementById('pkg-used').textContent       = bal.used.toLocaleString()      + ' ብር';
 
-  <!-- ─── Game Status Bar ─── -->
-  <div id="game-status-bar"
-       style="display:none; position:sticky; top:0; z-index:500;
-              background:linear-gradient(90deg,#031730,#051f4a);
-              border-bottom:1px solid rgba(0,198,255,0.25);
-              padding:6px 14px; align-items:center; gap:14px; flex-wrap:wrap;">
-    <span style="color:#00c6ff; font-weight:700; font-size:15px;" id="gsb-round">Round 1</span>
-    <span style="width:1px; height:18px; background:rgba(255,255,255,0.2); display:inline-block;"></span>
-    <span style="color:#aaa; font-size:13px;">Pattern: <b style="color:#fff;"       id="gsb-pattern">—</b></span>
-    <span style="color:#aaa; font-size:13px;">Cards:   <b style="color:#00e676;"    id="gsb-cards">0</b></span>
-    <span style="color:#aaa; font-size:13px;">Price:   <b style="color:#ffd740;"    id="gsb-price">0</b> ብር</span>
-    <span style="color:#aaa; font-size:13px;">Calls:   <b style="color:#ff7043;"    id="gsb-calls">0</b></span>
-  </div>
+        const availEl       = document.getElementById('pkg-available');
+        availEl.textContent = bal.available.toLocaleString() + ' ብር';
+        availEl.style.color = bal.available <= 0
+          ? '#ff5252'
+          : (bal.available < 1000 ? '#ffd740' : '#00e676');
+      }
 
-  <!-- ─── Game display ─── -->
-  <div class="container" style="margin-left:5px;">
-    <div class="info-bar">
+      /* Track whether the game modal was open when overlay appeared */
+      let _pkgModalWasOpen = false;
 
-      <!-- Current ball -->
-      <div class="info-ball-col" id="col-2">
-        <div class="ball2"><div class="ball3"><div class="ball4"><div class="ball5">
-          <p class="num" id="rand"></p>
-        </div></div></div></div>
-      </div>
+      function showPackageOverlay(mode) {
+        
+        const overlay       = document.getElementById('pkg-overlay');
+        const balBanner     = document.getElementById('pkg-locked-banner');
+        const trialBanner   = document.getElementById('pkg-trial-banner');
+        const activateSec   = document.getElementById('pkg-activate-section');
+        const unlockSec     = document.getElementById('pkg-unlock-section');
+        const errEl         = document.getElementById('pkg-key-error');
+        const sucEl         = document.getElementById('pkg-key-success');
+        const unlockErrEl   = document.getElementById('pkg-unlock-error');
+        const unlockSucEl   = document.getElementById('pkg-unlock-success');
 
-      <!-- Recent results table -->
-      <div class="info-results-col" id="col-4">
-        <p class="lastcall">
-          Recent Results for (<a href="#" style="color:red; font-size:20px; font-weight:900;"
-                                  id="round_number_bellow_5">yyyyy</a>)
-        </p>
-        <div class="tgable-container">
-          <table id="bingo-table">
-            <tr>
-              <td class="bingo-call" style="color:red;" t="0"></td>
-              <td class="bingo-call" t="1"></td>
-              <td class="bingo-call" t="2"></td>
-              <td class="bingo-call" t="3"></td>
-              <td class="bingo-call" t="4"></td>
-            </tr>
-          </table>
+        /* Reset messages */
+        if (errEl)       errEl.style.display      = 'none';
+        if (sucEl)       sucEl.style.display      = 'none';
+        if (unlockErrEl) unlockErrEl.style.display = 'none';
+        if (unlockSucEl) unlockSucEl.style.display = 'none';
+        document.getElementById('pkg-key-input').value = '';
+
+        balBanner.style.display = (mode === 'locked') ? 'block' : 'none';
+
+        /* Close Bootstrap modal first — its backdrop blocks all input */
+        _pkgModalWasOpen = ($('#myModal').data('bs.modal') || {})._isShown
+                        || $('#myModal').hasClass('show')
+                        || ($('#myModal').css('display') !== 'none');
+        if (_pkgModalWasOpen) $('#myModal').modal('hide');
+
+        /* Show overlay after modal has finished closing (~300 ms) */
+        setTimeout(async () => {
+          overlay.style.display = 'flex';
+          refreshBalanceDisplay();
+
+          /* Check trial-lock state and switch UI sections */
+          try {
+            const lockStatus = await API.getActivationLockStatus();
+            if (lockStatus.locked) {
+              trialBanner.style.display  = 'block';
+              activateSec.style.display  = 'none';
+              unlockSec.style.display    = 'block';
+              API.getUnlockNonce().then(n => {
+                const el = document.getElementById('pkg-unlock-nonce');
+                if (el) el.textContent = n;
+              }).catch(() => {});
+              const inp = document.getElementById('pkg-unlock-input');
+              if (inp) { inp.value = ''; inp.focus(); }
+            } else {
+              trialBanner.style.display  = 'none';
+              activateSec.style.display  = 'block';
+              unlockSec.style.display    = 'none';
+              const inp = document.getElementById('pkg-key-input');
+              if (inp) inp.focus();
+            }
+          } catch (_) {
+            trialBanner.style.display = 'none';
+            activateSec.style.display = 'block';
+            unlockSec.style.display   = 'none';
+          }
+        }, _pkgModalWasOpen ? 320 : 0);
+      }
+
+      function hidePackageOverlay() {
+        document.getElementById('pkg-overlay').style.display = 'none';
+        /* Reopen the game modal if it was open before */
+        if (_pkgModalWasOpen) {
+          setTimeout(() => { if (typeof initGameState === 'function') initGameState(); }, 150);
+        }
+      }
+
+      function showBalanceWarning(avail) {
+        if (avail >= 1000) return;
+        const msg  = '⚠ Your wallet is going to finish — remaining package: ' + avail.toLocaleString() + ' ብር';
+        const bala = document.getElementById('bala_alert');
+        if (bala) {
+          bala.textContent = msg;
+          setTimeout(() => { if (bala.textContent === msg) bala.textContent = ''; }, 10000);
+        }
+      }
+
+      /* Override showPackageOverlay to track mode for Close button logic */
+      let _pkgOverlayMode  = 'top-up';
+      const _origShow      = showPackageOverlay;
+      showPackageOverlay   = function (mode) {
+        _pkgOverlayMode = mode || 'top-up';
+        _origShow(mode);
+      };
+
+      document.getElementById('pkg-close-btn').addEventListener('click', () => {
+        // if (_pkgOverlayMode === 'locked') {
+        //   /* Balance is zero — must activate before closing */
+        //   const e = document.getElementById('pkg-key-error');
+        //   e.textContent  = 'You must activate a package before you can continue.';
+        //   e.style.display = 'block';
+        //   return;
+        // }
+        hidePackageOverlay();
+      });
+
+      /* ── Unlock code button ── */
+      document.getElementById('pkg-unlock-btn').addEventListener('click', async () => {
+        const code      = document.getElementById('pkg-unlock-input').value.trim();
+        const errEl     = document.getElementById('pkg-unlock-error');
+        const sucEl     = document.getElementById('pkg-unlock-success');
+        const btn       = document.getElementById('pkg-unlock-btn');
+
+        errEl.style.display = 'none';
+        sucEl.style.display = 'none';
+
+        if (!code) {
+          errEl.textContent   = 'Please enter the unlock code from your admin.';
+          errEl.style.display = 'block';
+          return;
+        }
+
+        btn.disabled    = true;
+        btn.textContent = 'Verifying…';
+
+        try {
+          await API.unlockActivation(code);
+          sucEl.textContent   = '✓ Lock cleared! You can now activate a package.';
+          sucEl.style.display = 'block';
+          /* After 1.5s switch back to the key input UI */
+          setTimeout(() => {
+            document.getElementById('pkg-trial-banner').style.display  = 'none';
+            document.getElementById('pkg-unlock-section').style.display = 'none';
+            document.getElementById('pkg-activate-section').style.display = 'block';
+            document.getElementById('pkg-key-input').focus();
+          }, 1500);
+        } catch (e) {
+          errEl.textContent   = '❌ ' + e.message;
+          errEl.style.display = 'block';
+        }
+
+        btn.disabled    = false;
+        btn.textContent = '🔓 Unlock';
+      });
+
+      /* Close button inside unlock section */
+      document.getElementById('pkg-close-btn2').addEventListener('click', () => {
+        if (_pkgOverlayMode === 'locked') {
+          const e = document.getElementById('pkg-unlock-error');
+          e.textContent   = 'You must activate a package before you can continue.';
+          e.style.display = 'block';
+          return;
+        }
+        hidePackageOverlay();
+      });
+
+      /* ── Activate package button ── */
+      document.getElementById('pkg-activate-btn').addEventListener('click', async () => {
+        const keyStr = document.getElementById('pkg-key-input').value.trim();
+        const errEl  = document.getElementById('pkg-key-error');
+        const sucEl  = document.getElementById('pkg-key-success');
+        const btn    = document.getElementById('pkg-activate-btn');
+
+        errEl.style.display = 'none';
+        sucEl.style.display = 'none';
+
+        if (!keyStr) {
+          errEl.textContent   = 'Please paste the license key first.';
+          errEl.style.display = 'block';
+          return;
+        }
+
+        btn.disabled    = true;
+        btn.textContent = 'Activating…';
+
+        try {
+          const result = await API.activatePackage(keyStr);
+          sucEl.innerHTML = '✓ Package activated! <strong>' + result.amount.toLocaleString()
+            + ' ብር</strong> added.<br>New balance: <strong>'
+            + result.new_balance.toLocaleString() + ' ብር</strong>';
+          sucEl.style.display = 'block';
+          document.getElementById('pkg-key-input').value = '';
+          await refreshBalanceDisplay();
+          setTimeout(() => hidePackageOverlay(), 2500);
+        } catch (e) {
+          errEl.textContent   = '❌ ' + e.message;
+          errEl.style.display = 'block';
+          /* If now locked, flip UI to unlock section */
+          if (e.message.startsWith('🔒 Activation locked after')) {
+            setTimeout(() => {
+              document.getElementById('pkg-trial-banner').style.display     = 'block';
+              document.getElementById('pkg-activate-section').style.display = 'none';
+              document.getElementById('pkg-unlock-section').style.display   = 'block';
+              document.getElementById('pkg-key-error').style.display        = 'none';
+              document.getElementById('pkg-unlock-input').value             = '';
+              document.getElementById('pkg-unlock-input').focus();
+              API.getUnlockNonce().then(n => {
+                const el = document.getElementById('pkg-unlock-nonce');
+                if (el) el.textContent = n;
+              }).catch(() => {});
+            }, 1200);
+          }
+        }
+
+        btn.disabled    = false;
+        btn.textContent = '✓ Activate Package';
+      });
+
+      /* ── Quick in-modal card registration ── */
+      function saveRegistration() {
+        const raw   = document.getElementById('reg_card_numbers').value;
+        const cards = raw.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+        if (!cards.length) { alert('Please enter at least one card number.'); return; }
+
+        const pattern = parseInt(document.getElementById('reg_pattern').value) || 1;
+        const price   = parseInt(document.getElementById('reg_price').value)   || 10;
+        const sound   = parseInt(document.getElementById('reg_voice').value)   || 1;
+        const gs      = getGameState();
+        const newGs   = {
+          round: gs.round || 1, cards, pattern, price, sound,
+          speed_range: gs.speed_range || 3, randomstring: gs.randomstring || ''
+        };
+
+        saveGameState(newGs);
+        document.getElementById('sew').innerText  = cards.length;
+        document.getElementById('birr').innerText = price;
+        document.getElementById('patt').innerText = pattern;
+        document.getElementById('voiceselect').value = sound;
+        document.getElementById('cardCounter').innerHTML = 'ብዛት : ' + cards.length;
+        renderRegisteredCards(cards, price, newGs.round);
+        $('#registerCardModal').modal('hide');
+        showAlert('ካርዶቹ ተመዝግበዋል! (' + cards.length + ' cards)', 'success');
+      }
+
+      function clearRegistration() {
+        if (!confirm('Clear game and start new round?')) return;
+        const gs = getGameState();
+        saveGameState({ round: (gs.round || 1) + 1, cards: [], pattern: 1, price: 0, sound: 1, speed_range: 3, randomstring: '' });
+        location.reload();
+      }
+    </script>
+
+    <!-- ─── Game Status Bar ─── -->
+    <div id="game-status-bar"
+        style="display:none; position:sticky; top:0; z-index:500;
+                background:linear-gradient(90deg,#031730,#051f4a);
+                border-bottom:1px solid rgba(0,198,255,0.25);
+                padding:6px 14px; align-items:center; gap:14px; flex-wrap:wrap;">
+      <span style="color:#00c6ff; font-weight:700; font-size:15px;" id="gsb-round">Round 1</span>
+      <span style="width:1px; height:18px; background:rgba(255,255,255,0.2); display:inline-block;"></span>
+      <span style="color:#aaa; font-size:13px;">Pattern: <b style="color:#fff;"       id="gsb-pattern">—</b></span>
+      <span style="color:#aaa; font-size:13px;">Cards:   <b style="color:#00e676;"    id="gsb-cards">0</b></span>
+      <span style="color:#aaa; font-size:13px;">Price:   <b style="color:#ffd740;"    id="gsb-price">0</b> ብር</span>
+      <span style="color:#aaa; font-size:13px;">Calls:   <b style="color:#ff7043;"    id="gsb-calls">0</b></span>
+    </div>
+
+    <!-- ─── Game display ─── -->
+    <div class="container" style="margin-left:5px;">
+      <div class="info-bar">
+
+        <!-- Current ball -->
+        <div class="info-ball-col" id="col-2">
+          <div class="ball2"><div class="ball3"><div class="ball4"><div class="ball5">
+            <p class="num" id="rand"></p>
+          </div></div></div></div>
         </div>
-      </div>
 
-      <!-- Prize / call counter box -->
-      <div class="info-derash-col">
-        <div class="derash-box">
-          <div class="derash-content">
-            <span class="amount">
-              <span id="amount1"></span><span>&nbsp;ደራሽ</span>
-            </span>
-          </div>
-          <span class="derash-line"></span>
-          <div class="derash-details">
-            <span class="total-card" id="cardCounter">ብዛት : 0</span>
-            <span class="total-calls">ጥሪ : <span id="drawn_number_counter">0</span></span>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /info-bar -->
-
-    <!-- ─── B/I/N/G/O number grid ─── -->
-    <div class="row">
-      <div class="col-12">
-
-        <!-- B (1–15) -->
-        <div class="brow">
-          <div class="callb">
-            <p class="txtbox" style="background-color:#ff0404;">B</p>
-            <div class="numrow"><p class="numbox" numb="1">1</p></div>
-            <div class="numrow"><p class="numbox" numb="2">2</p></div>
-            <div class="numrow"><p class="numbox" numb="3">3</p></div>
-            <div class="numrow"><p class="numbox" numb="4">4</p></div>
-            <div class="numrow"><p class="numbox" numb="5">5</p></div>
-            <div class="numrow"><p class="numbox" numb="6">6</p></div>
-            <div class="numrow"><p class="numbox" numb="7">7</p></div>
-            <div class="numrow"><p class="numbox" numb="8">8</p></div>
-            <div class="numrow"><p class="numbox" numb="9">9</p></div>
-            <div class="numrow"><p class="numbox" numb="10">10</p></div>
-            <div class="numrow"><p class="numbox" numb="11">11</p></div>
-            <div class="numrow"><p class="numbox" numb="12">12</p></div>
-            <div class="numrow"><p class="numbox" numb="13">13</p></div>
-            <div class="numrow"><p class="numbox" numb="14">14</p></div>
-            <div class="numrow"><p class="numbox" numb="15">15</p></div>
+        <!-- Recent results table -->
+        <div class="info-results-col" id="col-4">
+          <p class="lastcall">
+            Recent Results for (<a href="#" style="color:red; font-size:20px; font-weight:900;"
+                                    id="round_number_bellow_5">yyyyy</a>)
+          </p>
+          <div class="tgable-container">
+            <table id="bingo-table">
+              <tr>
+                <td class="bingo-call" style="color:red;" t="0"></td>
+                <td class="bingo-call" t="1"></td>
+                <td class="bingo-call" t="2"></td>
+                <td class="bingo-call" t="3"></td>
+                <td class="bingo-call" t="4"></td>
+              </tr>
+            </table>
           </div>
         </div>
 
-        <!-- I (16–30) -->
-        <div class="irow">
-          <div class="callb">
-            <p class="txtbox" style="background-color:#0c3d75;">I</p>
-            <div class="numrow"><p class="numbox" numi="16">16</p></div>
-            <div class="numrow"><p class="numbox" numi="17">17</p></div>
-            <div class="numrow"><p class="numbox" numi="18">18</p></div>
-            <div class="numrow"><p class="numbox" numi="19">19</p></div>
-            <div class="numrow"><p class="numbox" numi="20">20</p></div>
-            <div class="numrow"><p class="numbox" numi="21">21</p></div>
-            <div class="numrow"><p class="numbox" numi="22">22</p></div>
-            <div class="numrow"><p class="numbox" numi="23">23</p></div>
-            <div class="numrow"><p class="numbox" numi="24">24</p></div>
-            <div class="numrow"><p class="numbox" numi="25">25</p></div>
-            <div class="numrow"><p class="numbox" numi="26">26</p></div>
-            <div class="numrow"><p class="numbox" numi="27">27</p></div>
-            <div class="numrow"><p class="numbox" numi="28">28</p></div>
-            <div class="numrow"><p class="numbox" numi="29">29</p></div>
-            <div class="numrow"><p class="numbox" numi="30">30</p></div>
-          </div>
-        </div>
-
-        <!-- N (31–45) -->
-        <div class="irow">
-          <div class="callb">
-            <p class="txtbox" style="background-color:#34c659; color:white;">N</p>
-            <div class="numrow"><p class="numbox" numn="31">31</p></div>
-            <div class="numrow"><p class="numbox" numn="32">32</p></div>
-            <div class="numrow"><p class="numbox" numn="33">33</p></div>
-            <div class="numrow"><p class="numbox" numn="34">34</p></div>
-            <div class="numrow"><p class="numbox" numn="35">35</p></div>
-            <div class="numrow"><p class="numbox" numn="36">36</p></div>
-            <div class="numrow"><p class="numbox" numn="37">37</p></div>
-            <div class="numrow"><p class="numbox" numn="38">38</p></div>
-            <div class="numrow"><p class="numbox" numn="39">39</p></div>
-            <div class="numrow"><p class="numbox" numn="40">40</p></div>
-            <div class="numrow"><p class="numbox" numn="41">41</p></div>
-            <div class="numrow"><p class="numbox" numn="42">42</p></div>
-            <div class="numrow"><p class="numbox" numn="43">43</p></div>
-            <div class="numrow"><p class="numbox" numn="44">44</p></div>
-            <div class="numrow"><p class="numbox" numn="45">45</p></div>
-          </div>
-        </div>
-
-        <!-- G (46–60) -->
-        <div class="irow">
-          <div class="callb">
-            <p class="txtbox" style="background-color:#ff8800; color:white;">G</p>
-            <div class="numrow"><p class="numbox" numg="46">46</p></div>
-            <div class="numrow"><p class="numbox" numg="47">47</p></div>
-            <div class="numrow"><p class="numbox" numg="48">48</p></div>
-            <div class="numrow"><p class="numbox" numg="49">49</p></div>
-            <div class="numrow"><p class="numbox" numg="50">50</p></div>
-            <div class="numrow"><p class="numbox" numg="51">51</p></div>
-            <div class="numrow"><p class="numbox" numg="52">52</p></div>
-            <div class="numrow"><p class="numbox" numg="53">53</p></div>
-            <div class="numrow"><p class="numbox" numg="54">54</p></div>
-            <div class="numrow"><p class="numbox" numg="55">55</p></div>
-            <div class="numrow"><p class="numbox" numg="56">56</p></div>
-            <div class="numrow"><p class="numbox" numg="57">57</p></div>
-            <div class="numrow"><p class="numbox" numg="58">58</p></div>
-            <div class="numrow"><p class="numbox" numg="59">59</p></div>
-            <div class="numrow"><p class="numbox" numg="60">60</p></div>
-          </div>
-        </div>
-
-        <!-- O (61–75) -->
-        <div class="irow">
-          <div class="callb">
-            <p class="txtbox" style="background-color:rgb(10,89,31); color:white;">O</p>
-            <div class="numrow"><p class="numbox" numo="61">61</p></div>
-            <div class="numrow"><p class="numbox" numo="62">62</p></div>
-            <div class="numrow"><p class="numbox" numo="63">63</p></div>
-            <div class="numrow"><p class="numbox" numo="64">64</p></div>
-            <div class="numrow"><p class="numbox" numo="65">65</p></div>
-            <div class="numrow"><p class="numbox" numo="66">66</p></div>
-            <div class="numrow"><p class="numbox" numo="67">67</p></div>
-            <div class="numrow"><p class="numbox" numo="68">68</p></div>
-            <div class="numrow"><p class="numbox" numo="69">69</p></div>
-            <div class="numrow"><p class="numbox" numo="70">70</p></div>
-            <div class="numrow"><p class="numbox" numo="71">71</p></div>
-            <div class="numrow"><p class="numbox" numo="72">72</p></div>
-            <div class="numrow"><p class="numbox" numo="73">73</p></div>
-            <div class="numrow"><p class="numbox" numo="74">74</p></div>
-            <div class="numrow"><p class="numbox" numo="75">75</p></div>
-          </div>
-        </div>
-
-      </div>
-    </div><!-- /BINGO grid row -->
-
-    <!-- ─── Control row ─── -->
-    <div class="row">
-      <div class="col-12">
-        <div class="setting_box"
-             style="display:flex; justify-content:center; align-items:center;
-                    width:80%; margin:8px auto;">
-          <button style="border:5px solid white; max-width:150px;"
-                  onclick="change()" id="bingoo" class="btnbingo">Bingo</button>
-          <button style="border:5px solid white; max-width:150px;"
-                  id="shuffle" class="btnshuffle">Shuffle</button>
-          <button style="border:5px solid red; max-width:150px;"
-                  id="finsh_game" class="btnbingo">Finsh</button>
-
-          <div class="sound-input-text">
-            <select id="voiceselect" class="voiceselect" onchange="change_language()">
-              <option value="11">New voice</option>
-              <option value="10">Addis</option>
-              <option value="1">Bereket</option>
-              <option value="2">Nigus</option>
-              <option value="3">Amharic Arada</option>
-              <option value="4">Amharic formal</option>
-              <option value="5">Amharic yordi</option>
-              <option value="6">Amharic Beti</option>
-              <option value="7">Oromifa Female</option>
-              <option value="8">Tigrigna Female</option>
-              <option value="9">Tigrigna Male</option>
-            </select>
-          </div>
-
-          <div class="check_card">
-            <input type="text" placeholder="Card Number..." id="Ecard_no"
-                   class="card-input" required>
-          </div>
-          <button style="border:5px solid white; max-width:150px;"
-                  type="submit" class="btnbingo" id="mycheck">Check</button>
-        </div>
-
-        <!-- Speed slider -->
-        <div class="row">
-          <div class="col-1"></div>
-          <div class="col-3"></div>
-          <div class="slidecontainer col-4" style="display:inline-block;">
-            <p style="margin-bottom:-1.0rem; font-size:32px; font-weight:600; text-align:center;">
-              Play speed: <span id="demo">3</span>
-            </p>
-            <input type="range" min="1" max="15" value="3" class="slider" id="myRange"
-                   style="height:60px; letter-spacing:1px; margin-top:-2.0rem;">
-          </div>
-          <div class="col-4"></div>
-        </div>
-
-        <canvas id="canvas" style="display:none;"></canvas>
-        <script src="bootstrap/js/confetti.browser.min.js"></script>
-        <canvas id="canvas2"
-                style="position:fixed; top:0; left:0; width:100%; height:100%;
-                       pointer-events:none; z-index:2999; display:none;">
-        </canvas>
-
-        <!-- ─── Check-card result modal ─── -->
-        <div id="myModalcard" class="modal fade" data-keyboard="false" data-backdrop="static">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h1 class="modal-title">
-                  <span style="font-size:20px;">Round <span id="modal-card-round">1</span></span>
-                </h1>
-                <center>
-                  <div id="claim-bonus-popup" class="claim-bonus-popup"
-                       onclick="showBonusNotif()" style="cursor:pointer;">
-                    Claim Bonus
-                  </div>
-                </center>
-                <button class="modal-button" style="padding:10px 15px;" id="addbingo">Close</button>
-              </div>
-              <div class="modal-body">
-                <div id="modal-body"></div>
-                <!-- Current winners strip -->
-                <div id="modal-winners-strip"
-                     style="display:none; background:rgba(0,200,83,0.12); border:1px solid #00c853;
-                            border-radius:8px; padding:6px 12px; margin-bottom:8px;
-                            font-size:13px; font-weight:700; color:#69f0ae;">
-                  🏆 Winners so far: <span id="modal-winners-list"></span>
-                </div>
-                <div style="width:100%; margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
-                  <button class="modal-button" id="goodbingo">✔ GOOD BINGO</button>
-                  <button class="modal-button" style="display:none;" id="addwinner">+ ADD WINNER</button>
-                  <button class="modal-button" id="notbingo">✕ NOT BINGO</button>
-                  <button class="modal-button" id="lock_card">🔒 Lock?</button>
-                </div>
-              </div>
+        <!-- Prize / call counter box -->
+        <div class="info-derash-col">
+          <div class="derash-box">
+            <div class="derash-content">
+              <span class="amount">
+                <span id="amount1"></span><span>&nbsp;ደራሽ</span>
+              </span>
+            </div>
+            <span class="derash-line"></span>
+            <div class="derash-details">
+              <span class="total-card" id="cardCounter">ብዛት : 0</span>
+              <span class="total-calls">ጥሪ : <span id="drawn_number_counter">0</span></span>
             </div>
           </div>
         </div>
 
-        <!-- ─── Help modal ─── -->
-        <div id="helpmodal" class="modal fade" style="overflow-y:scroll;"
-             data-keyboard="false" data-backdrop="static">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h1 class="modal-title">
-                  <span style="font-size:20px;">Ethiomark - ኢትዮ ማርክ</span>
-                </h1>
-                <button class="modal-button" style="padding:10px 15px;" id="helpmodals">Close</button>
-              </div>
-              <div class="modal-body">
-                <div style="min-height:500px;">
-                  <div class="box1f">
-                    <h1>Sample Pattern</h1>
-                    <table id="bingoTable">
-                      <thead>
-                        <tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr>
-                      </thead>
-                      <tbody>
-                        <tr><td>1</td><td>16</td><td>31</td><td>46</td><td>61</td></tr>
-                        <tr><td>2</td><td>17</td><td>32</td><td>47</td><td>62</td></tr>
-                        <tr><td>3</td><td>18</td><td class="free-cell">★</td><td>48</td><td>63</td></tr>
-                        <tr><td>4</td><td>19</td><td>34</td><td>49</td><td>64</td></tr>
-                        <tr><td>5</td><td>20</td><td>35</td><td>50</td><td>65</td></tr>
-                      </tbody>
-                    </table>
+      </div><!-- /info-bar -->
+
+      <!-- ─── B/I/N/G/O number grid ─── -->
+      <div class="row">
+        <div class="col-12">
+
+          <!-- B (1–15) -->
+          <div class="brow">
+            <div class="callb">
+              <p class="txtbox" style="background-color:#ff0404;">B</p>
+              <div class="numrow"><p class="numbox" numb="1">1</p></div>
+              <div class="numrow"><p class="numbox" numb="2">2</p></div>
+              <div class="numrow"><p class="numbox" numb="3">3</p></div>
+              <div class="numrow"><p class="numbox" numb="4">4</p></div>
+              <div class="numrow"><p class="numbox" numb="5">5</p></div>
+              <div class="numrow"><p class="numbox" numb="6">6</p></div>
+              <div class="numrow"><p class="numbox" numb="7">7</p></div>
+              <div class="numrow"><p class="numbox" numb="8">8</p></div>
+              <div class="numrow"><p class="numbox" numb="9">9</p></div>
+              <div class="numrow"><p class="numbox" numb="10">10</p></div>
+              <div class="numrow"><p class="numbox" numb="11">11</p></div>
+              <div class="numrow"><p class="numbox" numb="12">12</p></div>
+              <div class="numrow"><p class="numbox" numb="13">13</p></div>
+              <div class="numrow"><p class="numbox" numb="14">14</p></div>
+              <div class="numrow"><p class="numbox" numb="15">15</p></div>
+            </div>
+          </div>
+
+          <!-- I (16–30) -->
+          <div class="irow">
+            <div class="callb">
+              <p class="txtbox" style="background-color:#0c3d75;">I</p>
+              <div class="numrow"><p class="numbox" numi="16">16</p></div>
+              <div class="numrow"><p class="numbox" numi="17">17</p></div>
+              <div class="numrow"><p class="numbox" numi="18">18</p></div>
+              <div class="numrow"><p class="numbox" numi="19">19</p></div>
+              <div class="numrow"><p class="numbox" numi="20">20</p></div>
+              <div class="numrow"><p class="numbox" numi="21">21</p></div>
+              <div class="numrow"><p class="numbox" numi="22">22</p></div>
+              <div class="numrow"><p class="numbox" numi="23">23</p></div>
+              <div class="numrow"><p class="numbox" numi="24">24</p></div>
+              <div class="numrow"><p class="numbox" numi="25">25</p></div>
+              <div class="numrow"><p class="numbox" numi="26">26</p></div>
+              <div class="numrow"><p class="numbox" numi="27">27</p></div>
+              <div class="numrow"><p class="numbox" numi="28">28</p></div>
+              <div class="numrow"><p class="numbox" numi="29">29</p></div>
+              <div class="numrow"><p class="numbox" numi="30">30</p></div>
+            </div>
+          </div>
+
+          <!-- N (31–45) -->
+          <div class="irow">
+            <div class="callb">
+              <p class="txtbox" style="background-color:#34c659; color:white;">N</p>
+              <div class="numrow"><p class="numbox" numn="31">31</p></div>
+              <div class="numrow"><p class="numbox" numn="32">32</p></div>
+              <div class="numrow"><p class="numbox" numn="33">33</p></div>
+              <div class="numrow"><p class="numbox" numn="34">34</p></div>
+              <div class="numrow"><p class="numbox" numn="35">35</p></div>
+              <div class="numrow"><p class="numbox" numn="36">36</p></div>
+              <div class="numrow"><p class="numbox" numn="37">37</p></div>
+              <div class="numrow"><p class="numbox" numn="38">38</p></div>
+              <div class="numrow"><p class="numbox" numn="39">39</p></div>
+              <div class="numrow"><p class="numbox" numn="40">40</p></div>
+              <div class="numrow"><p class="numbox" numn="41">41</p></div>
+              <div class="numrow"><p class="numbox" numn="42">42</p></div>
+              <div class="numrow"><p class="numbox" numn="43">43</p></div>
+              <div class="numrow"><p class="numbox" numn="44">44</p></div>
+              <div class="numrow"><p class="numbox" numn="45">45</p></div>
+            </div>
+          </div>
+
+          <!-- G (46–60) -->
+          <div class="irow">
+            <div class="callb">
+              <p class="txtbox" style="background-color:#ff8800; color:white;">G</p>
+              <div class="numrow"><p class="numbox" numg="46">46</p></div>
+              <div class="numrow"><p class="numbox" numg="47">47</p></div>
+              <div class="numrow"><p class="numbox" numg="48">48</p></div>
+              <div class="numrow"><p class="numbox" numg="49">49</p></div>
+              <div class="numrow"><p class="numbox" numg="50">50</p></div>
+              <div class="numrow"><p class="numbox" numg="51">51</p></div>
+              <div class="numrow"><p class="numbox" numg="52">52</p></div>
+              <div class="numrow"><p class="numbox" numg="53">53</p></div>
+              <div class="numrow"><p class="numbox" numg="54">54</p></div>
+              <div class="numrow"><p class="numbox" numg="55">55</p></div>
+              <div class="numrow"><p class="numbox" numg="56">56</p></div>
+              <div class="numrow"><p class="numbox" numg="57">57</p></div>
+              <div class="numrow"><p class="numbox" numg="58">58</p></div>
+              <div class="numrow"><p class="numbox" numg="59">59</p></div>
+              <div class="numrow"><p class="numbox" numg="60">60</p></div>
+            </div>
+          </div>
+
+          <!-- O (61–75) -->
+          <div class="irow">
+            <div class="callb">
+              <p class="txtbox" style="background-color:rgb(10,89,31); color:white;">O</p>
+              <div class="numrow"><p class="numbox" numo="61">61</p></div>
+              <div class="numrow"><p class="numbox" numo="62">62</p></div>
+              <div class="numrow"><p class="numbox" numo="63">63</p></div>
+              <div class="numrow"><p class="numbox" numo="64">64</p></div>
+              <div class="numrow"><p class="numbox" numo="65">65</p></div>
+              <div class="numrow"><p class="numbox" numo="66">66</p></div>
+              <div class="numrow"><p class="numbox" numo="67">67</p></div>
+              <div class="numrow"><p class="numbox" numo="68">68</p></div>
+              <div class="numrow"><p class="numbox" numo="69">69</p></div>
+              <div class="numrow"><p class="numbox" numo="70">70</p></div>
+              <div class="numrow"><p class="numbox" numo="71">71</p></div>
+              <div class="numrow"><p class="numbox" numo="72">72</p></div>
+              <div class="numrow"><p class="numbox" numo="73">73</p></div>
+              <div class="numrow"><p class="numbox" numo="74">74</p></div>
+              <div class="numrow"><p class="numbox" numo="75">75</p></div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /BINGO grid row -->
+
+      <!-- ─── Control row ─── -->
+      <div class="row">
+        <div class="col-12">
+          <div class="setting_box"
+              style="display:flex; justify-content:center; align-items:center;
+                      width:80%; margin:8px auto;">
+            <button style="border:5px solid white; max-width:150px;"
+                    onclick="change()" id="bingoo" class="btnbingo">Bingo</button>
+            <button style="border:5px solid white; max-width:150px;"
+                    id="shuffle" class="btnshuffle">Shuffle</button>
+            <button style="border:5px solid red; max-width:150px;"
+                    id="finsh_game" class="btnbingo">Finsh</button>
+
+            <div class="sound-input-text">
+              <select id="voiceselect" class="voiceselect" onchange="change_language()">
+                <option value="11">New voice</option>
+                <option value="10">Addis</option>
+                <option value="1">Bereket</option>
+                <option value="2">Nigus</option>
+                <option value="3">Amharic Arada</option>
+                <option value="4">Amharic formal</option>
+                <option value="5">Amharic yordi</option>
+                <option value="6">Amharic Beti</option>
+                <option value="7">Oromifa Female</option>
+                <option value="8">Tigrigna Female</option>
+                <option value="9">Tigrigna Male</option>
+              </select>
+            </div>
+
+            <div class="check_card">
+              <input type="text" placeholder="Card Number..." id="Ecard_no"
+                    class="card-input" required>
+            </div>
+            <button style="border:5px solid white; max-width:150px;"
+                    type="submit" class="btnbingo" id="mycheck">Check</button>
+          </div>
+
+          <!-- Speed slider -->
+          <div class="row">
+            <div class="col-1"></div>
+            <div class="col-3"></div>
+            <div class="slidecontainer col-4" style="display:inline-block;">
+              <p style="margin-bottom:-1.0rem; font-size:32px; font-weight:600; text-align:center;">
+                Play speed: <span id="demo">3</span>
+              </p>
+              <input type="range" min="1" max="15" value="3" class="slider" id="myRange"
+                    style="height:60px; letter-spacing:1px; margin-top:-2.0rem;">
+            </div>
+            <div class="col-4"></div>
+          </div>
+
+          <canvas id="canvas" style="display:none;"></canvas>
+          <script src="bootstrap/js/confetti.browser.min.js"></script>
+          <canvas id="canvas2"
+                  style="position:fixed; top:0; left:0; width:100%; height:100%;
+                        pointer-events:none; z-index:2999; display:none;">
+          </canvas>
+
+          <!-- ─── Check-card result modal ─── -->
+          <div id="myModalcard" class="modal fade" data-keyboard="false" data-backdrop="static">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h1 class="modal-title">
+                    <span style="font-size:20px;">Round <span id="modal-card-round">1</span></span>
+                  </h1>
+                  <center>
+                    <div id="claim-bonus-popup" class="claim-bonus-popup"
+                        onclick="showBonusNotif()" style="cursor:pointer;">
+                      Claim Bonus
+                    </div>
+                  </center>
+                  <button class="modal-button" style="padding:10px 15px;" id="addbingo">Close</button>
+                </div>
+                <div class="modal-body">
+                  <div id="modal-body"></div>
+                  <!-- Current winners strip -->
+                  <div id="modal-winners-strip"
+                      style="display:none; background:rgba(0,200,83,0.12); border:1px solid #00c853;
+                              border-radius:8px; padding:6px 12px; margin-bottom:8px;
+                              font-size:13px; font-weight:700; color:#69f0ae;">
+                    🏆 Winners so far: <span id="modal-winners-list"></span>
+                  </div>
+                  <div style="width:100%; margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+                    <button class="modal-button" id="goodbingo">✔ GOOD BINGO</button>
+                    <button class="modal-button" style="display:none;" id="addwinner">+ ADD WINNER</button>
+                    <button class="modal-button" id="notbingo">✕ NOT BINGO</button>
+                    <button class="modal-button" id="lock_card">🔒 Lock?</button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-      </div>
-    </div><!-- /control row -->
-  </div><!-- /container -->
+          <!-- ─── Help modal ─── -->
+          <div id="helpmodal" class="modal fade" style="overflow-y:scroll;"
+              data-keyboard="false" data-backdrop="static">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h1 class="modal-title">
+                    <span style="font-size:20px;">Ethiomark - ኢትዮ ማርክ</span>
+                  </h1>
+                  <button class="modal-button" style="padding:10px 15px;" id="helpmodals">Close</button>
+                </div>
+                <div class="modal-body">
+                  <div style="min-height:500px;">
+                    <div class="box1f">
+                      <h1>Sample Pattern</h1>
+                      <table id="bingoTable">
+                        <thead>
+                          <tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr>
+                        </thead>
+                        <tbody>
+                          <tr><td>1</td><td>16</td><td>31</td><td>46</td><td>61</td></tr>
+                          <tr><td>2</td><td>17</td><td>32</td><td>47</td><td>62</td></tr>
+                          <tr><td>3</td><td>18</td><td class="free-cell">★</td><td>48</td><td>63</td></tr>
+                          <tr><td>4</td><td>19</td><td>34</td><td>49</td><td>64</td></tr>
+                          <tr><td>5</td><td>20</td><td>35</td><td>50</td><td>65</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /control row -->
+    </div><!-- /container -->
 
 </div><!-- /main-content -->
 
@@ -2986,7 +2987,7 @@
     });
     window._gameStateCache = await API.getGameState(); /* keep cache in sync */
     showAlert('Round ተጠናቋል! → ወደ ምዝገባ...', 'success');
-    setTimeout(() => { window.location.href = 'reg_new_game.html'; }, 400);
+    //setTimeout(() => { window.location.href = 'reg_new_game.html'; }, 400);
   });
 </script>
 
