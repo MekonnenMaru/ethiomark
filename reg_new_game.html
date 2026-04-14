@@ -548,13 +548,29 @@ html, body {
 
   <!-- Ball grid -->
   <div class="grid-area">
-    <div class="grid-hint" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-      <span>Click a numbered ball to select it — turns green when selected.</span>
+    <div class="grid-hint">
+      <!-- Left: ball size controls -->
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <span style="font-size:11px;color:#90caf9;letter-spacing:.5px;">Ball Size</span>
+        <button onclick="adjustBallSize(-6)"
+                style="background:rgba(0,198,255,0.12);border:1px solid rgba(0,198,255,0.35);color:#00c6ff;
+                       width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:18px;font-weight:900;
+                       line-height:1;display:flex;align-items:center;justify-content:center;">−</button>
+        <button onclick="adjustBallSize(6)"
+                style="background:rgba(0,198,255,0.12);border:1px solid rgba(0,198,255,0.35);color:#00c6ff;
+                       width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:18px;font-weight:900;
+                       line-height:1;display:flex;align-items:center;justify-content:center;">+</button>
+      </div>
+
+      <!-- Centre: pagination -->
       <div id="pagination-controls" style="display:flex;align-items:center;gap:6px;">
         <button id="pg-prev" onclick="changePage(-1)" style="background:rgba(0,198,255,0.15);border:1px solid rgba(0,198,255,0.4);color:#00c6ff;padding:4px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;">‹ Prev</button>
         <span style="color:#90caf9;font-size:13px;">Page <b id="pg-current" style="color:#fff;">1</b> of <b id="pg-total" style="color:#fff;">1</b></span>
         <button id="pg-next" onclick="changePage(1)" style="background:rgba(0,198,255,0.15);border:1px solid rgba(0,198,255,0.4);color:#00c6ff;padding:4px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;">Next ›</button>
       </div>
+
+      <!-- Right: keyboard typing indicator -->
+      <span id="kb-indicator"></span>
     </div>
     <div class="card-grid" id="cardGrid"></div>
   </div>
@@ -575,6 +591,7 @@ let allCardNumbers = [];
 let currentFilter  = '';
 let currentPage    = 1;
 const PAGE_SIZE    = 100;
+let ballSize       = 56; /* px — controlled by + / − buttons */
 
 /* ── IDB-backed state with sync memory cache ── */
 window._gameStateCache   = {};
@@ -749,22 +766,42 @@ function renderGrid(filter) {
 
   const pageNums = nums.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const grid = document.getElementById('cardGrid');
+  grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${ballSize}px, 1fr))`;
   grid.innerHTML = '';
 
   pageNums.forEach(num => {
+    const isSel = selectedCards.has(num);
     const el = document.createElement('div');
-    el.className = 'card-ball' + (selectedCards.has(num) ? ' selected' : '');
-    el.textContent = num;
-    el.dataset.num  = num;
+    el.className  = 'card-ball' + (isSel ? ' selected' : '');
+    el.dataset.num = num;
+    el.innerHTML   = num + `<span class="ball-badge">${isSel ? '−' : '+'}</span>`;
     el.onclick = () => toggleCard(num, el);
     grid.appendChild(el);
   });
 }
 
 function toggleCard(num, el) {
-  if (selectedCards.has(num)) { selectedCards.delete(num); el.classList.remove('selected'); }
-  else                        { selectedCards.add(num);    el.classList.add('selected');    }
+  const badge = el.querySelector('.ball-badge');
+  if (selectedCards.has(num)) {
+    selectedCards.delete(num);
+    el.classList.remove('selected');
+    if (badge) badge.textContent = '+';
+  } else {
+    selectedCards.add(num);
+    el.classList.add('selected');
+    if (badge) badge.textContent = '−';
+  }
   updateStats();
+}
+
+function adjustBallSize(delta) {
+  ballSize = Math.min(110, Math.max(32, ballSize + delta));
+  const grid = document.getElementById('cardGrid');
+  if (grid) grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${ballSize}px, 1fr))`;
+  /* also scale font roughly */
+  document.querySelectorAll('.card-ball').forEach(b => {
+    b.style.fontSize = Math.round(ballSize * 0.28) + 'px';
+  });
 }
 
 function updateStats() {
@@ -946,6 +983,86 @@ function selectRange() {
 }
 
 document.getElementById('bp_price').addEventListener('input', updateStats);
+
+/* ══════════════════════════════════════════════════════
+   KEYBOARD INPUT  —  type digits → Enter/Space to register
+   ══════════════════════════════════════════════════════ */
+(function () {
+  let _buf   = '';
+  let _timer = null;
+  const _ind = document.getElementById('kb-indicator');
+
+  function _show(text, color) {
+    _ind.textContent = text;
+    _ind.style.color  = color;
+    _ind.style.borderColor = color + '66';
+    _ind.style.background  = color + '14';
+    _ind.style.display = 'inline-block';
+  }
+
+  function _clearBuf(keepIndicator) {
+    _buf = '';
+    if (_timer) { clearTimeout(_timer); _timer = null; }
+    if (!keepIndicator) _ind.style.display = 'none';
+  }
+
+  function _process() {
+    if (!_buf) return;
+    const num = parseInt(_buf, 10);
+    _clearBuf(true); /* clear buf but keep indicator visible for feedback */
+
+    if (!allCardNumbers.includes(num)) {
+      _show('✕ ' + num + ' not found', '#ff5252');
+    } else if (selectedCards.has(num)) {
+      /* deselect */
+      selectedCards.delete(num);
+      const el = document.querySelector(`.card-ball[data-num="${num}"]`);
+      if (el) { el.classList.remove('selected'); const b = el.querySelector('.ball-badge'); if (b) b.textContent = '+'; }
+      updateStats();
+      _show('✕ ' + num + ' removed', '#ffb74d');
+    } else {
+      /* select */
+      selectedCards.add(num);
+      const el = document.querySelector(`.card-ball[data-num="${num}"]`);
+      if (el) { el.classList.add('selected'); const b = el.querySelector('.ball-badge'); if (b) b.textContent = '−'; }
+      updateStats();
+      _show('✓ ' + num + ' saved', '#00e676');
+    }
+    _timer = setTimeout(() => _ind.style.display = 'none', 1600);
+  }
+
+  document.addEventListener('keydown', function (e) {
+    /* Ignore when a text/number/select input is focused */
+    const tag = (document.activeElement || {}).tagName || '';
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+
+    if (e.key >= '0' && e.key <= '9') {
+      e.preventDefault();
+      _buf += e.key;
+      if (_timer) clearTimeout(_timer);
+      _show('typing .. ' + _buf, '#90caf9');
+      /* auto-clear buffer after 3 s of inactivity */
+      _timer = setTimeout(() => _clearBuf(false), 3000);
+
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      if (!_buf) return;
+      e.preventDefault();
+      _process();
+
+    } else if (e.key === 'Backspace') {
+      if (!_buf) return;
+      e.preventDefault();
+      _buf = _buf.slice(0, -1);
+      if (_timer) clearTimeout(_timer);
+      if (_buf) {
+        _show('typing .. ' + _buf, '#90caf9');
+        _timer = setTimeout(() => _clearBuf(false), 3000);
+      } else {
+        _clearBuf(false);
+      }
+    }
+  });
+})();
 
 init();
 </script>
