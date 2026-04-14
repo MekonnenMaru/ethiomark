@@ -134,19 +134,19 @@ function decryptData($data, $key) {
 // Storage path (system-like)
 function getStorageFile($static_machine_id, $secret) {
 
-    // $base = getenv('APPDATA');
+    $base = getenv('APPDATA');
 
-    // $machine = substr(hash('sha256', $static_machine_id), 0, 8);
+    $machine = substr(hash('sha256', $static_machine_id), 0, 8);
 
-    // $dir = $base . "\\Microsoft\\Windows\\WinPadVersionController\\Cache\\" . $machine;
+    $dir = $base . "\\Microsoft\\Windows\\WinPadVersionController\\Cache\\" . $machine;
 
-    // if (!is_dir($dir)) {
-    //     mkdir($dir, 0777, true);
-    // }
+    if (!is_dir($dir)) {
+        mkdir($dir, 0777, true);
+    }
 
-    // return $dir . "\\syscache.dat";
-    $file = __DIR__ . "license.lock";
-    return $file;
+    return $dir . "\\syscache.dat";
+    // $file = __DIR__ . "syscache.dat";
+    // return $file;
 }
 
 /* ================= INIT ================= */
@@ -156,41 +156,29 @@ $file = getStorageFile($static_machine_id, $secret);
 
 $action = $_GET['action'] ?? 'get';
 
-/* ================= SAVE ================= */
+
 if ($action === "saveCheckpoint") {
+
     $input = json_decode(file_get_contents("php://input"), true);
 
-    file_put_contents($file, json_encode([
+    $payload = [
         "static_machine_id" => $static_machine_id,
-        "total_deposited" => $input["total_deposited"],
-        "total_revenue" => $input["total_revenue"],
-    ]));
+        "total_deposited" => $input["total_deposited"] ?? 0,
+        "total_revenue" => $input["total_revenue"] ?? 0,
+        "time" => time()
+    ];
+
+    // FIXED: proper HMAC (exclude sig)
+    $temp = $payload;
+    $payload["sig"] = hash_hmac('sha256', json_encode($temp), $secret);
+
+    $encrypted = encryptData($payload, $secret);
+
+    file_put_contents($file, $encrypted);
 
     echo json_encode(["status" => "saved"]);
     exit;
 }
-// if ($action === "saveCheckpoint") {
-
-//     $input = json_decode(file_get_contents("php://input"), true);
-
-//     $payload = [
-//         "static_machine_id" => $static_machine_id,
-//         "total_deposited" => $input["total_deposited"] ?? 0,
-//         "total_revenue" => $input["total_revenue"] ?? 0,
-//         "time" => time()
-//     ];
-
-//     // FIXED: proper HMAC (exclude sig)
-//     $temp = $payload;
-//     $payload["sig"] = hash_hmac('sha256', json_encode($temp), $secret);
-
-//     $encrypted = encryptData($payload, $secret);
-
-//     file_put_contents($file, $encrypted);
-
-//     echo json_encode(["status" => "saved"]);
-//     exit;
-// }
 
 /* ================= LOAD ================= */
 
