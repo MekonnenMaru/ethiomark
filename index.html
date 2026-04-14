@@ -857,9 +857,10 @@
     document.getElementById('new_bonus_status').innerText     = bonusStatus;
     document.getElementById('new_bonus_amount').innerText     = settings.bonus?.amount    || 20;
     document.getElementById('max_new_bonus_per_day').innerText = settings.bonus?.per_day  || 1;
-    document.getElementById('auto_check_result').innerText    = settings.system?.check_result   || 'manual';
-    document.getElementById('good_bingo_sound').innerText     = settings.system?.good_bingo_sound || '0';
-    document.getElementById('profit').innerText               = settings.system?.profit   || '0';
+    document.getElementById('auto_check_result').innerText        = settings.system?.check_result   || 'manual';
+    document.getElementById('good_bingo_sound').innerText         = settings.system?.good_bingo_sound || '0';
+    document.getElementById('profit').innerText                   = settings.system?.profit   || '0';
+    document.getElementById('lock_round_up_last_digit').innerText = settings.system?.lock_round_up_last_digit ?? 0;
 
     const bonusBtn  = document.getElementById('bonus');
     const bonusCont = document.getElementById('bonusContainer');
@@ -952,6 +953,13 @@
     if (cm)  cm.value  = settings.system?.color_mode      || 'two';
     if (pr)  pr.value  = settings.system?.profit          || '0';
     if (gs_) gs_.value = settings.system?.good_bingo_sound || '0';
+
+    /* Profit rounding toggle — stored as 0 (rounding ON) or 1 (rounding OFF) */
+    const lrdEl = document.getElementById('settings_lock_round_up_last_digit');
+    if (lrdEl) {
+      const lrdVal = settings.system?.lock_round_up_last_digit ?? 0;
+      lrdEl.checked = (parseInt(lrdVal) === 0); /* checked = rounding ON */
+    }
 
     if (settings.toggles) {
       $('#will_start_sound_toggle').prop('checked', settings.toggles.will_start     ?? true);
@@ -1523,6 +1531,15 @@
       </select>
     </div>
 
+    <div class="settings-option" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+      <label style="margin:0; flex:1;">ትርፍ ማጠጋጠጊ (Round profit to nearest 10):</label>
+      <label class="sound-settings-switch" style="margin:0;">
+        <input type="checkbox" id="settings_lock_round_up_last_digit">
+        <span class="sound-settings-slider"></span>
+        <span class="sound-settings-state">OFF</span>
+      </label>
+    </div>
+
     <div class="settings-option">
       <label>Set Profit:</label>
       <select id="settings_cashier_profit">
@@ -1718,7 +1735,8 @@
           check_result:    $('#settings_check_result').val(),
           color_mode:      $('#settings_color_mode').val(),
           profit:          $('#settings_cashier_profit').val(),
-          good_bingo_sound: $('#settings_good_bingo_sound').val()
+          good_bingo_sound: $('#settings_good_bingo_sound').val(),
+          lock_round_up_last_digit: $('#settings_lock_round_up_last_digit').is(':checked') ? 0 : 1
         },
         toggles: {
           will_start:       $('#will_start_sound_toggle').is(':checked'),
@@ -1734,9 +1752,10 @@
       document.getElementById('new_bonus_status').innerText     = settings.bonus.status;
       document.getElementById('new_bonus_amount').innerText     = settings.bonus.amount;
       document.getElementById('max_new_bonus_per_day').innerText = settings.bonus.per_day;
-      document.getElementById('auto_check_result').innerText    = settings.system.check_result;
-      document.getElementById('good_bingo_sound').innerText     = settings.system.good_bingo_sound;
-      document.getElementById('profit').innerText               = settings.system.profit;
+      document.getElementById('auto_check_result').innerText        = settings.system.check_result;
+      document.getElementById('good_bingo_sound').innerText         = settings.system.good_bingo_sound;
+      document.getElementById('profit').innerText                   = settings.system.profit;
+      document.getElementById('lock_round_up_last_digit').innerText = settings.system.lock_round_up_last_digit;
 
       updateBonusModalImage(settings.bonus.status);
 
