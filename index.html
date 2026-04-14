@@ -1547,14 +1547,6 @@
       </select>
     </div>
 
-    <div class="settings-option" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-      <label style="margin:0; flex:1;">ትርፍ ማጠጋጠጊ (Round profit to nearest 10):</label>
-      <label class="sound-settings-switch" style="margin:0;">
-        <input type="checkbox" id="settings_lock_round_up_last_digit">
-        <span class="sound-settings-slider"></span>
-        <span class="sound-settings-state">OFF</span>
-      </label>
-    </div>
 
     <div class="settings-option">
       <label>Set Profit:</label>
@@ -1571,6 +1563,15 @@
     </div>
 
     <div class="sound-settings-toggles">
+      <div class="settings-option" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+      <label style="margin:0; flex:1;">ትርፍ አጠጋጠጊ (Round profit to nearest 10):</label>
+      <label class="sound-settings-switch" style="margin:0;">
+        <input type="checkbox" id="settings_lock_round_up_last_digit">
+        <span class="sound-settings-slider"></span>
+        <span class="sound-settings-state">OFF</span>
+      </label>
+    </div>
+
       <div class="sound-settings-toggle-row">
         <div class="sound-settings-toggle-group">
           <label class="sound-settings-toggle-label">ሊጀምር ነው ድምጽ</label>
@@ -3033,6 +3034,9 @@
     });
     window._gameStateCache = await API.getGameState();
     showAlert('Round ተጠናቋል! → ወደ ምዝገባ...', 'success');
+    setTimeout(() => {
+      window.location.href = 'reg_new_game.html';
+    }, 1500);
   });
 
   /* ── Reload Guard ──
