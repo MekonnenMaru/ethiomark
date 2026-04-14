@@ -250,7 +250,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s;
@@ -769,11 +769,13 @@ function renderGrid(filter) {
   grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${ballSize}px, 1fr))`;
   grid.innerHTML = '';
 
+  const fontSize = Math.round(ballSize * 0.35) + 'px';
   pageNums.forEach(num => {
     const isSel = selectedCards.has(num);
     const el = document.createElement('div');
     el.className  = 'card-ball' + (isSel ? ' selected' : '');
     el.dataset.num = num;
+    el.style.fontSize = fontSize;
     el.innerHTML   = num + `<span class="ball-badge">${isSel ? '−' : '+'}</span>`;
     el.onclick = () => toggleCard(num, el);
     grid.appendChild(el);
@@ -800,7 +802,7 @@ function adjustBallSize(delta) {
   if (grid) grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${ballSize}px, 1fr))`;
   /* also scale font roughly */
   document.querySelectorAll('.card-ball').forEach(b => {
-    b.style.fontSize = Math.round(ballSize * 0.28) + 'px';
+    b.style.fontSize = Math.round(ballSize * 0.35) + 'px';
   });
 }
 
