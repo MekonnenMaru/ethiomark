@@ -906,13 +906,29 @@
       if (noCardsView) noCardsView.style.display = 'none';
       if (gi)          gi.style.display          = 'block';
 
-      const total_bet  = cards.length * (price || 0);
-      const profit_pct = parseInt(document.getElementById('profit')?.innerText) || 0;
-      let   derash     = total_bet;
+      const total_bet      = cards.length * (price || 0);
+      const profit_pct     = parseInt(document.getElementById('profit')?.innerText) || 0;
+      const lockRoundDigit = parseInt(document.getElementById('lock_round_up_last_digit')?.innerText) || 0;
+      let   derash         = total_bet;
       if (total_bet >= 11) {
-        let house_profit = total_bet * profit_pct / 100;
-        const ld = house_profit % 10;
-        house_profit = house_profit - ld + (ld > 5 ? 10 : 0);
+        let house_profit_tmp = 0;
+        if (profit_pct === 0) {
+          if      (total_bet >= 11  && total_bet < 120)  house_profit_tmp = total_bet * 0.15;
+          else if (total_bet > 120  && total_bet < 320)  house_profit_tmp = total_bet * 0.20;
+          else if (total_bet >= 320 && total_bet < 800)  house_profit_tmp = total_bet * 0.25;
+          else if (total_bet >= 800 && total_bet < 1000) house_profit_tmp = total_bet * 0.30;
+          else if (total_bet >= 1000)                    house_profit_tmp = total_bet * 0.35;
+          else                                           house_profit_tmp = total_bet * 0.40;
+        } else {
+          house_profit_tmp = total_bet * profit_pct / 100;
+        }
+        let house_profit = 0;
+        if (lockRoundDigit === 0) {
+          const ld = house_profit_tmp % 10;
+          house_profit = house_profit_tmp - ld + (ld > 5 ? 10 : 0);
+        } else {
+          house_profit = house_profit_tmp;
+        }
         if (house_profit < 10) house_profit = 10;
         derash = total_bet - house_profit;
       }
