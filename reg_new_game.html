@@ -250,9 +250,9 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 900;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  text-shadow: 0 1px 6px rgba(0,0,0,0.6);
   cursor: pointer;
   transition: all 0.15s;
   user-select: none;
@@ -535,15 +535,15 @@ html, body {
                        line-height:1;display:flex;align-items:center;justify-content:center;">+</button>
       </div>
 
-      <!-- Centre: pagination -->
+      <!-- Centre: keyboard typing indicator -->
+      <span id="kb-indicator" style="flex:1;text-align:center;"></span>
+
+      <!-- Right: pagination -->
       <div id="pagination-controls" style="display:flex;align-items:center;gap:6px;">
         <button id="pg-prev" onclick="changePage(-1)" style="background:rgba(0,198,255,0.15);border:1px solid rgba(0,198,255,0.4);color:#00c6ff;padding:4px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;">‹ Prev</button>
         <span style="color:#90caf9;font-size:13px;">Page <b id="pg-current" style="color:#fff;">1</b> of <b id="pg-total" style="color:#fff;">1</b></span>
         <button id="pg-next" onclick="changePage(1)" style="background:rgba(0,198,255,0.15);border:1px solid rgba(0,198,255,0.4);color:#00c6ff;padding:4px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;">Next ›</button>
       </div>
-
-      <!-- Right: keyboard typing indicator -->
-      <span id="kb-indicator"></span>
     </div>
     <div class="card-grid" id="cardGrid"></div>
   </div>
@@ -742,7 +742,7 @@ function renderGrid(filter) {
   grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${ballSize}px, 1fr))`;
   grid.innerHTML = '';
 
-  const fontSize = Math.round(ballSize * 0.35) + 'px';
+  const fontSize = Math.round(ballSize * 0.45) + 'px';
   pageNums.forEach(num => {
     const isSel = selectedCards.has(num);
     const el = document.createElement('div');
@@ -771,7 +771,7 @@ function adjustBallSize(delta) {
   localStorage.setItem('em_ball_size', ballSize);
   const grid = document.getElementById('cardGrid');
   if (grid) grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${ballSize}px, 1fr))`;
-  const fs = Math.round(ballSize * 0.35) + 'px';
+  const fs = Math.round(ballSize * 0.45) + 'px';
   document.querySelectorAll('.card-ball').forEach(b => { b.style.fontSize = fs; });
 }
 
