@@ -2793,10 +2793,18 @@
 
     setBallColor(rn);
 
-    /* Persist draw string */
+    /* Persist draw string to game state on every draw */
     const gs     = getGameState();
     gs.randomstring = randomstring;
     saveGameState(gs);
+
+    /* Every 5 draws also persist randomstring to the history record in DB
+       so it survives even if game_state is lost on a hard restart */
+    if (drawnCount % 5 === 0) {
+      API.updateHistoryByRound(gs.round || 1, 'started', {
+        randomstring: randomstring,
+      }).catch(() => {});
+    }
   }
 
   function functionC() { randomnuber(); max = max - 1; }
@@ -2860,6 +2868,12 @@
         gs.randomstring   = valid;
         gs.last_result    = valid;
         saveGameState(gs);
+
+        /* Always flush drawn numbers to history record on STOP */
+        API.updateHistoryByRound(gs.round || 1, 'started', {
+          randomstring: valid,
+        }).catch(() => {});
+
         showAlert('✅ ተቀምጧል', 'success');
 
         setTimeout(() => {
@@ -2984,6 +2998,19 @@
     });
     window._gameStateCache = await API.getGameState();
     showAlert('Round ተጠናቋል! → ወደ ምዝገባ...', 'success');
+  });
+
+  /* ── Reload / close protection ──
+     Shows the browser's native "Leave site?" dialog whenever a game is
+     in progress (started_at is set).  Works for F5, browser close, and
+     accidental navigation — including sudden power loss triggering a page
+     unload event before the OS shuts down. */
+  window.addEventListener('beforeunload', function (e) {
+    const gs = getGameState();
+    if (gs && gs.started_at) {
+      e.preventDefault();
+      e.returnValue = ''; /* required for Chrome/Edge to show the dialog */
+    }
   });
 </script>
 
