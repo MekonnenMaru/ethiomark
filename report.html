@@ -224,6 +224,7 @@ tbody tr:hover td{background:rgba(0,114,255,.04);}
 <nav class="nav">
   <div class="nav-brand">ኢትዮ-ማርክ ቢንጎ</div>
   <a href="index.html" class="nav-btn">← ጨዋታ</a>
+  <button class="nav-btn" id="globalRefreshBtn" onclick="refreshAll()" title="Reload all data from database">⟳ Refresh</button>
   <div class="nav-user">
     <div class="nav-user-dot" id="navInitial">C</div>
     <div class="nav-user-name" id="sideUsername">@cashier</div>
@@ -486,19 +487,60 @@ async function init(){
     document.getElementById(id).value=today;
   });
 
-  loadGameReport();
-  loadWalletReport();
-  loadActivityReport();
+  _applyGameFilter();
+  _applyWalletFilter();
+  _applyActivityFilter();
+}
+
+/* ════════════ REFRESH ALL ════════════ */
+async function refreshAll(){
+  const btn=document.getElementById('globalRefreshBtn');
+  if(btn){btn.disabled=true;btn.textContent='⟳ …';}
+  try{
+    const [bal,hist,wallet]=await Promise.all([
+      API.getBalance(), API.getHistory(), API.getWalletTransactions()
+    ]);
+    _hist=hist; _walletTx=wallet;
+    /* refresh wallet card */
+    document.getElementById('w-deposited').textContent=bal.deposited.toLocaleString();
+    document.getElementById('w-used').textContent=bal.used.toLocaleString();
+    const availEl=document.getElementById('w-avail');
+    availEl.textContent=bal.available.toLocaleString();
+    const cls=bal.available<=0?'w-avail-empty':bal.available<1000?'w-avail-low':'w-avail';
+    availEl.className='w-amount '+cls;
+    const pct=bal.deposited>0?Math.min(100,Math.round(bal.used/bal.deposited*100)):0;
+    document.getElementById('w-pct').textContent=pct+'% used';
+    const bar=document.getElementById('w-bar');
+    bar.style.width=pct+'%';
+    bar.style.background=pct>85?'linear-gradient(90deg,#ff5252,#ff8a65)':pct>60?'linear-gradient(90deg,#ff6f00,#ffd740)':'linear-gradient(90deg,#0072ff,#00c6ff)';
+    /* re-render all three tabs with current filter values */
+    _applyGameFilter();
+    _applyWalletFilter();
+    _applyActivityFilter();
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='⟳ Refresh';}
+  }
 }
 
 /* ════════════ GAME HISTORY ════════════ */
-function loadGameReport(){
+function _applyGameFilter(){
   const from=new Date(document.getElementById('dateFrom').value+'T00:00:00');
   const to  =new Date(document.getElementById('dateTo').value+'T23:59:59');
   _filteredGames=[..._hist].filter(g=>{const d=new Date(g.date);return d>=from&&d<=to;}).reverse();
   renderStats(_filteredGames);
   gamePage=1;
   renderGameTable();
+}
+
+async function loadGameReport(){
+  const btn=document.querySelector('#tab-game .fbtn-search');
+  if(btn){btn.disabled=true;btn.textContent='⟳ …';}
+  try{
+    _hist=await API.getHistory();
+    _applyGameFilter();
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Search';}
+  }
 }
 
 function _gBet(g){return (g.total_bet!==undefined)?g.total_bet:(g.cards.length*(g.price||0));}
@@ -617,7 +659,7 @@ function setWalletToday(){
   loadWalletReport();
 }
 
-function loadWalletReport(){
+function _applyWalletFilter(){
   const from=new Date(document.getElementById('wDateFrom').value+'T00:00:00');
   const to  =new Date(document.getElementById('wDateTo').value+'T23:59:59');
   _filteredWallet=[..._walletTx].filter(r=>{
@@ -626,6 +668,17 @@ function loadWalletReport(){
   renderWalletStats(_filteredWallet);
   walletPage=1;
   renderWalletTable();
+}
+
+async function loadWalletReport(){
+  const btn=document.querySelector('#tab-wallet .fbtn-search');
+  if(btn){btn.disabled=true;btn.textContent='⟳ …';}
+  try{
+    _walletTx=await API.getWalletTransactions();
+    _applyWalletFilter();
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Search';}
+  }
 }
 
 function renderWalletStats(rows){
@@ -696,16 +749,26 @@ function setActivityToday(){
   loadActivityReport();
 }
 
-function loadActivityReport(){
+function _applyActivityFilter(){
   const from=new Date(document.getElementById('aDateFrom').value+'T00:00:00');
   const to  =new Date(document.getElementById('aDateTo').value+'T23:59:59');
-  /* Activation activity = all wallet transactions (deposits = activation events) */
   _filteredActivity=[..._walletTx].filter(r=>{
     const d=new Date(r.timestamp);return d>=from&&d<=to;
   }).reverse();
   renderActivityStats(_filteredActivity);
   activityPage=1;
   renderActivityTable();
+}
+
+async function loadActivityReport(){
+  const btn=document.querySelector('#tab-activity .fbtn-search');
+  if(btn){btn.disabled=true;btn.textContent='⟳ …';}
+  try{
+    _walletTx=await API.getWalletTransactions();
+    _applyActivityFilter();
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Search';}
+  }
 }
 
 function renderActivityStats(rows){
