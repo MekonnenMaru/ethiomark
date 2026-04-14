@@ -3000,16 +3000,69 @@
     showAlert('Round ተጠናቋል! → ወደ ምዝገባ...', 'success');
   });
 
-  /* ── Reload / close protection ──
-     Shows the browser's native "Leave site?" dialog whenever a game is
-     in progress (started_at is set).  Works for F5, browser close, and
-     accidental navigation — including sudden power loss triggering a page
-     unload event before the OS shuts down. */
-  window.addEventListener('beforeunload', function (e) {
+  /* ── Reload Guard ──
+     Keyboard reload (F5 / Ctrl+R / Ctrl+Shift+R) → custom 3-button modal.
+     Browser reload-button / close → native beforeunload fallback (browsers
+     block custom modals during beforeunload by design). */
+
+  function _gameInProgress() {
     const gs = getGameState();
-    if (gs && gs.started_at) {
+    return !!(gs && gs.started_at);
+  }
+
+  function _showReloadModal() {
+    const m = document.getElementById('reloadGuardModal');
+    if (m) m.style.display = 'flex';
+  }
+  function _hideReloadModal() {
+    const m = document.getElementById('reloadGuardModal');
+    if (m) m.style.display = 'none';
+  }
+
+  /* Intercept keyboard reload shortcuts */
+  document.addEventListener('keydown', function (e) {
+    if (!_gameInProgress()) return;
+    const isF5      = e.key === 'F5';
+    const isCtrlR   = (e.ctrlKey || e.metaKey) && e.key === 'r';
+    const isCtrlShiftR = (e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'R';
+    if (isF5 || isCtrlR || isCtrlShiftR) {
       e.preventDefault();
-      e.returnValue = ''; /* required for Chrome/Edge to show the dialog */
+      _showReloadModal();
+    }
+  }, true);
+
+  /* Wire up modal buttons after DOM is ready */
+  document.addEventListener('DOMContentLoaded', function () {
+    /* Cancel */
+    document.getElementById('rgm-cancel').addEventListener('click', _hideReloadModal);
+
+    /* Reload Anyway */
+    document.getElementById('rgm-reload').addEventListener('click', function () {
+      _hideReloadModal();
+      window.location.reload();
+    });
+
+    /* Save & Reload — flush randomstring to history DB first, then reload */
+    document.getElementById('rgm-save-reload').addEventListener('click', async function () {
+      const btn = this;
+      btn.disabled    = true;
+      btn.textContent = 'Saving…';
+      try {
+        const gs = getGameState();
+        const rs = gs.randomstring || '';
+        if (rs) {
+          await API.updateHistoryByRound(gs.round || 1, 'started', { randomstring: rs });
+        }
+      } catch (_) {}
+      window.location.reload();
+    });
+  });
+
+  /* Native fallback for browser close / address-bar navigation */
+  window.addEventListener('beforeunload', function (e) {
+    if (_gameInProgress()) {
+      e.preventDefault();
+      e.returnValue = '';
     }
   });
 </script>
@@ -3610,6 +3663,38 @@ function buildCardHTML(card, drawn, pattern, cardNo) {
   }
 </script>
 
+
+<!-- ── Reload Guard Modal ── -->
+<div id="reloadGuardModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.82);
+     z-index:99999; align-items:center; justify-content:center;">
+  <div style="background:#1a1f2e; border:1px solid #2a3a5c; padding:28px 24px;
+              border-radius:14px; max-width:360px; width:92%; text-align:center; color:#fff;
+              box-shadow:0 8px 40px rgba(0,0,0,0.7);">
+    <div style="font-size:36px; margin-bottom:8px;">⚠️</div>
+    <h3 style="margin:0 0 8px; font-size:18px; color:#f1c40f;">ጨዋታ በሂደት ላይ ነው</h3>
+    <p style="font-size:13px; color:#aab; margin-bottom:22px; line-height:1.5;">
+      ገፁን ብትጫኑ የተሳሉ ቁጥሮች ሊጠፉ ይችላሉ።<br>
+      <span style="color:#7ecfff;">ምን ማድረግ ይፈልጋሉ?</span>
+    </p>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <button id="rgm-save-reload"
+              style="padding:12px; background:#1976D2; border:none; border-radius:9px;
+                     color:#fff; font-size:15px; font-weight:700; cursor:pointer;">
+        💾 Save &amp; Reload
+      </button>
+      <button id="rgm-reload"
+              style="padding:12px; background:#c0392b; border:none; border-radius:9px;
+                     color:#fff; font-size:15px; font-weight:700; cursor:pointer;">
+        🔄 Reload Anyway
+      </button>
+      <button id="rgm-cancel"
+              style="padding:12px; background:#2c3e50; border:none; border-radius:9px;
+                     color:#ccc; font-size:14px; cursor:pointer;">
+        ✖ Cancel
+      </button>
+    </div>
+  </div>
+</div>
 
 <div id="securityModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
   <div style="background:#111; padding:24px; border-radius:12px; max-width:360px; width:90%; text-align:center; color:#fff;">
