@@ -523,8 +523,8 @@ html, body {
   <!-- Ball grid -->
   <div class="grid-area">
     <div class="grid-hint">
-      <!-- Left: ball size controls -->
-      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+      <!-- Left: ball size + pagination toggle -->
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
         <span style="font-size:11px;color:#90caf9;letter-spacing:.5px;">Ball Size</span>
         <button onclick="adjustBallSize(-6)"
                 style="background:rgba(0,198,255,0.12);border:1px solid rgba(0,198,255,0.35);color:#00c6ff;
@@ -534,12 +534,19 @@ html, body {
                 style="background:rgba(0,198,255,0.12);border:1px solid rgba(0,198,255,0.35);color:#00c6ff;
                        width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:18px;font-weight:900;
                        line-height:1;display:flex;align-items:center;justify-content:center;">+</button>
+
+        <span style="width:1px;height:22px;background:rgba(255,255,255,0.12);flex-shrink:0;"></span>
+
+        <button id="pg-toggle-btn" onclick="togglePagination()"
+                style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:7px;cursor:pointer;
+                       font-size:11px;font-weight:700;letter-spacing:.4px;border:1px solid;transition:all 0.2s;">
+        </button>
       </div>
 
       <!-- Centre: keyboard typing indicator -->
       <span id="kb-indicator" style="flex:1;text-align:center;"></span>
 
-      <!-- Right: pagination -->
+      <!-- Right: pagination controls (shown only when pagination is ON) -->
       <div id="pagination-controls" style="display:flex;align-items:center;gap:6px;">
         <button id="pg-prev" onclick="changePage(-1)" style="background:rgba(0,198,255,0.15);border:1px solid rgba(0,198,255,0.4);color:#00c6ff;padding:4px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;">‹ Prev</button>
         <span style="color:#90caf9;font-size:13px;">Page <b id="pg-current" style="color:#fff;">1</b> of <b id="pg-total" style="color:#fff;">1</b></span>
@@ -566,6 +573,33 @@ let currentFilter  = '';
 let currentPage    = 1;
 const PAGE_SIZE    = 100;
 let ballSize = parseInt(localStorage.getItem('em_ball_size') || '56', 10);
+let paginationEnabled = localStorage.getItem('em_pagination') === 'true'; /* default OFF */
+
+function _applyPaginationUI() {
+  const btn  = document.getElementById('pg-toggle-btn');
+  const ctrl = document.getElementById('pagination-controls');
+  if (paginationEnabled) {
+    btn.textContent   = '📄 Pages: ON';
+    btn.style.background    = 'rgba(0,198,255,0.18)';
+    btn.style.borderColor   = 'rgba(0,198,255,0.5)';
+    btn.style.color         = '#00c6ff';
+    ctrl.style.display      = 'flex';
+  } else {
+    btn.textContent   = '📋 Pages: OFF';
+    btn.style.background    = 'rgba(255,255,255,0.06)';
+    btn.style.borderColor   = 'rgba(255,255,255,0.2)';
+    btn.style.color         = '#90caf9';
+    ctrl.style.display      = 'none';
+  }
+}
+
+function togglePagination() {
+  paginationEnabled = !paginationEnabled;
+  localStorage.setItem('em_pagination', paginationEnabled);
+  _applyPaginationUI();
+  currentPage = 1;
+  renderGrid();
+}
 
 /* ── IDB-backed state with sync memory cache ── */
 window._gameStateCache   = {};
@@ -676,6 +710,7 @@ async function init() {
   allCardNumbers = _getCardIdsByCategory(savedCategory);
   document.getElementById('totalCards').textContent = allCardNumbers.length;
 
+  _applyPaginationUI();
   renderGrid();
   updateStats();
 }
@@ -730,15 +765,19 @@ function renderGrid(filter) {
     currentPage = 1;
   }
   const nums = getFilteredNums();
-  const totalPages = Math.max(1, Math.ceil(nums.length / PAGE_SIZE));
-  currentPage = Math.min(currentPage, totalPages);
 
-  document.getElementById('pg-current').textContent = currentPage;
-  document.getElementById('pg-total').textContent   = totalPages;
-  document.getElementById('pg-prev').style.opacity  = currentPage <= 1 ? '0.35' : '1';
-  document.getElementById('pg-next').style.opacity  = currentPage >= totalPages ? '0.35' : '1';
-
-  const pageNums = nums.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  let pageNums;
+  if (paginationEnabled) {
+    const totalPages = Math.max(1, Math.ceil(nums.length / PAGE_SIZE));
+    currentPage = Math.min(currentPage, totalPages);
+    document.getElementById('pg-current').textContent = currentPage;
+    document.getElementById('pg-total').textContent   = totalPages;
+    document.getElementById('pg-prev').style.opacity  = currentPage <= 1 ? '0.35' : '1';
+    document.getElementById('pg-next').style.opacity  = currentPage >= totalPages ? '0.35' : '1';
+    pageNums = nums.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  } else {
+    pageNums = nums;
+  }
   const grid = document.getElementById('cardGrid');
   grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${ballSize}px, 1fr))`;
   grid.innerHTML = '';
