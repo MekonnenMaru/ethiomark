@@ -1175,7 +1175,8 @@
 <!-- ─── Package overlay (license key input) ─── -->
 <style>
   #pkg-key-input::placeholder { color: rgba(255, 255, 255, 0.25); }
-  #pkg-key-input:focus {
+  #pkg-key-input:focus ~ * { outline: none; }
+  #pkg-key-wrap:focus-within {
     border-color: rgba(0, 198, 255, 0.5) !important;
     box-shadow: 0 0 0 3px rgba(0, 198, 255, 0.1);
   }
@@ -1303,14 +1304,22 @@
                   letter-spacing:1.2px; text-transform:uppercase; margin-bottom:10px;">
         🔓 Step 3 — Paste the key below and activate
       </div>
-      <textarea id="pkg-key-input" rows="2"
-                placeholder="e.g.  EM-76058E59-5000-1-A3F92B1C"
-                style="width:100%; background:rgba(255,255,255,0.06);
-                       border:1px solid rgba(255,255,255,0.12); border-radius:10px;
-                       color:#fff; font-family:monospace; font-size:13px;
-                       padding:10px 12px; resize:none; outline:none;
-                       transition:border-color 0.2s, box-shadow 0.2s; line-height:1.5;">
-      </textarea>
+      <div style="display:flex; align-items:center; gap:0;
+                  background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+                  border-radius:10px; overflow:hidden; transition:border-color 0.2s, box-shadow 0.2s;"
+           id="pkg-key-wrap">
+        <span id="pkg-key-prefix"
+              style="flex-shrink:0; padding:10px 10px 10px 12px; font-family:monospace;
+                     font-size:13px; color:rgba(255,255,255,0.35); white-space:nowrap;
+                     border-right:1px solid rgba(255,255,255,0.1); user-select:none;">
+          EM-········-
+        </span>
+        <input id="pkg-key-input" type="text"
+               placeholder="5000-1-A3F92B1C"
+               style="flex:1; background:transparent; border:none; outline:none;
+                      color:#fff; font-family:monospace; font-size:13px;
+                      padding:10px 12px; min-width:0;" />
+      </div>
       <div id="pkg-key-error"
            style="display:none; color:#ff5252; font-size:12px; font-weight:600;
                   margin-top:8px; padding:8px 10px; background:rgba(255,82,82,0.1);
@@ -2112,6 +2121,12 @@
               trialBanner.style.display  = 'none';
               activateSec.style.display  = 'block';
               unlockSec.style.display    = 'none';
+              API.getMachineId().then(mid => {
+                if (mid) {
+                  const pfx = document.getElementById('pkg-key-prefix');
+                  if (pfx) pfx.textContent = 'EM-' + mid + '-';
+                }
+              }).catch(() => {});
               const inp = document.getElementById('pkg-key-input');
               if (inp) inp.focus();
             }
@@ -2119,6 +2134,12 @@
             trialBanner.style.display = 'none';
             activateSec.style.display = 'block';
             unlockSec.style.display   = 'none';
+            API.getMachineId().then(mid => {
+              if (mid) {
+                const pfx = document.getElementById('pkg-key-prefix');
+                if (pfx) pfx.textContent = 'EM-' + mid + '-';
+              }
+            }).catch(() => {});
           }
         }, _pkgModalWasOpen ? 320 : 0);
       }
@@ -2212,7 +2233,7 @@
 
       /* ── Activate package button ── */
       document.getElementById('pkg-activate-btn').addEventListener('click', async () => {
-        const keyStr = document.getElementById('pkg-key-input').value.trim();
+        const suffix = document.getElementById('pkg-key-input').value.trim().toUpperCase();
         const errEl  = document.getElementById('pkg-key-error');
         const sucEl  = document.getElementById('pkg-key-success');
         const btn    = document.getElementById('pkg-activate-btn');
@@ -2220,8 +2241,18 @@
         errEl.style.display = 'none';
         sucEl.style.display = 'none';
 
-        if (!keyStr) {
-          errEl.textContent   = 'Please paste the license key first.';
+        if (!suffix) {
+          errEl.textContent   = 'Please enter the key suffix first (e.g. 5000-1-A3F92B1C).';
+          errEl.style.display = 'block';
+          return;
+        }
+
+        let keyStr;
+        try {
+          const mid = await API.getMachineId();
+          keyStr = 'EM-' + mid + '-' + suffix;
+        } catch (_) {
+          errEl.textContent   = 'Could not read machine ID. Please try again.';
           errEl.style.display = 'block';
           return;
         }
