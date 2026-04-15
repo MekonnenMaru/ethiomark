@@ -477,6 +477,7 @@ html, body {
     <div class="field">
       <label>🎯 Win Pattern</label>
       <select id="bp_pattern">
+        <option value="0">Default</option>
         <option value="1">Any 1 line</option>
         <option value="2">Any 2 lines</option>
         <option value="3">Any Horizontal</option>
@@ -821,7 +822,7 @@ async function saveAndGo() {
     cards:            _savedCards,
     last_used_cards:  _savedCards,   /* preserved for next-round card restore */
     cartela_category: document.getElementById('bp_category').value || '',
-    pattern:          parseInt(document.getElementById('bp_pattern').value) || 1,
+    pattern:          parseInt(document.getElementById('bp_pattern').value) || 0,
     price:            parseInt(document.getElementById('bp_price').value)   || 10,
     sound:            gs.sound || 1,
     speed_range:      gs.speed_range || 3,
@@ -906,7 +907,7 @@ async function saveAndGo() {
     date:         new Date().toISOString(),
     cards:        newState.cards,
     price:        newState.price   || 0,
-    pattern:      newState.pattern || 1,
+    pattern:      newState.pattern || 0,
     sound:        newState.sound   || 1,
     randomstring: '',
     status:       'pending',

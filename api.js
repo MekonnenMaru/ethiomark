@@ -15,6 +15,7 @@ window.API = (() => {
   /* ────────────────────────────────────────────────────────────
      INITIALISATION
   ──────────────────────────────────────────────────────────── */
+  const API = "logic/machine.php";
 
   async function init() {
     return EthiomarkDB.openDB();
@@ -175,48 +176,47 @@ window.API = (() => {
      Trial lock     : 5 failed activation attempts → locked.
                       Unlock with a code from keygen.html.
   ──────────────────────────────────────────────────────────── */
-
-  /* HMAC secret — same constant must be in keygen.html */
-  const _LS = 'EMbingo!X9pQ#2025-EthioMark-Lic3ns3-S3cr3t@Key';
-
-  /* Separate secret for unlock codes */
-  const _ULS = 'EMbingo!UNLOCK@2025-EthioMark-Unl0ck-S3cr3t';
-
   async function _hmac(data) {
-    const enc = new TextEncoder();
-    const k = await crypto.subtle.importKey(
-      'raw', enc.encode(_LS), { name:'HMAC', hash:'SHA-256' }, false, ['sign']
-    );
-    const s = await crypto.subtle.sign('HMAC', k, enc.encode(data));
-    return Array.from(new Uint8Array(s))
-      .map(b => b.toString(16).padStart(2,'0')).join('');
+    const res = await fetch("logic/machine.php?action=hmac", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data })
+    });
+
+    const json = await res.json();    
+    return json.hmac;
   }
 
   async function _hmacUnlock(data) {
-    const enc = new TextEncoder();
-    const k = await crypto.subtle.importKey(
-      'raw', enc.encode(_ULS), { name:'HMAC', hash:'SHA-256' }, false, ['sign']
-    );
-    const s = await crypto.subtle.sign('HMAC', k, enc.encode(data));
-    return Array.from(new Uint8Array(s))
-      .map(b => b.toString(16).padStart(2,'0')).join('');
+    const res = await fetch("logic/machine.php?action=unlock_hmac", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data })
+    });
+
+    const json = await res.json();
+    return json.hmac;
   }
 
   /** Get this machine's unique 8-char hex ID (creates on first run). */
   async function getMachineId() {
-    const lic = await EthiomarkDB.dbGetLicense();
-
-    console.log("get license", lic);
+    // const serial_number_res = await fetch(API);
+    // const serial_number_res_data = await serial_number_res.json(); // its dynamic
+    // const serial_number=serial_number_res_data.serial_number?serial_number_res_data.serial_number: "";
     
+    // console.log("==========================", serial_number);
+    
+
+    const lic = await EthiomarkDB.dbGetLicense();
     if (lic && lic.machine_id) return lic.machine_id;
-    const uuid = crypto.randomUUID();
+    const uuid = crypto.randomUUID() + Date.now();
     const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(uuid));
     const mid  = Array.from(new Uint8Array(buf))
       .map(b => b.toString(16).padStart(2,'0')).join('')
       .substring(0, 8).toUpperCase();
 
     // get main machin id
-    const res = await fetch('logic/machine.php');
+    const res = await fetch(API);
     const data = await res.json(); // its dynamic
     const static_machine_id=data.machine_id?data.machine_id: "";
 
@@ -300,7 +300,7 @@ window.API = (() => {
         throw new Error('Invalid key — must start with EM-');
       const parts = keyStr.split('-');
       if (parts.length !== 5)
-        throw new Error('Invalid key format — expected EM-MACHINEID-AMOUNT-SERIAL-CODE');
+        throw new Error('Invalid key format.');
       const [, mid, amtStr, sn, sigIn] = parts;
       if (mid.length !== 8)
         throw new Error('Machine ID in key must be 8 characters');
@@ -477,16 +477,6 @@ window.API = (() => {
     }).catch(() => {});
   }
 
-  /**
-   * Admin helper: compute the one-time unlock code for a given machine ID + nonce.
-   * Used in keygen.html — format: XXXXXXXX (8 hex chars, uppercase).
-   * nonce must match the machine's current unlock_nonce value.
-   */
-  async function generateUnlockCode(machineId, nonce) {
-    machineId = machineId.replace(/-/g,'').trim().toUpperCase();
-    nonce     = parseInt(nonce, 10) || 0;
-    return (await _hmacUnlock(machineId + ':' + nonce)).substring(0, 8).toUpperCase();
-  }
 
   /**
    * Return the current unlock nonce for display in the UI.
@@ -512,18 +502,6 @@ window.API = (() => {
       // =================================================================
     await EthiomarkDB.dbSaveLicense({ ...lic, total_revenue: (lic.total_revenue || 0) + Number(amount) });
 
-  }
-
-  /**
-   * Admin-only: generate a compact license key.
-   * Format: EM-{MID8}-{AMT}-{SN}-{SIG8}
-   */
-  async function generateLicenseKey(machineId, serial, amount) {
-    machineId = machineId.replace(/-/g,'').trim().toUpperCase();
-    serial    = String(serial).trim();
-    amount    = Number(amount);
-    const sig = (await _hmac([machineId, serial, amount].join('|'))).substring(0,8).toUpperCase();
-    return 'EM-' + machineId + '-' + amount + '-' + serial + '-' + sig;
   }
 
   /* ────────────────────────────────────────────────────────────
@@ -601,7 +579,7 @@ window.API = (() => {
   // 3. No rollback, tampering, or copying has occurred
   async function checkLicenseSecurity() {
     // 🔹 Get machine ID from server (trusted source)
-    const resMachine = await fetch('logic/machine.php');
+    const resMachine = await fetch(API);
     const machineData = await resMachine.json();
     const staticMachineId = machineData.static_machine_id;
 
@@ -728,7 +706,7 @@ window.API = (() => {
       yesBtn.onclick = async () => {
         console.warn("⚠ Fixing system (syncing values)...");
 
-        const res = await fetch('logic/machine.php');
+        const res = await fetch(API);
         const { static_machine_id } = await res.json();
 
         const lic = await getLicense();
@@ -784,7 +762,7 @@ window.API = (() => {
 
   // ==== UPDATE CHECKPOINT AFTER CHECKING ====
   async function updateCheckPoint(total_deposited, total_revenue) {
-    const res = await fetch('logic/machine.php');
+    const res = await fetch(API);
     const data = await res.json();
     const staticMachineId = data.static_machine_id;
 
@@ -824,34 +802,7 @@ window.API = (() => {
 
     return true;
   }
-  // async function updateCheckPoint(total_deposited = 0, total_revenue = 0)
-  // {
-  //     const getstaticmachinid = await fetch('logic/machine.php');
-  //     const getstaticmachiniddata = await getstaticmachinid.json();
-  //     const staticMachineId = getstaticmachiniddata.static_machine_id;  // get machine id from php its live checked
 
-  //     const license = await getLicense();  // get license from indexeddb its from indexeddb
-
-  //     const total_deposited_1 = total_deposited ? total_deposited >0 : license.total_deposited
-  //     const total_revenue_1 = total_revenue ? total_revenue >0 : license.total_revenue
-  //     // ✅ UPDATE CHECKPOINT (important)
-  //       data={
-  //           total_deposited: total_deposited_1,
-  //           total_revenue: total_revenue_1,
-  //           static_machine_id: staticMachineId,
-  //       };
-  //       await fetch('logic/machine.php?action=saveCheckpoint', {
-  //         method: 'POST',
-  //         body: JSON.stringify(data)
-  //       });
-
-  //       console.log(`✅ Update checkpoint 
-  //       total_deposited: ${total_deposited_1}
-  //       total_revenue: ${total_revenue_1}
-  //       machine: ${staticMachineId}`);
-
-  //       return true;
-  // }
 
   // =====================================================================
   // =====================================================================
@@ -878,8 +829,7 @@ window.API = (() => {
     /* license */
     getMachineId, getLicenseInfo, getBalance,
     isLicensed, activatePackage, addRevenue,
-    generateLicenseKey,
-    getActivationLockStatus, unlockActivation, generateUnlockCode, getUnlockNonce,
+    getActivationLockStatus, unlockActivation, getUnlockNonce,
 
     /* daily reset */
     checkAndResetDailyRound, stampActiveDate,

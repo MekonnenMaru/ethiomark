@@ -214,29 +214,17 @@ body{background:#07101f;color:#e3eaf6;font-family:'Segoe UI',Arial,sans-serif;mi
 
 <script>
 /* ── HMAC-SHA256 (SubtleCrypto) ── */
-const SECRET        = 'EMbingo!X9pQ#2025-EthioMark-Lic3ns3-S3cr3t@Key';
-const UNLOCK_SECRET = 'EMbingo!UNLOCK@2025-EthioMark-Unl0ck-S3cr3t';
-const ADMIN_MD5     = '9f9237baae65e39a07539308888c24cb'; /* MD5 of EthioAdmin@2025 */
+// const SECRET        = 'EMbingo!X9pQ#2025-EthioMark-Lic3ns3-S3cr3t@Key';
+// const UNLOCK_SECRET = 'EMbingo!UNLOCK@2025-EthioMark-Unl0ck-S3cr3t';
+// const ADMIN_MD5     = '9f9237baae65e39a07539308888c24cb'; /* MD5 of EthioAdmin@2025 */
 
-async function _hmacWith(secret, data) {
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey('raw', enc.encode(secret),
-    {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(data));
-  return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
+/* ─────────────────────────────────────────
+   ADMIN GATE
+───────────────────────────────────────── */
+const ADMIN_MD5 = '9f9237baae65e39a07539308888c24cb';
+const API = "keygenAPI.php";
 
-async function hmac8(data) {
-  return (await _hmacWith(SECRET, data)).substring(0,8).toUpperCase();
-}
-
-async function generateKey(mid, sn, amt) {
-  mid = mid.replace(/-/g,'').trim().toUpperCase();
-  const sig = await hmac8([mid, sn, amt].join('|'));
-  return 'EM-' + mid + '-' + amt + '-' + sn + '-' + sig;
-}
-
-/* ── MD5 (minimal, for gate check) ── */
+/* ── MD5 (unchanged) ── */
 function md5(s){
   function safeAdd(x,y){const lsw=(x&0xffff)+(y&0xffff);const msw=(x>>16)+(y>>16)+(lsw>>16);return(msw<<16)|(lsw&0xffff);}
   function bitRotateLeft(x,n){return(x<<n)|(x>>>(32-n));}
@@ -279,22 +267,17 @@ let sessionLog = [];
 /* ── Gate ── */
 function checkGate() {
   const pw = document.getElementById('gatePass').value;
-  const h  = md5(pw);
-  if (h === ADMIN_MD5) {
+  if (md5(pw) === ADMIN_MD5) {
     document.getElementById('gate').style.display = 'none';
     document.getElementById('tool').style.display = 'block';
-    /* restore serial from sessionStorage */
+
     const saved = sessionStorage.getItem('em_keygen_serial');
     document.getElementById('serial').value = saved ? parseInt(saved)+1 : 1;
   } else {
-    document.getElementById('gate-err').textContent = 'Wrong password. Try again.';
+    document.getElementById('gate-err').textContent = 'Wrong password';
     document.getElementById('gatePass').value = '';
-    document.getElementById('gatePass').focus();
   }
 }
-document.getElementById('gatePass').addEventListener('keydown', e => {
-  if (e.key === 'Enter') checkGate();
-});
 
 /* ── Amount select ── */
 document.getElementById('amount').addEventListener('change', function() {
@@ -302,122 +285,125 @@ document.getElementById('amount').addEventListener('change', function() {
     this.value === 'custom' ? 'block' : 'none';
 });
 
-/* ── Generate ── */
+/* ── Generate Key (API) ── */
 async function generate() {
-  const midRaw = document.getElementById('machineId').value.replace(/-/g,'').trim().toUpperCase();
-  const snRaw  = document.getElementById('serial').value.trim();
-  const sn     = String(parseInt(snRaw) || 0);
-  let amtVal   = document.getElementById('amount').value;
-  if (amtVal === 'custom') amtVal = document.getElementById('customAmt').value.trim();
-  const amt = Number(amtVal);
-
-  if (midRaw.length !== 8) { alert('Machine ID must be exactly 8 hex characters (e.g. 76058E59)'); return; }
-  if (!amt || isNaN(amt) || amt <= 0) { alert('Select or enter a valid package amount.'); return; }
-  if (!snRaw || parseInt(snRaw) <= 0) { alert('Serial must be a positive number (1, 2, 3 …)'); return; }
+  const mid = document.getElementById('machineId').value.replace(/-/g,'').toUpperCase();
+  const sn  = parseInt(document.getElementById('serial').value);
+  let amt   = document.getElementById('amount').value;
+  if (amt === 'custom') amt = document.getElementById('customAmt').value;
 
   const btn = document.getElementById('genBtn');
-  btn.disabled = true; btn.textContent = 'Generating…';
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
 
   try {
-    const key  = await generateKey(midRaw, sn, amt);
-    const date = new Date().toLocaleString('en-ET', {dateStyle:'short',timeStyle:'short'});
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action:'generate_key', mid, sn, amt })
+    });
 
-    /* show output */
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    const key = data.key;
+
     document.getElementById('keyText').textContent = key;
     document.getElementById('keyLen').textContent  = key.length + ' characters';
-    document.getElementById('keyMeta').innerHTML   =
-      `Machine: <strong style="color:#90caf9;">${midRaw.match(/.{1,4}/g).join('-')}</strong>` +
-      ` &nbsp;|&nbsp; Amount: <strong style="color:#69f0ae;">${Number(amt).toLocaleString()} ብር</strong>` +
-      ` &nbsp;|&nbsp; Serial: <strong style="color:#ffd740;">#${sn}</strong>` +
-      `<br><span style="color:rgba(255,165,0,.7);font-size:11px;margin-top:6px;display:block;">⚠ Single-use. Only valid on machine ${midRaw.match(/.{1,4}/g).join('-')}.</span>`;
     document.getElementById('keyOut').style.display = 'block';
 
-    /* session log */
-    sessionLog.push({ no: sessionLog.length+1, machineId: midRaw, amount: amt, serial: sn, date, key });
+    /* log */
+    sessionLog.push({ no: sessionLog.length+1, machineId: mid, amount: amt, serial: sn, key });
     sessionStorage.setItem('em_keygen_serial', sn);
-    document.getElementById('serial').value = parseInt(sn) + 1;
+    document.getElementById('serial').value = sn + 1;
+
     renderHistory();
 
   } catch(e) {
-    alert('Error generating key: ' + e.message);
+    alert(e.message);
   }
 
-  btn.disabled = false; btn.textContent = '⚡ Generate Key';
+  btn.disabled = false;
+  btn.textContent = '⚡ Generate Key';
 }
 
-/* ── Copy key ── */
+/* ── Generate Unlock ── */
+async function generateUnlock() {
+  const mid   = document.getElementById('unlockMid').value.replace(/-/g,'').toUpperCase();
+  const nonce = parseInt(document.getElementById('unlockNonce').value);
+
+  const btn = document.getElementById('unlockBtn');
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+
+  try {
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action:'generate_unlock', mid, nonce })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    document.getElementById('unlockCode').textContent = data.code;
+    document.getElementById('unlockOut').style.display = 'block';
+
+  } catch(e) {
+    alert(e.message);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🔓 Generate One-Time Unlock Code';
+}
+
+/* ── Copy ── */
 function copyKey() {
   const txt = document.getElementById('keyText').textContent;
   if (!txt || txt === '—') return;
+
   navigator.clipboard.writeText(txt).then(() => {
     const t = document.getElementById('copyToast');
     t.style.display = 'block';
-    setTimeout(() => { t.style.display = 'none'; }, 2000);
+    setTimeout(()=>t.style.display='none',2000);
   });
-}
-
-/* ── History ── */
-function renderHistory() {
-  if (!sessionLog.length) return;
-  document.getElementById('histWrap').style.display = 'block';
-  document.getElementById('histCount').textContent   = sessionLog.length;
-  const rows = [...sessionLog].reverse().map(e => `
-    <tr>
-      <td style="color:#2d4a68;font-weight:700;">${e.no}</td>
-      <td style="font-family:monospace;color:#7986cb;">${e.machineId.match(/.{1,4}/g).join('-')}</td>
-      <td style="color:#69f0ae;font-weight:800;">${Number(e.amount).toLocaleString()} ብር</td>
-      <td style="color:#ffd740;">#${e.serial}</td>
-      <td class="key-cell" onclick="copyText('${e.key}')" title="Click to copy">${e.key}</td>
-    </tr>`).join('');
-  document.getElementById('histBody').innerHTML = rows;
 }
 
 function copyText(txt) {
   navigator.clipboard.writeText(txt).then(() => {
     const t = document.getElementById('copyToast');
     t.style.display = 'block';
-    setTimeout(() => { t.style.display = 'none'; }, 2000);
+    setTimeout(()=>t.style.display='none',2000);
   });
 }
 
-/* ── Unlock code generator (nonce-based one-time code) ── */
-async function generateUnlock() {
-  const midRaw = document.getElementById('unlockMid').value.replace(/-/g,'').trim().toUpperCase();
-  const nonce  = parseInt(document.getElementById('unlockNonce').value, 10);
+/* ── History ── */
+function renderHistory() {
+  if (!sessionLog.length) return;
 
-  if (midRaw.length !== 8) {
-    alert('Machine ID must be exactly 8 hex characters (e.g. 76058E59)');
-    return;
-  }
-  if (isNaN(nonce) || nonce < 0) {
-    alert('Use # must be 0 or a positive number (exactly as shown on the cashier screen).');
-    return;
-  }
+  document.getElementById('histWrap').style.display = 'block';
+  document.getElementById('histCount').textContent = sessionLog.length;
 
-  const btn = document.getElementById('unlockBtn');
-  btn.disabled    = true;
-  btn.textContent = 'Generating…';
-  try {
-    const payload = midRaw + ':' + nonce;
-    const code    = (await _hmacWith(UNLOCK_SECRET, payload)).substring(0, 8).toUpperCase();
-    document.getElementById('unlockCode').textContent          = code;
-    document.getElementById('unlockMidDisplay').textContent    = midRaw.match(/.{1,4}/g).join('-');
-    document.getElementById('unlockNonceDisplay').textContent  = nonce;
-    document.getElementById('unlockOut').style.display         = 'block';
-  } catch(e) {
-    alert('Error: ' + e.message);
-  }
-  btn.disabled    = false;
-  btn.textContent = '🔓 Generate One-Time Unlock Code';
+  const rows = [...sessionLog].reverse().map(e => `
+    <tr>
+      <td>${e.no}</td>
+      <td>${e.machineId}</td>
+      <td>${Number(e.amount).toLocaleString()} ብር</td>
+      <td>#${e.serial}</td>
+      <td class="key-cell" onclick="copyText('${e.key}')">${e.key}</td>
+    </tr>`).join('');
+
+  document.getElementById('histBody').innerHTML = rows;
 }
 
-/* ── Export JSON ── */
+/* ── Export ── */
 function exportJSON() {
   if (!sessionLog.length) return;
-  const blob = new Blob([JSON.stringify(sessionLog, null, 2)], {type:'application/json'});
+
+  const blob = new Blob([JSON.stringify(sessionLog,null,2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'ethiomark_keys_' + new Date().toISOString().split('T')[0] + '.json';
+  a.download = 'ethiomark_keys.json';
   a.click();
 }
 </script>

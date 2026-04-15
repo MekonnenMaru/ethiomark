@@ -703,7 +703,7 @@
         date:         completedAt,
         cards:        gs.cards,
         price:        gs.price        || 0,
-        pattern:      gs.pattern      || 1,
+        pattern:      gs.pattern      || 0,
         sound:        gs.sound        || 1,
         randomstring: gs.randomstring || '',
         status:       'completed',
@@ -839,7 +839,7 @@
     const price = gs.price  || 0;
     document.getElementById('sew').innerText   = cards.length;
     document.getElementById('birr').innerText  = price;
-    document.getElementById('patt').innerText  = gs.pattern || 1;
+    document.getElementById('patt').innerText  = gs.pattern || 0;
 
     const sound = gs.sound || 1;
     document.getElementById('ran_voice').innerText = sound;
@@ -893,6 +893,7 @@
     document.getElementById('modal-round-number').innerHTML = 'Round ' + round;
 
     const patternNames = {
+      0: 'Default',
       1: 'Any 1 Line',   2: 'Any 2 Lines', 3: 'Any Horizontal', 4: 'Any Vertical',
       5: 'X Pattern',    6: 'Four Corners', 7: 'Center Corners', 8: 'Meskel',
       9: 'T Shape',     10: 'Reverse T',  11: 'L Shape',       12: 'Full Card'
@@ -1092,6 +1093,7 @@
 
     /* Update game status bar */
     const patternNames = {
+      0: 'Default',
       1: 'Any 1 Line', 2: 'Any 2 Lines', 3: 'Any Horizontal', 4: 'Any Vertical',
       5: 'X Pattern', 6: 'Four Corners', 7: 'Center Corners', 8: 'Meskel',
       9: 'T Shape', 10: 'Reverse T', 11: 'L Shape', 12: 'Full Card'
@@ -1104,7 +1106,7 @@
       const gameState = getGameState();
 
       document.getElementById('gsb-round').textContent   = 'Round ' + roundNumber;
-      document.getElementById('gsb-pattern').textContent = patternNames[gameState.pattern || 1] || 'Pattern ' + (gameState.pattern || 1);
+      document.getElementById('gsb-pattern').textContent = patternNames[gameState.pattern || 0] || 'Pattern ' + (gameState.pattern || 0);
       document.getElementById('gsb-cards').textContent   = totalCardsSelected;
       document.getElementById('gsb-price').textContent   = betAmountPerCard;
     }
@@ -1149,7 +1151,7 @@
           date: startedAt,
           cards: gameStateLock.cards,
           price: gameStateLock.price || 0,
-          pattern: gameStateLock.pattern || 1,
+          pattern: gameStateLock.pattern || 0,
           sound: gameStateLock.sound || 1,
           randomstring: '',
           status: 'started',
@@ -1974,6 +1976,7 @@
             <div style="margin-bottom:10px;">
               <label style="font-size:20px;">Pattern:</label><br>
               <select id="reg_pattern" style="font-size:20px; width:100%; padding:5px;">
+                <option value="0">Default</option>
                 <option value="1">Any 1 line</option>
                 <option value="2">Any 2 lines</option>
                 <option value="3">Any Horizontal</option>
@@ -2265,7 +2268,7 @@
         const cards = raw.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
         if (!cards.length) { alert('Please enter at least one card number.'); return; }
 
-        const pattern = parseInt(document.getElementById('reg_pattern').value) || 1;
+        const pattern = parseInt(document.getElementById('reg_pattern').value) || 0;
         const price   = parseInt(document.getElementById('reg_price').value)   || 10;
         const sound   = parseInt(document.getElementById('reg_voice').value)   || 1;
         const gs      = getGameState();
@@ -2288,7 +2291,7 @@
       function clearRegistration() {
         if (!confirm('Clear game and start new round?')) return;
         const gs = getGameState();
-        saveGameState({ round: (gs.round || 1) + 1, cards: [], pattern: 1, price: 0, sound: 1, speed_range: 3, randomstring: '' });
+        saveGameState({ round: (gs.round || 1) + 1, cards: [], pattern: 0, price: 0, sound: 1, speed_range: 3, randomstring: '' });
         location.reload();
       }
     </script>
@@ -3017,7 +3020,7 @@
     await API.saveGameState({
       round:            newRound,
       cards:            [],
-      pattern:          gs.pattern      || 1,
+      pattern:          gs.pattern      || 0,
       price:            gs.price        || 0,
       sound:            gs.sound        || 1,
       speed_range:      gs.speed_range  || 3,
@@ -3120,65 +3123,7 @@
     }
     return src.find(c => c[0] === cn) || null;
   }
-
-
-
-
-  /* Returns { count_winning_line, expected_pattern } */
-  // function checkCardWin(card, drawn, pattern) {
-  //   const b = card[1], ic = card[2], n = card[3], g = card[4], o = card[5];
-  //   const drawnSet = new Set(drawn);
-  //   const FREE     = n[2];
-
-  //   function hit(v)     { return drawnSet.has(v) || v === FREE; }
-  //   function allHit(arr){ return arr.every(v => hit(v)); }
-
-  //   const rows    = [
-  //     [b[0],ic[0],n[0],g[0],o[0]], [b[1],ic[1],n[1],g[1],o[1]],
-  //     [b[2],ic[2],n[2],g[2],o[2]], [b[3],ic[3],n[3],g[3],o[3]],
-  //     [b[4],ic[4],n[4],g[4],o[4]]
-  //   ];
-  //   const cols    = [b, ic, n, g, o];
-  //   const diag1   = [b[0],ic[1],n[2],g[3],o[4]];
-  //   const diag2   = [b[4],ic[3],n[2],g[1],o[0]];
-  //   const corners  = [b[0],o[0],b[4],o[4]];
-  //   const cCorners = [ic[1],g[1],ic[3],g[3]];
-  //   const meskel   = [ic[2],n[1],n[3],g[2]];
-
-  //   function rowHit(i) { return rows[i].filter(v => hit(v)).length >= (i === 2 ? 4 : 5); }
-  //   function colHit(c) { return c.filter(v => hit(v)).length >= (c === n ? 4 : 5); }
-  //   function diagHit(d){ return d.filter(v => hit(v)).length >= 4; }
-
-  //   function countLines() {
-  //     let cnt = 0;
-  //     if (allHit(corners))  cnt++;
-  //     if (allHit(cCorners)) cnt++;
-  //     if (allHit(meskel))   cnt++;
-  //     for (let i = 0; i < 5; i++) if (rowHit(i)) cnt++;
-  //     cols.forEach(c => { if (colHit(c)) cnt++; });
-  //     if (diagHit(diag1)) cnt++;
-  //     if (diagHit(diag2)) cnt++;
-  //     return cnt;
-  //   }
-
-  //   let win = false;
-  //   switch (pattern) {
-  //     case 1:  win = countLines() >= 1; break;
-  //     case 2:  win = countLines() >= 2; break;
-  //     case 3:  win = rows.some((_, i) => rowHit(i)); break;
-  //     case 4:  win = cols.some(c => colHit(c)); break;
-  //     case 5:  win = diagHit(diag1) && diagHit(diag2); break;
-  //     case 6:  win = allHit(corners); break;
-  //     case 7:  win = allHit(cCorners); break;
-  //     case 8:  win = allHit(meskel); break;
-  //     case 9:  win = rowHit(0) && colHit(n); break;
-  //     case 10: win = rowHit(4) && colHit(n); break;
-  //     case 11: win = colHit(b) && rowHit(4); break;
-  //     case 12: win = [b,ic,n,g,o].every(c => c.every(v => hit(v))); break;
-  //     default: win = false;
-  //   }
-  //   return { count_winning_line: win ? 1 : 0, expected_pattern: 1 };
-  // }
+  
   function checkCardWin(card, drawn, pattern) {
     const b = card[1], ic = card[2], n = card[3], g = card[4], o = card[5];
     const drawnSet = new Set(drawn);
@@ -3220,6 +3165,12 @@
     let win = false;
 
     switch (pattern) {
+      case 0:
+        win =
+          countLines() >= 1 ||   // rows, cols, diagonals
+          allHit(corners)  ||    // outer corners
+          allHit(cCorners);      // inner corners
+        break; 
       case 1:  win = countLines() >= 1; break;
       case 2:  win = countLines() >= 2; break;
       case 3:  win = rows.some((_, i) => rowHit(i)); break;
@@ -3264,61 +3215,7 @@
     return { count_winning_line: win ? 1 : 0, expected_pattern: 1 };
   }
 
-
-
-
-  /* Returns a Set of cell values that form winning lines */
-  // function getWinningCells(card, drawn, pattern) {
-  //   const b = card[1], ic = card[2], n = card[3], g = card[4], o = card[5];
-  //   const drawnSet = new Set(drawn);
-  //   const FREE     = n[2];
-
-  //   function hit(v)     { return drawnSet.has(v) || v === FREE; }
-  //   function allHit(arr){ return arr.every(v => hit(v)); }
-
-  //   const rows    = [
-  //     [b[0],ic[0],n[0],g[0],o[0]], [b[1],ic[1],n[1],g[1],o[1]],
-  //     [b[2],ic[2],n[2],g[2],o[2]], [b[3],ic[3],n[3],g[3],o[3]],
-  //     [b[4],ic[4],n[4],g[4],o[4]]
-  //   ];
-  //   const cols    = [b, ic, n, g, o];
-  //   const diag1   = [b[0],ic[1],n[2],g[3],o[4]];
-  //   const diag2   = [b[4],ic[3],n[2],g[1],o[0]];
-  //   const corners  = [b[0],o[0],b[4],o[4]];
-  //   const cCorners = [ic[1],g[1],ic[3],g[3]];
-  //   const meskel   = [ic[2],n[1],n[3],g[2]];
-
-  //   function rowHit(i) { return rows[i].filter(v => hit(v)).length >= (i === 2 ? 4 : 5); }
-  //   function colHit(c) { return c.filter(v => hit(v)).length >= (c === n ? 4 : 5); }
-  //   function diagHit(d){ return d.filter(v => hit(v)).length >= 4; }
-
-  //   const W   = new Set();
-  //   function add(arr) { arr.forEach(v => W.add(v)); }
-
-  //   switch (pattern) {
-  //     case 1: case 2:
-  //       if (allHit(corners))  add(corners);
-  //       if (allHit(cCorners)) add(cCorners);
-  //       if (allHit(meskel))   add(meskel);
-  //       rows.forEach((r, i) => { if (rowHit(i)) add(r); });
-  //       cols.forEach(c       => { if (colHit(c)) add(c); });
-  //       if (diagHit(diag1)) add(diag1);
-  //       if (diagHit(diag2)) add(diag2);
-  //       break;
-  //     case 3:  rows.forEach((r, i) => { if (rowHit(i)) add(r); }); break;
-  //     case 4:  cols.forEach(c      => { if (colHit(c)) add(c); }); break;
-  //     case 5:  if (diagHit(diag1) && diagHit(diag2)) { add(diag1); add(diag2); } break;
-  //     case 6:  if (allHit(corners))  add(corners);  break;
-  //     case 7:  if (allHit(cCorners)) add(cCorners); break;
-  //     case 8:  if (allHit(meskel))   add(meskel);   break;
-  //     case 9:  if (rowHit(0) && colHit(n)) { add(rows[0]); add(n); } break;
-  //     case 10: if (rowHit(4) && colHit(n)) { add(rows[4]); add(n); } break;
-  //     case 11: if (colHit(b) && rowHit(4)) { add(b); add(rows[4]); } break;
-  //     case 12: [b,ic,n,g,o].forEach(c => add(c)); break;
-  //   }
-  //   return W;
-  // }
-
+  
   function getWinningCells(card, drawn, pattern) {
     const b = card[1], ic = card[2], n = card[3], g = card[4], o = card[5];
     const drawnSet = new Set(drawn);
@@ -3347,6 +3244,16 @@
     function add(arr) { arr.forEach(v => W.add(v)); }
 
     switch (pattern) {
+      case 0:
+        rows.forEach(r => { if (allHit(r)) add(r); });
+        cols.forEach(c => { if (allHit(c)) add(c); });
+
+        if (allHit(diag1)) add(diag1);
+        if (allHit(diag2)) add(diag2);
+
+        if (allHit(corners))  add(corners);
+        if (allHit(cCorners)) add(cCorners);
+        break;
       case 1:
       case 2:
         rows.forEach((r, i) => { if (allHit(r)) add(r); });
@@ -3420,6 +3327,7 @@ function buildCardHTML(card, drawn, pattern, cardNo) {
   function hit(v)  { return drawnSet.has(v) || v === FREE; }
 
   const patternNames = {
+    0: 'Default',
     1: 'Any 1 Line',   2: 'Any 2 Lines', 3: 'Any Horizontal', 4: 'Any Vertical',
     5: 'X Pattern',    6: 'Four Corners', 7: 'Center Corners', 8: 'Meskel',
     9: 'T Shape',     10: 'Reverse T',  11: 'L Shape',       12: 'Full Card'
@@ -3520,7 +3428,7 @@ function buildCardHTML(card, drawn, pattern, cardNo) {
 
     const gs         = getGameState();
     const regCards   = gs.cards || [];
-    const pattern    = gs.pattern || 1;
+    const pattern    = gs.pattern || 0;
     const drawn      = (gs.randomstring || randomstring).split(',')
                           .map(n => parseInt(n)).filter(n => !isNaN(n) && n > 0);
     /* Capture on_call at check moment — before any more numbers are drawn */
