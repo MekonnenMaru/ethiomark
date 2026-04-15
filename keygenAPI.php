@@ -30,7 +30,7 @@ if ($action === 'generate_key') {
 
     $hash = strtoupper(substr(
         hash_hmac('sha256', $data, $SECRET),
-        0, 8
+        0, 16
     ));
 
     $key = "EM-$mid-$amt-$sn-$hash";

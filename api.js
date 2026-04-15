@@ -314,7 +314,7 @@ window.API = (() => {
         throw new Error('Key is for machine ' + fmt(mid) + ' — yours is ' + fmt(myMid));
       }
 
-      const expectedSig = (await _hmac([mid, sn, amt].join('|'))).substring(0,8).toUpperCase();
+      const expectedSig = (await _hmac([mid, sn, amt].join('|'))).substring(0,16).toUpperCase();
       if (sigIn !== expectedSig)
         throw new Error('Key signature is invalid — key may be typed incorrectly');
 

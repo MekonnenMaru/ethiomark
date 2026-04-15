@@ -1315,7 +1315,7 @@
           EM-········-
         </span>
         <input id="pkg-key-input" type="text"
-               placeholder="5000-1-A3F92B1C"
+               placeholder="5000-1-A3F92B1C71AA7395"
                style="flex:1; background:transparent; border:none; outline:none;
                       color:#fff; font-family:monospace; font-size:13px;
                       padding:10px 12px; min-width:0;" />
@@ -2121,12 +2121,6 @@
               trialBanner.style.display  = 'none';
               activateSec.style.display  = 'block';
               unlockSec.style.display    = 'none';
-              API.getMachineId().then(mid => {
-                if (mid) {
-                  const pfx = document.getElementById('pkg-key-prefix');
-                  if (pfx) pfx.textContent = 'EM-' + mid + '-';
-                }
-              }).catch(() => {});
               const inp = document.getElementById('pkg-key-input');
               if (inp) inp.focus();
             }
@@ -2134,12 +2128,6 @@
             trialBanner.style.display = 'none';
             activateSec.style.display = 'block';
             unlockSec.style.display   = 'none';
-            API.getMachineId().then(mid => {
-              if (mid) {
-                const pfx = document.getElementById('pkg-key-prefix');
-                if (pfx) pfx.textContent = 'EM-' + mid + '-';
-              }
-            }).catch(() => {});
           }
         }, _pkgModalWasOpen ? 320 : 0);
       }
@@ -2242,7 +2230,7 @@
         sucEl.style.display = 'none';
 
         if (!suffix) {
-          errEl.textContent   = 'Please enter the key suffix first (e.g. 5000-1-A3F92B1C).';
+          errEl.textContent   = 'Please enter the key suffix first (e.g. 5000-1-A3F92B1C71AA7395).';
           errEl.style.display = 'block';
           return;
         }
