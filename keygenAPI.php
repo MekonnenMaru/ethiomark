@@ -26,8 +26,8 @@ if ($action === 'generate_key') {
     if ($sn <= 0)           respond(['error' => 'Invalid Serial']);
     if ($amt <= 0)          respond(['error' => 'Invalid Amount']);
 
-    $today   = date('Ymd');                          /* YYYYMMDD — baked silently into HMAC */
-    $expires = date('Y-m-d', strtotime('+7 days'));   /* human-readable for the admin UI    */
+    $today   = gmdate('Ymd');                              /* UTC YYYYMMDD — baked silently into HMAC */
+    $expires = gmdate('Y-m-d', time() + 7 * 86400);       /* UTC expiry date for the admin UI        */
 
     $data = $mid . '|' . $sn . '|' . $amt . '|' . $today;
 

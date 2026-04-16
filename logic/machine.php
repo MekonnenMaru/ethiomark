@@ -165,6 +165,29 @@ if ($action === 'hmac') {
     exit;
 }
 
+/* ── verify_key: check key signature against last 7 days (UTC) — one request ── */
+if ($action === 'verify_key') {
+
+    $input  = json_decode(file_get_contents("php://input"), true);
+    $mid    = strtoupper($input['mid']    ?? '');
+    $sn     = $input['sn']    ?? '';
+    $amt    = $input['amt']   ?? '';
+    $sigIn  = strtoupper($input['sigIn'] ?? '');
+
+    for ($i = 0; $i <= 7; $i++) {
+        $dateStr  = gmdate('Ymd', time() - 86400 * $i);
+        $payload  = $mid . '|' . $sn . '|' . $amt . '|' . $dateStr;
+        $expected = strtoupper(substr(hash_hmac('sha256', $payload, $_LS), 0, 16));
+        if ($expected === $sigIn) {
+            echo json_encode(['valid' => true, 'daysOld' => $i]);
+            exit;
+        }
+    }
+
+    echo json_encode(['valid' => false]);
+    exit;
+}
+
 if ($action === 'unlock_hmac') {
 
     $input = json_decode(file_get_contents("php://input"), true);

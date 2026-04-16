@@ -314,27 +314,18 @@ window.API = (() => {
         throw new Error('Key is for machine ' + fmt(mid) + ' — yours is ' + fmt(myMid));
       }
 
-      /* ── Expiry check: key encodes generation date in HMAC (invisible).
-         Try today and up to 7 days back — if none match the key is expired. ── */
-      function _dateStr(daysAgo) {
-        const d = new Date();
-        d.setDate(d.getDate() - daysAgo);
-        return d.getFullYear().toString()
-          + String(d.getMonth() + 1).padStart(2, '0')
-          + String(d.getDate()).padStart(2, '0');
-      }
+      /* ── Expiry check: single server call, PHP uses UTC gmdate() for consistency ── */
+      const verifyRes = await fetch('logic/machine.php?action=verify_key', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({ mid, sn, amt, sigIn })
+      });
+      const verifyData = await verifyRes.json();
 
-      let matched = false;
-      let daysOld = -1;
-      for (let i = 0; i <= 7; i++) {
-        const sig = (await _hmac([mid, sn, amt, _dateStr(i)].join('|'))).substring(0,16).toUpperCase();
-        if (sig === sigIn) { matched = true; daysOld = i; break; }
-      }
-
-      if (!matched)
+      if (!verifyData.valid)
         throw new Error('Key has expired (valid for 7 days after generation). Please request a new key.');
 
-      return { mid, sn, amt, daysOld };
+      return { mid, sn, amt, daysOld: verifyData.daysOld };
     }
 
     /* ── run validation ── */
