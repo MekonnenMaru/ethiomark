@@ -1,8 +1,0 @@
-uploads = []
-generated = []
-
-[[outputs]]
-id = "Ca728t6okM6SNsj9PXKnj"
-uri = "file://ethiomark-bingo.tar.gz"
-type = "unspecified"
-title = "Ethiomark Bingo — Clean Download (452 KB)"
