@@ -200,6 +200,7 @@ body{background:#07101f;color:#e3eaf6;font-family:'Segoe UI',Arial,sans-serif;mi
             <th>Machine</th>
             <th>Amount</th>
             <th>Serial</th>
+            <th>Expires</th>
             <th>Key (click to copy)</th>
           </tr>
         </thead>
@@ -308,12 +309,16 @@ async function generate() {
 
     const key = data.key;
 
+    const expires = data.expires || '—';
+
     document.getElementById('keyText').textContent = key;
     document.getElementById('keyLen').textContent  = key.length + ' characters';
+    document.getElementById('keyMeta').innerHTML   =
+      `⏳ Expires: <strong style="color:#ff9800;">${expires}</strong> &nbsp;(7 days from today)`;
     document.getElementById('keyOut').style.display = 'block';
 
     /* log */
-    sessionLog.push({ no: sessionLog.length+1, machineId: mid, amount: amt, serial: sn, key });
+    sessionLog.push({ no: sessionLog.length+1, machineId: mid, amount: amt, serial: sn, key, expires });
     sessionStorage.setItem('em_keygen_serial', sn);
     document.getElementById('serial').value = sn + 1;
 
@@ -390,6 +395,7 @@ function renderHistory() {
       <td>${e.machineId}</td>
       <td>${Number(e.amount).toLocaleString()} ብር</td>
       <td>#${e.serial}</td>
+      <td style="color:#ff9800;font-weight:700;">${e.expires || '—'}</td>
       <td class="key-cell" onclick="copyText('${e.key}')">${e.key}</td>
     </tr>`).join('');
 

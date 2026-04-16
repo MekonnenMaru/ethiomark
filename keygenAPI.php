@@ -26,7 +26,10 @@ if ($action === 'generate_key') {
     if ($sn <= 0)           respond(['error' => 'Invalid Serial']);
     if ($amt <= 0)          respond(['error' => 'Invalid Amount']);
 
-    $data = $mid . '|' . $sn . '|' . $amt;
+    $today   = date('Ymd');                          /* YYYYMMDD — baked silently into HMAC */
+    $expires = date('Y-m-d', strtotime('+7 days'));   /* human-readable for the admin UI    */
+
+    $data = $mid . '|' . $sn . '|' . $amt . '|' . $today;
 
     $hash = strtoupper(substr(
         hash_hmac('sha256', $data, $SECRET),
@@ -35,7 +38,7 @@ if ($action === 'generate_key') {
 
     $key = "EM-$mid-$amt-$sn-$hash";
 
-    respond(['key' => $key]);
+    respond(['key' => $key, 'expires' => $expires]);
 }
 
 /* ── generate unlock code ── */

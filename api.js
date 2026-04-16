@@ -314,11 +314,27 @@ window.API = (() => {
         throw new Error('Key is for machine ' + fmt(mid) + ' — yours is ' + fmt(myMid));
       }
 
-      const expectedSig = (await _hmac([mid, sn, amt].join('|'))).substring(0,16).toUpperCase();
-      if (sigIn !== expectedSig)
-        throw new Error('Key signature is invalid — key may be typed incorrectly');
+      /* ── Expiry check: key encodes generation date in HMAC (invisible).
+         Try today and up to 7 days back — if none match the key is expired. ── */
+      function _dateStr(daysAgo) {
+        const d = new Date();
+        d.setDate(d.getDate() - daysAgo);
+        return d.getFullYear().toString()
+          + String(d.getMonth() + 1).padStart(2, '0')
+          + String(d.getDate()).padStart(2, '0');
+      }
 
-      return { mid, sn, amt };
+      let matched = false;
+      let daysOld = -1;
+      for (let i = 0; i <= 7; i++) {
+        const sig = (await _hmac([mid, sn, amt, _dateStr(i)].join('|'))).substring(0,16).toUpperCase();
+        if (sig === sigIn) { matched = true; daysOld = i; break; }
+      }
+
+      if (!matched)
+        throw new Error('Key has expired (valid for 7 days after generation). Please request a new key.');
+
+      return { mid, sn, amt, daysOld };
     }
 
     /* ── run validation ── */
