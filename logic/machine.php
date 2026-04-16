@@ -1,4 +1,6 @@
 <?php
+ini_set('display_errors', '0');
+error_reporting(0);
 
 header('Content-Type: application/json');
 
@@ -68,7 +70,7 @@ function getStorageFile($static_machine_id, $secret) {
     $dir = $base . "\\Microsoft\\Windows\\WinPadVersionController\\Cache\\" . $machine;
 
     if (!is_dir($dir)) {
-        mkdir($dir, 0777, true);
+        @mkdir($dir, 0777, true);
     }
 
     return $dir . "\\syscache.dat";
